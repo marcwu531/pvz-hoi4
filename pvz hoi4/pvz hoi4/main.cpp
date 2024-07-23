@@ -158,4 +158,4 @@ if(sprite.getGlobalBounds().contains(translated_pos)) // Rectangle-contains-poin
     // Mouse is inside the sprite.
 */
 
-//Version 1.0.2.a
+//Version 1.0.2.b
