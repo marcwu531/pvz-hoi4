@@ -1,2 +1,12 @@
 ﻿  main.cpp
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(130,75): warning C4244: 'argument': conversion from 'T' to 'int', possible loss of data
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(130,75): warning C4244:         with
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(130,75): warning C4244:         [
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(130,75): warning C4244:             T=float
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(130,75): warning C4244:         ]
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(129,75): warning C4244: 'argument': conversion from 'T' to 'int', possible loss of data
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(129,75): warning C4244:         with
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(129,75): warning C4244:         [
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(129,75): warning C4244:             T=float
+D:\c++\pvz hoi4\pvz hoi4\main.cpp(129,75): warning C4244:         ]
   pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Debug\pvz hoi4.exe

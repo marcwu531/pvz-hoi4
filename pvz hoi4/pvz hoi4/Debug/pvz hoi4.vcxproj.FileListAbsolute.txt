@@ -1,2 +1,0 @@
-D:\c++\pvz hoi4\Debug\pvz hoi4.exe.lastcodeanalysissucceeded
-D:\c++\pvz hoi4\pvz hoi4\Debug\NativeCodeAnalysis.read.1.tlog

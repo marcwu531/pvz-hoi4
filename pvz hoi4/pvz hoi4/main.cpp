@@ -1,9 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <algorithm>
-
-float tx = 0.0f;
-float ty = 0.0f;
+#include <cstring>
 
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view) {
     //std::cout << zoom << std::endl;
@@ -17,20 +15,52 @@ void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::Vi
     window.setView(view);
 }
 
+int getPixelColour(sf::Texture& texture, int imageX, int imageY, char colourType) {
+    sf::Image image = texture.copyToImage();
+
+    if (colourType == 'r') {
+        return image.getPixel(imageX, imageY).r;
+    }
+    if (colourType == 'g') {
+        return image.getPixel(imageX, imageY).g;
+    }
+    if (colourType == 'b') {
+        return image.getPixel(imageX, imageY).b;
+    }
+    if (colourType == 'a') {
+        return image.getPixel(imageX, imageY).a;
+    }
+    
+    return 0;
+}
+
+std::string getRGBA(sf::Texture& texture, int imageX, int imageY) {
+    std::string string = std::to_string(getPixelColour(texture, imageX, imageY, 'r')) + ' '
+        + std::to_string(getPixelColour(texture, imageX, imageY, 'g')) + ' '
+        + std::to_string(getPixelColour(texture, imageX, imageY, 'b')) + ' '
+        + std::to_string(getPixelColour(texture, imageX, imageY, 'a'));
+    return string;
+}
+
 int main() {
+    float tx = 0.0f;
+    float ty = 0.0f;
+    bool leftClicking = false;
+    float mapRatio = 20.0f;
+
     sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
 
     sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
-    view.setCenter(sf::Vector2f(94000.0f, 20000.0f));
+    view.setCenter(sf::Vector2f(90000.0f, 20000.0f)); //94000.0f, 20000.0f
 
-    sf::RectangleShape world(sf::Vector2f(20*5632.0f, 20*2048.0f));
+    sf::RectangleShape world(sf::Vector2f(mapRatio*5632.0f, mapRatio*2048.0f));
     //world.setOrigin(93000.0f, 19500.0f);
     sf::Texture texture_world;
     texture_world.loadFromFile("images/world.png");
     world.setTexture(&texture_world);
+
+    sf::Texture Provinces[] = { texture_world };
     
-
-
     while (window.isOpen())
     {
         sf::Event e;
@@ -53,6 +83,12 @@ int main() {
                     zoomViewAt({ e.mouseWheelScroll.x, e.mouseWheelScroll.y }, window, std::pow(1.1f, -e.mouseWheelScroll.delta), view);
                     view = window.getView();
                     //std::cout << view.getCenter().x << " " << view.getCenter().y << std::endl;
+                    break;
+                case sf::Event::MouseButtonReleased:
+                    //std::cout << "A" << std::endl;
+                    if (e.mouseButton.button == sf::Mouse::Left && leftClicking) {
+                        leftClicking = false;
+                    }
                     break;
             }
         }
@@ -81,6 +117,23 @@ int main() {
 
         view.move(sf::Vector2f(dx, dy));
 
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+            leftClicking = true;
+            /*std::cout << "x: " << window.mapPixelToCoords(sf::Mouse::getPosition(window)).x
+                << " y: " << window.mapPixelToCoords(sf::Mouse::getPosition(window)).y << std::endl;*/
+            /*std::cout << getRGBA(texture_world,
+                window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
+                window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio)
+                << std::endl;*/
+            if (getRGBA(texture_world,
+                window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
+                window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio) == "89 171 196 255") {
+                std::cout << "T" << std::endl;
+            }
+        }
+
+        //Taipei: r: 89 g: 171 b: 196 a: 255
+
         window.clear();
         window.setView(view);
         window.draw(world);
@@ -88,3 +141,10 @@ int main() {
     }
 	return 0;
 }
+
+/*
+* auto mouse_pos = sf::Mouse::getPosition(window); // Mouse position relative to the window
+auto translated_pos = window.mapPixelToCoords(mouse_pos); // Mouse position translated into world coordinates
+if(sprite.getGlobalBounds().contains(translated_pos)) // Rectangle-contains-point check
+    // Mouse is inside the sprite.
+*/
