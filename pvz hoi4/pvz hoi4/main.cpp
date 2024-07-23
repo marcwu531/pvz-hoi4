@@ -15,26 +15,26 @@ void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::Vi
     window.setView(view);
 }
 
-int getPixelColour(sf::Texture& texture, int imageX, int imageY, char colourType) {
-    sf::Image image = texture.copyToImage();
+int getPixelColour(sf::Image& image, int imageX, int imageY, char colourType) {
+    sf::Color color = image.getPixel(imageX, imageY);
 
     if (colourType == 'r') {
-        return image.getPixel(imageX, imageY).r;
+        return color.r;
     }
     if (colourType == 'g') {
-        return image.getPixel(imageX, imageY).g;
+        return color.g;
     }
     if (colourType == 'b') {
-        return image.getPixel(imageX, imageY).b;
+        return color.b;
     }
     if (colourType == 'a') {
-        return image.getPixel(imageX, imageY).a;
+        return color.a;
     }
     
     return 0;
 }
 
-std::string getRGBA(sf::Texture& texture, int imageX, int imageY) {
+std::string getRGBA(sf::Image& texture, int imageX, int imageY) {
     std::string string = std::to_string(getPixelColour(texture, imageX, imageY, 'r')) + ' '
         + std::to_string(getPixelColour(texture, imageX, imageY, 'g')) + ' '
         + std::to_string(getPixelColour(texture, imageX, imageY, 'b')) + ' '
@@ -49,14 +49,18 @@ int main() {
     float mapRatio = 20.0f;
 
     sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
+    //window.setVerticalSyncEnabled(true);
 
     sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
     view.setCenter(sf::Vector2f(90000.0f, 20000.0f)); //94000.0f, 20000.0f
+    //window.setFramerateLimit(100);
 
     sf::RectangleShape world(sf::Vector2f(mapRatio*5632.0f, mapRatio*2048.0f));
     //world.setOrigin(93000.0f, 19500.0f);
     sf::Texture texture_world;
-    texture_world.loadFromFile("images/world.png");
+    sf::Image image;
+    image.loadFromFile("images/world.png");
+    texture_world.loadFromImage(image);
     world.setTexture(&texture_world);
 
     sf::Texture Provinces[] = { texture_world };
@@ -117,7 +121,7 @@ int main() {
 
         view.move(sf::Vector2f(dx, dy));
 
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !leftClicking) {
             leftClicking = true;
             /*std::cout << "x: " << window.mapPixelToCoords(sf::Mouse::getPosition(window)).x
                 << " y: " << window.mapPixelToCoords(sf::Mouse::getPosition(window)).y << std::endl;*/
@@ -125,9 +129,14 @@ int main() {
                 window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
                 window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio)
                 << std::endl;*/
-            if (getRGBA(texture_world,
+            auto mx = sf::Mouse::getPosition(window);
+            float x = window.mapPixelToCoords(mx).x;
+            auto random = getRGBA(image, window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio, 
+                window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio);
+            if (getRGBA(image,
                 window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
-                window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio) == "89 171 196 255") {
+                window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio)
+                == "89 171 196 255") {
                 std::cout << "T" << std::endl;
             }
         }
