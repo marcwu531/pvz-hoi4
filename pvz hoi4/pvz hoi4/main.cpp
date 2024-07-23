@@ -157,3 +157,5 @@ auto translated_pos = window.mapPixelToCoords(mouse_pos); // Mouse position tran
 if(sprite.getGlobalBounds().contains(translated_pos)) // Rectangle-contains-point check
     // Mouse is inside the sprite.
 */
+
+//Version 1.0.2.a
