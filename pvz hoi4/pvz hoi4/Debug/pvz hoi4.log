@@ -1,4 +1,2 @@
 ﻿  main.cpp
-D:\c++\pvz hoi4\pvz hoi4\main.cpp(47,40): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
-D:\c++\pvz hoi4\pvz hoi4\main.cpp(47,24): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
   pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Debug\pvz hoi4.exe

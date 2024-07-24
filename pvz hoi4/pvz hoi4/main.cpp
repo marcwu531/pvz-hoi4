@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <cstring>
 #include "State.hpp"
+#include <vector>
+#include <array>
+#include <future>
+#include <thread>
 
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view) {
     //std::cout << zoom << std::endl;
@@ -44,7 +48,7 @@ std::string getRGBA(sf::Image& texture, int imageX, int imageY) {
 }
 
 std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY) {
-    if (getRGBA(image, mouseInMapPosX, mouseInMapPosY) == State::T::RGBA()) {
+    if (getRGBA(image, (int)std::floor(mouseInMapPosX), (int)std::floor(mouseInMapPosY)) == State::T::RGBA()) {
         if (mouseInMapPosX > State::T::sx && mouseInMapPosX < State::T::lx
             && mouseInMapPosY > State::T::sy && mouseInMapPosY < State::T::ly) {
             return "T";
@@ -53,28 +57,56 @@ std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMa
     return "";
 }
 
+int blinkSpeed = 10;
+int ra = 1;
+
+sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image) {
+    for (int i = 1; i != coords.size(); i++) {
+        int alpha = getPixelColour(image, std::get<0>(coords[i]), std::get<1>(coords[i]), 'a');
+        if (ra > 0 && alpha <= 100) {
+            ra = -1;
+        }
+        else if (ra < 0 && alpha >= 255) {
+            ra = 1;
+        }
+        alpha -= blinkSpeed * ra;
+        image.setPixel(std::get<0>(coords[i]), std::get<1>(coords[i]), sf::Color(89, 171, 196, alpha));
+    }
+    return image;
+}
+
+std::vector<std::array<int, 2>> targetCoords = { {NULL, NULL} };
+std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
+
+sf::Texture texture_world;
+
+sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
+sf::Image image;
+
 int main() {
     float tx = 0.0f;
     float ty = 0.0f;
     bool leftClicking = false;
     float mapRatio = 20.0f;
+    window.setFramerateLimit(60);
 
-    sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
     //window.setVerticalSyncEnabled(true);
 
-    sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
-    view.setCenter(sf::Vector2f(90000.0f, 20000.0f)); //94000.0f, 20000.0f
-    //window.setFramerateLimit(100);
+    sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 100.0f));
+    //view.setCenter(sf::Vector2f(94000.0f, 20000.0f)); //94000.0f, 20000.0f
 
-    sf::RectangleShape world(sf::Vector2f(mapRatio*5632.0f, mapRatio*2048.0f));
+    sf::RectangleShape world(sf::Vector2f(mapRatio*200.0f, mapRatio*200.0f)); //5632*2048
     //world.setOrigin(93000.0f, 19500.0f);
-    sf::Texture texture_world;
-    sf::Image image;
-    image.loadFromFile("images/world.png");
-    texture_world.loadFromImage(image);
-    world.setTexture(&texture_world);
+    image.loadFromFile("images/taiwan.png");
 
-    sf::Texture Provinces[] = { texture_world };
+    //texture_world.loadFromImage(image);
+    texture_world.loadFromImage(image, sf::IntRect(4555, 920, 200, 200));
+    world.setTexture(&texture_world);
+    //world.setSize(sf::Vector2f(5632.0f, 2048.0f));
+
+    //sf::Texture Provinces[] = { texture_world };
+
+    int updateCd = 0;
     
     while (window.isOpen())
     {
@@ -123,12 +155,12 @@ int main() {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) dty = 1;
         }
 
-        tx += dtx * std::max(std::min(tx, -10.0f), 10.0f);
-        tx *= 0.99f;
-        float dx = 0.002f * tx * view.getSize().x / 1920.0f;
-        ty += dty * std::max(std::min(ty, -10.0f), 10.0f);
-        ty *= 0.99f;
-        float dy = 0.002f * ty * view.getSize().y / 1046.0f;
+        tx += dtx * std::max(std::min(tx, -80.0f), 80.0f);
+        tx *= 0.9f;
+        float dx = 0.02f * tx * view.getSize().x / 1920.0f;
+        ty += dty * std::max(std::min(ty, -80.0f), 80.0f);
+        ty *= 0.9f;
+        float dy = 0.02f * ty * view.getSize().y / 1046.0f;
 
         view.move(sf::Vector2f(dx, dy));
 
@@ -146,23 +178,32 @@ int main() {
                 window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio);*/
             float mouseInMapPosX = window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio;
             float mouseInMapPosY = window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio;
-            std::cout << mouseInMapPosX << std::endl;
-            std::cout << mouseInMapPosY << std::endl;
+            //std::cout << mouseInMapPosX << std::endl;
+            //std::cout << mouseInMapPosY << std::endl;
 
             std::string targetState = clickingState(image, mouseInMapPosX, mouseInMapPosY);
-            
+
             //std::cout << targetState << std::endl;
             if (strcmp(targetState.c_str(), "T") == 0) {
-                std::cout << "T1" << std::endl;
                 for (int x = State::T::sx; x <= State::T::lx; x++) {
                     for (int y = State::T::sy; y <= State::T::ly; y++) {
-                        std::cout << getRGBA(image, x, y).c_str() << std::endl;
                         if (strcmp(getRGBA(image, x, y).c_str(), State::T::RGBA().c_str()) == 0) {
-                            image.setPixel(x, y, sf::Color(1, 1, 1, 255));
+                            targetCoords.push_back({x, y});
                         }
                     }
                 }
             }
+        }
+
+        if (targetCoords != nullVector) {
+            /*if (updateCd < 2) {
+                updateCd++;
+            }
+            else {
+                updateCd = 0;*/
+                //image = pixelsToBlink(targetCoords, image);
+                //texture_world.loadFromImage(image, sf::IntRect(4690, 980, 15, 15));
+            //}
         }
 
         window.clear();
@@ -180,4 +221,4 @@ if(sprite.getGlobalBounds().contains(translated_pos)) // Rectangle-contains-poin
     // Mouse is inside the sprite.
 */
 
-//Version 1.0.3
+//Version 1.0.4
