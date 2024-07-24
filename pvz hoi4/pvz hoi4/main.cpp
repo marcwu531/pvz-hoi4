@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cstring>
+#include "State.hpp"
 
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view) {
     //std::cout << zoom << std::endl;
@@ -40,6 +41,16 @@ std::string getRGBA(sf::Image& texture, int imageX, int imageY) {
         + std::to_string(getPixelColour(texture, imageX, imageY, 'b')) + ' '
         + std::to_string(getPixelColour(texture, imageX, imageY, 'a'));
     return string;
+}
+
+std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY) {
+    if (getRGBA(image, mouseInMapPosX, mouseInMapPosY) == State::T::RGBA()) {
+        if (mouseInMapPosX > State::T::sx && mouseInMapPosX < State::T::lx
+            && mouseInMapPosY > State::T::sy && mouseInMapPosY < State::T::ly) {
+            return "T";
+        }
+    }
+    return "";
 }
 
 int main() {
@@ -129,19 +140,30 @@ int main() {
                 window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
                 window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio)
                 << std::endl;*/
-            auto mx = sf::Mouse::getPosition(window);
+            /*auto mx = sf::Mouse::getPosition(window);
             float x = window.mapPixelToCoords(mx).x;
             auto random = getRGBA(image, window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio, 
-                window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio);
-            if (getRGBA(image,
-                window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
-                window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio)
-                == "89 171 196 255") {
-                std::cout << "T" << std::endl;
+                window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio);*/
+            float mouseInMapPosX = window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio;
+            float mouseInMapPosY = window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio;
+            std::cout << mouseInMapPosX << std::endl;
+            std::cout << mouseInMapPosY << std::endl;
+
+            std::string targetState = clickingState(image, mouseInMapPosX, mouseInMapPosY);
+            
+            //std::cout << targetState << std::endl;
+            if (strcmp(targetState.c_str(), "T") == 0) {
+                std::cout << "T1" << std::endl;
+                for (int x = State::T::sx; x <= State::T::lx; x++) {
+                    for (int y = State::T::sy; y <= State::T::ly; y++) {
+                        std::cout << getRGBA(image, x, y).c_str() << std::endl;
+                        if (strcmp(getRGBA(image, x, y).c_str(), State::T::RGBA().c_str()) == 0) {
+                            image.setPixel(x, y, sf::Color(1, 1, 1, 255));
+                        }
+                    }
+                }
             }
         }
-
-        //Taipei: r: 89 g: 171 b: 196 a: 255
 
         window.clear();
         window.setView(view);
@@ -158,4 +180,4 @@ if(sprite.getGlobalBounds().contains(translated_pos)) // Rectangle-contains-poin
     // Mouse is inside the sprite.
 */
 
-//Version 1.0.2.b
+//Version 1.0.3
