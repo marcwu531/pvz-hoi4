@@ -75,39 +75,47 @@ sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image)
     return image;
 }
 
-std::vector<std::array<int, 2>> targetCoords = { {NULL, NULL} };
-std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
+sf::Image cropImage(sf::Image image, std::array<int, 2> cropFromCoords, std::array<int, 2> resizedSize) {
+    sf::Image cropped_image;
+    cropped_image.create(cropFromCoords[0], cropFromCoords[1], sf::Color(50,50,50,255));
 
-sf::Texture texture_world;
+    for (int x = cropFromCoords[0]; x <= cropFromCoords[0] + resizedSize[0]; x++) {
+        for (int y = cropFromCoords[1]; y <= cropFromCoords[1] + resizedSize[1]; y++) {
+            //cropped_image.setPixel(x - cropFromCoords[0], y - cropFromCoords[1], sf::Color(10, 10, 10, 255)); //image.getPixel(x, y)
+        }
+    }
 
-sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
-sf::Image image;
+    return cropped_image;
+}
 
 int main() {
+    std::vector<std::array<int, 2>> targetCoords = { {NULL, NULL} };
+    std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
+
+    sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
+
+    sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
+    view.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
+
+    float mapRatio = 20.0f;
+
+    sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
+    //world.setOrigin(93000.0f, 19500.0f);
+    sf::Texture texture_world;
+    sf::Image image;
+    image.loadFromFile("images/world.png");
+    texture_world.loadFromImage(image); //, sf::IntRect(4555, 920, 200, 200)
+    world.setTexture(&texture_world);
+
     float tx = 0.0f;
     float ty = 0.0f;
     bool leftClicking = false;
-    float mapRatio = 20.0f;
     window.setFramerateLimit(60);
 
-    //window.setVerticalSyncEnabled(true);
+    int blinkCd = 0;
 
-    sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(100.0f, 100.0f));
-    //view.setCenter(sf::Vector2f(94000.0f, 20000.0f)); //94000.0f, 20000.0f
+    sf::RectangleShape world_blink(sf::Vector2f(15.0f * mapRatio, 15.0f * mapRatio)); //15s
 
-    sf::RectangleShape world(sf::Vector2f(mapRatio*200.0f, mapRatio*200.0f)); //5632*2048
-    //world.setOrigin(93000.0f, 19500.0f);
-    image.loadFromFile("images/taiwan.png");
-
-    //texture_world.loadFromImage(image);
-    texture_world.loadFromImage(image, sf::IntRect(4555, 920, 200, 200));
-    world.setTexture(&texture_world);
-    //world.setSize(sf::Vector2f(5632.0f, 2048.0f));
-
-    //sf::Texture Provinces[] = { texture_world };
-
-    int updateCd = 0;
-    
     while (window.isOpen())
     {
         sf::Event e;
@@ -195,30 +203,42 @@ int main() {
             }
         }
 
-        if (targetCoords != nullVector) {
-            /*if (updateCd < 2) {
-                updateCd++;
-            }
-            else {
-                updateCd = 0;*/
-                //image = pixelsToBlink(targetCoords, image);
-                //texture_world.loadFromImage(image, sf::IntRect(4690, 980, 15, 15));
-            //}
-        }
-
         window.clear();
         window.setView(view);
         window.draw(world);
+
+        if (targetCoords != nullVector) {
+            if (blinkCd < 10) {
+                blinkCd++;
+            } else {
+                blinkCd = 0;
+                sf::Image image_blink;
+                sf::Texture texture_blink;
+                
+                image_blink = pixelsToBlink(targetCoords, image);
+                image_blink = cropImage(image_blink, {4699, 986}, {15, 15});
+
+                texture_blink.loadFromImage(image_blink); //4690
+                world_blink.setTexture(&texture_blink);
+                world_blink.setPosition(sf::Vector2f(view.getCenter().x - view.getSize().x / 2.0f, view.getCenter().y - view.getSize().y / 2.0f));
+                /*sf::Image image_blink;
+                sf::Texture texture_blink;
+                sf::RectangleShape world_blink(sf::Vector2f(15.0f, 15.0f));
+                image_blink = pixelsToBlink(targetCoords, image);
+
+                texture_blink.loadFromImage(image_blink, sf::IntRect(4690, 980, 15, 15));
+                world_blink.setTexture(&texture_blink);
+                world_blink.setPosition(sf::Vector2f(4600.0f * mapRatio, 980.0f * mapRatio));
+                window.draw(world_blink);
+                //}
+                //return;*/
+                //updating = true;
+            }
+            window.draw(world_blink);
+        }
         window.display();
     }
 	return 0;
 }
 
-/*
-* auto mouse_pos = sf::Mouse::getPosition(window); // Mouse position relative to the window
-auto translated_pos = window.mapPixelToCoords(mouse_pos); // Mouse position translated into world coordinates
-if(sprite.getGlobalBounds().contains(translated_pos)) // Rectangle-contains-point check
-    // Mouse is inside the sprite.
-*/
-
-//Version 1.0.4
+//Version 1.0.5
