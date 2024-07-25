@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Image.hpp>
 #include <iostream>
 #include <algorithm>
 #include <cstring>
@@ -23,20 +24,13 @@ void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::Vi
 int getPixelColour(sf::Image& image, int imageX, int imageY, char colourType) {
     sf::Color color = image.getPixel(imageX, imageY);
 
-    if (colourType == 'r') {
-        return color.r;
+    switch (colourType) {
+        case 'r': return color.r;
+        case 'g': return color.g;
+        case 'b': return color.b;
+        case 'a': return color.a;
+        default: return 0;
     }
-    if (colourType == 'g') {
-        return color.g;
-    }
-    if (colourType == 'b') {
-        return color.b;
-    }
-    if (colourType == 'a') {
-        return color.a;
-    }
-    
-    return 0;
 }
 
 std::string getRGBA(sf::Image& texture, int imageX, int imageY) {
@@ -57,36 +51,42 @@ std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMa
     return "";
 }
 
-int blinkSpeed = 10;
+int blinkSpeed = 5;
+int alpha = 254;
 int ra = 1;
 
 sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image) {
-    for (int i = 1; i != coords.size(); i++) {
-        int alpha = getPixelColour(image, std::get<0>(coords[i]), std::get<1>(coords[i]), 'a');
-        if (ra > 0 && alpha <= 100) {
-            ra = -1;
-        }
-        else if (ra < 0 && alpha >= 255) {
-            ra = 1;
-        }
-        alpha -= blinkSpeed * ra;
-        image.setPixel(std::get<0>(coords[i]), std::get<1>(coords[i]), sf::Color(89, 171, 196, alpha));
+    if (ra > 0 && alpha <= 100) {
+        ra = -1;
+    }
+    else if (ra < 0 && alpha >= 255) {
+        ra = 1;
+    }
+    alpha -= blinkSpeed * ra;
+    alpha = std::max(std::min(alpha, 254), 100);
+    for (const auto& coord : coords) {
+        //int alpha = getPixelColour(image, coord[0], coord[1], 'a');
+        //std::cout << alpha << std::endl;
+        sf::Color ogColor = image.getPixel(coord[0], coord[1]);
+        image.setPixel(coord[0], coord[1], sf::Color(ogColor.r, ogColor.g, ogColor.b, alpha));
     }
     return image;
 }
 
-sf::Image cropImage(sf::Image image, std::array<int, 2> cropFromCoords, std::array<int, 2> resizedSize) {
+sf::Image cropImage(const sf::Image image, const sf::IntRect& cropArea) {
     sf::Image cropped_image;
-    cropped_image.create(cropFromCoords[0], cropFromCoords[1], sf::Color(50,50,50,255));
+    cropped_image.create(cropArea.width, cropArea.height, sf::Color::Transparent);
 
-    for (int x = cropFromCoords[0]; x <= cropFromCoords[0] + resizedSize[0]; x++) {
-        for (int y = cropFromCoords[1]; y <= cropFromCoords[1] + resizedSize[1]; y++) {
-            //cropped_image.setPixel(x - cropFromCoords[0], y - cropFromCoords[1], sf::Color(10, 10, 10, 255)); //image.getPixel(x, y)
+    for (int x = 0; x < cropArea.width; x++) {
+        for (int y = 0; y < cropArea.height; y++) {
+            cropped_image.setPixel(x, y, image.getPixel(cropArea.left + x, cropArea.top + y));
         }
     }
 
     return cropped_image;
 }
+
+sf::Image image;
 
 int main() {
     std::vector<std::array<int, 2>> targetCoords = { {NULL, NULL} };
@@ -102,10 +102,13 @@ int main() {
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //world.setOrigin(93000.0f, 19500.0f);
     sf::Texture texture_world;
-    sf::Image image;
     image.loadFromFile("images/world.png");
     texture_world.loadFromImage(image); //, sf::IntRect(4555, 920, 200, 200)
     world.setTexture(&texture_world);
+
+    sf::RectangleShape world_blink(sf::Vector2f(2 * mapRatio * (State::T::lx - State::T::sx + 1), 
+        mapRatio * (State::T::ly - State::T::sy + 1))); //15s
+    sf::Texture texture_blink;
 
     float tx = 0.0f;
     float ty = 0.0f;
@@ -113,8 +116,6 @@ int main() {
     window.setFramerateLimit(60);
 
     int blinkCd = 0;
-
-    sf::RectangleShape world_blink(sf::Vector2f(15.0f * mapRatio, 15.0f * mapRatio)); //15s
 
     while (window.isOpen())
     {
@@ -192,10 +193,10 @@ int main() {
             std::string targetState = clickingState(image, mouseInMapPosX, mouseInMapPosY);
 
             //std::cout << targetState << std::endl;
-            if (strcmp(targetState.c_str(), "T") == 0) {
+            if (targetState == "T") {
                 for (int x = State::T::sx; x <= State::T::lx; x++) {
                     for (int y = State::T::sy; y <= State::T::ly; y++) {
-                        if (strcmp(getRGBA(image, x, y).c_str(), State::T::RGBA().c_str()) == 0) {
+                        if (getRGBA(image, x, y) == State::T::RGBA()) {
                             targetCoords.push_back({x, y});
                         }
                     }
@@ -212,27 +213,22 @@ int main() {
                 blinkCd++;
             } else {
                 blinkCd = 0;
+
                 sf::Image image_blink;
-                sf::Texture texture_blink;
-                
-                image_blink = pixelsToBlink(targetCoords, image);
-                image_blink = cropImage(image_blink, {4699, 986}, {15, 15});
+                //image_blink.create(11, 12, sf::Color::Red);
 
-                texture_blink.loadFromImage(image_blink); //4690
-                world_blink.setTexture(&texture_blink);
-                world_blink.setPosition(sf::Vector2f(view.getCenter().x - view.getSize().x / 2.0f, view.getCenter().y - view.getSize().y / 2.0f));
-                /*sf::Image image_blink;
-                sf::Texture texture_blink;
-                sf::RectangleShape world_blink(sf::Vector2f(15.0f, 15.0f));
                 image_blink = pixelsToBlink(targetCoords, image);
 
-                texture_blink.loadFromImage(image_blink, sf::IntRect(4690, 980, 15, 15));
+                sf::IntRect cropArea(State::T::sx, State::T::sy, State::T::lx - State::T::sx + 1, State::T::ly - State::T::sy + 1);
+                image_blink = cropImage(image_blink, cropArea);
+
+                texture_blink.loadFromImage(image_blink);
+
                 world_blink.setTexture(&texture_blink);
-                world_blink.setPosition(sf::Vector2f(4600.0f * mapRatio, 980.0f * mapRatio));
-                window.draw(world_blink);
-                //}
-                //return;*/
-                //updating = true;
+                world_blink.setPosition(sf::Vector2f(State::T::sx* mapRatio, State::T::sy* mapRatio));
+                //State::T::sx * mapRatio, State::T::sy * mapRatio)
+                //view.getCenter().x - view.getSize().x / 2.0f, view.getCenter().y - view.getSize().y / 2.0f)
+                //window.draw(world_blink);
             }
             window.draw(world_blink);
         }
@@ -241,4 +237,4 @@ int main() {
 	return 0;
 }
 
-//Version 1.0.5
+//Version 1.0.6
