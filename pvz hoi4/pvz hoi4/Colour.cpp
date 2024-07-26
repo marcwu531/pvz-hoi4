@@ -136,8 +136,3 @@ std::string getRGBA(sf::Image& texture, int imageX, int imageY) {
         + std::to_string(getPixelColour(texture, imageX, imageY, 'a'));
     return string;
 }
-
-/*std::array<int, 3> HSLtoRGB(int h, int s, int l) {
-    int r, g, b;
-    return { r, g, b };
-}*/
