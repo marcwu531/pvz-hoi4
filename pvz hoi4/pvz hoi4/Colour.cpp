@@ -11,9 +11,8 @@
 #include "State.hpp"
 #include "Window.h"
 
-int blinkSpeed = 5;
-int alpha = 254;
-int ra = 1;
+//int alpha = 254;
+//int ra = 1;
 
 std::array<int, 3> RGBtoHSL(std::array<int, 3> rgb) {
     int r = rgb[0];
@@ -94,22 +93,42 @@ std::array<int, 3> HSLtoRGB(std::array<int, 3> hsl) {
     return { (int)std::round(r), (int)std::round(g), (int)std::round(b) };
 }
 
+int blinkSpeed = 3;
+int lRatio = 1;
+int lRatioF = 1;
+
 sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image) {
-    if (ra > 0 && alpha <= 100) {
-        ra = -1;
-    }
-    else if (ra < 0 && alpha >= 255) {
-        ra = 1;
-    }
-    alpha -= blinkSpeed * ra;
-    alpha = std::max(std::min(alpha, 254), 100);
+    lRatio += lRatioF;
     for (const auto& coord : coords) {
         //int alpha = getPixelColour(image, coord[0], coord[1], 'a');
         //std::cout << alpha << std::endl;
         sf::Color ogColor = image.getPixel(coord[0], coord[1]);
-        image.setPixel(coord[0], coord[1], sf::Color(ogColor.r, ogColor.g, ogColor.b, alpha));
+        std::array<int, 3> newColor = RGBtoHSL({ ogColor.r, ogColor.g, ogColor.b });
+
+        if (newColor[2] - blinkSpeed * lRatio < 50) {
+            lRatio -= 2;
+            lRatioF = -1;
+        }
+        else if (newColor[2] - blinkSpeed * lRatio > 80) {
+            lRatio -= -2;
+            lRatioF = 1;
+        }
+
+        newColor[2] -= blinkSpeed * lRatio;
+        newColor[2] = std::max(std::min(newColor[2], 100), 0);
+
+        newColor = HSLtoRGB(newColor);
+        image.setPixel(coord[0], coord[1], sf::Color(newColor[0], newColor[1], newColor[2]));
     }
     return image;
+    /*if (ra > 0 && alpha <= 100) {
+    ra = -1;
+}
+else if (ra < 0 && alpha >= 255) {
+    ra = 1;
+}
+alpha -= blinkSpeed * ra;
+alpha = std::max(std::min(alpha, 254), 100);*/
 }
 
 int getPixelColour(sf::Image& image, int imageX, int imageY, char colourType) {
@@ -125,10 +144,10 @@ int getPixelColour(sf::Image& image, int imageX, int imageY, char colourType) {
 }
 
 std::string getRGBA(sf::Image& texture, int imageX, int imageY) {
-    std::array<int, 3> ArrayFloat = HSLtoRGB(RGBtoHSL({ getPixelColour(texture, imageX, imageY, 'r'),
+    /*std::array<int, 3> ArrayFloat = HSLtoRGB(RGBtoHSL({ getPixelColour(texture, imageX, imageY, 'r'),
         getPixelColour(texture, imageX, imageY, 'g'),
         getPixelColour(texture, imageX, imageY, 'b') }));
-    std::cout << ArrayFloat[0] << ", " << ArrayFloat[1] << ", " << ArrayFloat[2] << std::endl;
+    std::cout << ArrayFloat[0] << ", " << ArrayFloat[1] << ", " << ArrayFloat[2] << std::endl;*/
 
     std::string string = std::to_string(getPixelColour(texture, imageX, imageY, 'r')) + ' '
         + std::to_string(getPixelColour(texture, imageX, imageY, 'g')) + ' '

@@ -10,19 +10,62 @@
 #include <thread>
 #include "Window.h"
 #include "Colour.h"
+#include <atomic>
 
 sf::Image image;
+std::string blinking_state;
+
+std::atomic<bool> running(true);
+std::vector<std::array<int, 2>> targetCoords = { {NULL, NULL} };
+std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
+float mapRatio = 20.0f;
+sf::RectangleShape world_blink(sf::Vector2f(mapRatio* (State::T::lx - State::T::sx + 1),
+    mapRatio* (State::T::ly - State::T::sy + 1))); //15s
+
+//std::atomic<int> blinkCd(0);  //int blinkCd = 0;
+std::atomic<bool> readyToDraw(false);
+
+sf::Texture texture_blink;
+
+void asyncUpdate() {
+    auto lastTime = std::chrono::high_resolution_clock::now();
+
+    while (running.load()) {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
+
+        if (elapsedTime.count() >= 16) { //(int)(1000.0f/60.0f)
+            if (targetCoords != nullVector && !readyToDraw.load()) {
+                /*int currentBlinkCd = blinkCd.load();
+                //if (currentBlinkCd < 5) {
+                    //blinkCd.store(currentBlinkCd + 1);
+                //}
+                //else {
+                    //blinkCd.store(0);*/
+
+                sf::Image image_blink;
+                image_blink = pixelsToBlink(targetCoords, image);
+
+                sf::IntRect cropArea(State::T::sx, State::T::sy, State::T::lx - State::T::sx + 1, State::T::ly - State::T::sy + 1);
+                image_blink = cropImage(image_blink, cropArea);
+
+                texture_blink.loadFromImage(image_blink);
+
+                world_blink.setPosition(sf::Vector2f(State::T::sx * mapRatio, State::T::sy * mapRatio));
+
+                readyToDraw.store(true);
+            }
+            lastTime = currentTime;
+        }
+        //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
 
 int main() {
-    std::vector<std::array<int, 2>> targetCoords = { {NULL, NULL} };
-    std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
-
     sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
 
     sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
     view.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
-
-    float mapRatio = 20.0f;
 
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //world.setOrigin(93000.0f, 19500.0f);
@@ -31,16 +74,12 @@ int main() {
     texture_world.loadFromImage(image); //, sf::IntRect(4555, 920, 200, 200)
     world.setTexture(&texture_world);
 
-    sf::RectangleShape world_blink(sf::Vector2f(2 * mapRatio * (State::T::lx - State::T::sx + 1), 
-        mapRatio * (State::T::ly - State::T::sy + 1))); //15s
-    sf::Texture texture_blink;
-
     float tx = 0.0f;
     float ty = 0.0f;
     bool leftClicking = false;
     window.setFramerateLimit(60);
 
-    int blinkCd = 0;
+    std::thread updateThread(asyncUpdate);
 
     while (window.isOpen())
     {
@@ -118,7 +157,8 @@ int main() {
             std::string targetState = clickingState(image, mouseInMapPosX, mouseInMapPosY);
 
             //std::cout << targetState << std::endl;
-            if (targetState == "T") {
+            if (targetState == "T" && blinking_state != "T") {
+                blinking_state = "T";
                 for (int x = State::T::sx; x <= State::T::lx; x++) {
                     for (int y = State::T::sy; y <= State::T::ly; y++) {
                         if (getRGBA(image, x, y) == State::T::RGBA()) {
@@ -132,34 +172,17 @@ int main() {
         window.clear();
         window.setView(view);
         window.draw(world);
-
-        if (targetCoords != nullVector) {
-            if (blinkCd < 10) {
-                blinkCd++;
-            } else {
-                blinkCd = 0;
-
-                sf::Image image_blink;
-                //image_blink.create(11, 12, sf::Color::Red);
-
-                image_blink = pixelsToBlink(targetCoords, image);
-
-                sf::IntRect cropArea(State::T::sx, State::T::sy, State::T::lx - State::T::sx + 1, State::T::ly - State::T::sy + 1);
-                image_blink = cropImage(image_blink, cropArea);
-
-                texture_blink.loadFromImage(image_blink);
-
-                world_blink.setTexture(&texture_blink);
-                world_blink.setPosition(sf::Vector2f(State::T::sx* mapRatio, State::T::sy* mapRatio));
-                //State::T::sx * mapRatio, State::T::sy * mapRatio)
-                //view.getCenter().x - view.getSize().x / 2.0f, view.getCenter().y - view.getSize().y / 2.0f)
-                //window.draw(world_blink);
-            }
-            window.draw(world_blink);
+        if (readyToDraw.load()) {
+            world_blink.setTexture(&texture_blink);
+            readyToDraw.store(false);
         }
+        window.draw(world_blink);
         window.display();
     }
+    running = false;
+    updateThread.join();
+
 	return 0;
 }
 
-//Version 1.0.7.a
+//Version 1.0.8
