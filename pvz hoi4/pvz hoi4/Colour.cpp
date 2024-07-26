@@ -1,12 +1,9 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/Image.hpp>
 #include <iostream>
-#include <algorithm>
-#include <cstring>
 #include <vector>
 #include <array>
-#include <future>
-#include <thread>
+#include <cmath>
+#include <algorithm>
 #include "Colour.h"
 #include "State.hpp"
 #include "Window.h"
@@ -14,17 +11,18 @@
 //int alpha = 254;
 //int ra = 1;
 
-std::array<int, 3> RGBtoHSL(std::array<int, 3> rgb) {
-    int r = rgb[0];
-    int g = rgb[1];
-    int b = rgb[2];
+template <typename T>
+constexpr T clamp(T value, T low, T high) {
+    return (value < low) ? low : (value > high) ? high : value;
+}
 
-    float fr = r / 255.0f;
-    float fg = g / 255.0f;
-    float fb = b / 255.0f;
+std::array<int, 3> RGBtoHSL(const std::array<int, 3> rgb) {
+    float r = rgb[0] / 255.0f;
+    float g = rgb[1] / 255.0f;
+    float b = rgb[2] / 255.0f;
 
-    float fMin = std::min({ fr, fg, fb });
-    float fMax = std::max({ fr, fg, fb });
+    float fMin = std::min({ r, g, b });
+    float fMax = std::max({ r, g, b });
     float delta = fMax - fMin;
 
     float h = 0.0f;
@@ -34,35 +32,29 @@ std::array<int, 3> RGBtoHSL(std::array<int, 3> rgb) {
     if (delta != 0) {
         s = (l < 0.5f) ? delta / (fMax + fMin) : delta / (2.0f - fMax - fMin);
 
-        if (fr == fMax) {
-            h = (fg - fb) / delta;
+        if (r == fMax) {
+            h = (g - b) / delta;
         }
-        else if (fg == fMax) {
-            h = 2.0f + (fb - fr) / delta;
+        else if (g == fMax) {
+            h = 2.0f + (b - r) / delta;
         }
         else {
-            h = 4.0f + (fr - fg) / delta;
+            h = 4.0f + (r - g) / delta;
         }
 
         h /= 6.0f;
         if (h < 0) h += 1;
     }
 
-    h *= 360.0f;
-    s *= 100.0f;
-    l *= 100.0f;
-
-    return { (int)std::round(h), (int)std::round(s), (int)std::round(l) };
+    return { static_cast<int>(std::round(h * 360.0f)),
+             static_cast<int>(std::round(s * 100.0f)),
+             static_cast<int>(std::round(l * 100.0f)) };
 }
 
-std::array<int, 3> HSLtoRGB(std::array<int, 3> hsl) {
-    int h = hsl[0];
-    int s = hsl[1];
-    int l = hsl[2];
-
-    float fh = h / 360.0f;
-    float fs = s / 100.0f;
-    float fl = l / 100.0f;
+std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
+    float h = hsl[0] / 360.0f;
+    float s = hsl[1] / 100.0f;
+    float l = hsl[2] / 100.0f;
 
     auto hueToRGB = [](float p, float q, float t) -> float {
         if (t < 0) t += 1;
@@ -71,33 +63,31 @@ std::array<int, 3> HSLtoRGB(std::array<int, 3> hsl) {
         if (t < 1.0f / 2.0f) return q;
         if (t < 2.0f / 3.0f) return p + (q - p) * (2.0f / 3.0f - t) * 6.0f;
         return p;
-    };
+        };
 
     float r, g, b;
 
-    if (fs == 0) {
-        r = g = b = fl; // achromatic
+    if (s == 0) {
+        r = g = b = l; // achromatic
     }
     else {
-        float q = fl < 0.5f ? fl * (1 + fs) : fl + fs - fl * fs;
-        float p = 2 * fl - q;
-        r = hueToRGB(p, q, fh + 1.0f / 3.0f);
-        g = hueToRGB(p, q, fh);
-        b = hueToRGB(p, q, fh - 1.0f / 3.0f);
+        float q = l < 0.5f ? l * (1 + s) : l + s - l * s;
+        float p = 2 * l - q;
+        r = hueToRGB(p, q, h + 1.0f / 3.0f);
+        g = hueToRGB(p, q, h);
+        b = hueToRGB(p, q, h - 1.0f / 3.0f);
     }
 
-    r *= 255.0f;
-    g *= 255.0f;
-    b *= 255.0f;
-
-    return { (int)std::round(r), (int)std::round(g), (int)std::round(b) };
+    return { static_cast<int>(std::round(r * 255.0f)),
+             static_cast<int>(std::round(g * 255.0f)),
+             static_cast<int>(std::round(b * 255.0f)) };
 }
 
-int blinkSpeed = 3;
-int lRatio = 1;
-int lRatioF = 1;
-
 sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image) {
+    static int lRatio = 1;
+    static int lRatioF = 1;
+    static int blinkSpeed = 2;
+
     lRatio += lRatioF;
     for (const auto& coord : coords) {
         //int alpha = getPixelColour(image, coord[0], coord[1], 'a');
@@ -110,12 +100,12 @@ sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image)
             lRatioF = -1;
         }
         else if (newColor[2] - blinkSpeed * lRatio > 80) {
-            lRatio -= -2;
+            lRatio += 2;
             lRatioF = 1;
         }
 
         newColor[2] -= blinkSpeed * lRatio;
-        newColor[2] = std::max(std::min(newColor[2], 100), 0);
+        newColor[2] = clamp(newColor[2], 30, 100);
 
         newColor = HSLtoRGB(newColor);
         image.setPixel(coord[0], coord[1], sf::Color(newColor[0], newColor[1], newColor[2]));

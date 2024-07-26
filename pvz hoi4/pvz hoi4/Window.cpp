@@ -1,12 +1,9 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Image.hpp>
 #include <iostream>
-#include <algorithm>
-#include <cstring>
 #include <vector>
 #include <array>
-#include <future>
-#include <thread>
+#include <cmath>
 #include "Window.h"
 #include "State.hpp"
 #include "Colour.h"
@@ -24,7 +21,10 @@ void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::Vi
 }
 
 std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY) {
-    if (getRGBA(image, (int)std::floor(mouseInMapPosX), (int)std::floor(mouseInMapPosY)) == State::T::RGBA()) {
+    int x = static_cast<int>(std::floor(mouseInMapPosX));
+    int y = static_cast<int>(std::floor(mouseInMapPosY));
+
+    if (getRGBA(image, x, y) == State::T::RGBA()) {
         if (mouseInMapPosX > State::T::sx && mouseInMapPosX < State::T::lx
             && mouseInMapPosY > State::T::sy && mouseInMapPosY < State::T::ly) {
             return "T";
@@ -37,8 +37,8 @@ sf::Image cropImage(const sf::Image image, const sf::IntRect& cropArea) {
     sf::Image cropped_image;
     cropped_image.create(cropArea.width, cropArea.height, sf::Color::Transparent);
 
-    for (int x = 0; x < cropArea.width; x++) {
-        for (int y = 0; y < cropArea.height; y++) {
+    for (int x = 0; x < cropArea.width; ++x) {
+        for (int y = 0; y < cropArea.height; ++y) {
             cropped_image.setPixel(x, y, image.getPixel(cropArea.left + x, cropArea.top + y));
         }
     }

@@ -16,8 +16,8 @@ sf::Image image;
 std::string blinking_state;
 
 std::atomic<bool> running(true);
-std::vector<std::array<int, 2>> targetCoords = { {NULL, NULL} };
-std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
+std::vector<std::array<int, 2>> targetCoords;
+//std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
 float mapRatio = 20.0f;
 sf::RectangleShape world_blink(sf::Vector2f(mapRatio* (State::T::lx - State::T::sx + 1),
     mapRatio* (State::T::ly - State::T::sy + 1))); //15s
@@ -35,7 +35,7 @@ void asyncUpdate() {
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
 
         if (elapsedTime.count() >= 16) { //(int)(1000.0f/60.0f)
-            if (targetCoords != nullVector && !readyToDraw.load()) {
+            if (!targetCoords.empty() && !readyToDraw.load()) {
                 /*int currentBlinkCd = blinkCd.load();
                 //if (currentBlinkCd < 5) {
                     //blinkCd.store(currentBlinkCd + 1);
@@ -43,13 +43,17 @@ void asyncUpdate() {
                 //else {
                     //blinkCd.store(0);*/
 
-                sf::Image image_blink;
-                image_blink = pixelsToBlink(targetCoords, image);
+                sf::Image image_blink = pixelsToBlink(targetCoords, image);
 
                 sf::IntRect cropArea(State::T::sx, State::T::sy, State::T::lx - State::T::sx + 1, State::T::ly - State::T::sy + 1);
                 image_blink = cropImage(image_blink, cropArea);
 
-                texture_blink.loadFromImage(image_blink);
+                if (texture_blink.getSize().x != static_cast<unsigned int>(cropArea.width) ||
+                    texture_blink.getSize().y != static_cast<unsigned int>(cropArea.height)) {
+                    texture_blink.create(cropArea.width, cropArea.height);
+                }
+
+                texture_blink.update(image_blink);
 
                 world_blink.setPosition(sf::Vector2f(State::T::sx * mapRatio, State::T::sy * mapRatio));
 
@@ -57,7 +61,7 @@ void asyncUpdate() {
             }
             lastTime = currentTime;
         }
-        //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 
@@ -159,8 +163,9 @@ int main() {
             //std::cout << targetState << std::endl;
             if (targetState == "T" && blinking_state != "T") {
                 blinking_state = "T";
-                for (int x = State::T::sx; x <= State::T::lx; x++) {
-                    for (int y = State::T::sy; y <= State::T::ly; y++) {
+                targetCoords.clear();
+                for (int x = State::T::sx; x <= State::T::lx; ++x) {
+                    for (int y = State::T::sy; y <= State::T::ly; ++y) {
                         if (getRGBA(image, x, y) == State::T::RGBA()) {
                             targetCoords.push_back({x, y});
                         }
@@ -185,4 +190,4 @@ int main() {
 	return 0;
 }
 
-//Version 1.0.8
+//Version 1.0.8.a

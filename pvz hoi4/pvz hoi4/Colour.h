@@ -11,6 +11,8 @@
 #include <future>
 #include <thread>
 
+template <typename T>
+constexpr T clamp(T value, T low, T high);
 sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image);
 int getPixelColour(sf::Image& image, int imageX, int imageY, char colourType);
 std::string getRGBA(sf::Image& texture, int imageX, int imageY);
