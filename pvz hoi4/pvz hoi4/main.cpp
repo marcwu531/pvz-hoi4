@@ -8,83 +8,8 @@
 #include <array>
 #include <future>
 #include <thread>
-
-void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view) {
-    //std::cout << zoom << std::endl;
-    const sf::Vector2f beforeCoord{ window.mapPixelToCoords(pixel) };
-    //sf::View view = window.getView();
-    view.zoom(zoom);
-    window.setView(view);
-    const sf::Vector2f afterCoord{ window.mapPixelToCoords(pixel) };
-    const sf::Vector2f offsetCoords{ beforeCoord - afterCoord };
-    view.move(offsetCoords);
-    window.setView(view);
-}
-
-int getPixelColour(sf::Image& image, int imageX, int imageY, char colourType) {
-    sf::Color color = image.getPixel(imageX, imageY);
-
-    switch (colourType) {
-        case 'r': return color.r;
-        case 'g': return color.g;
-        case 'b': return color.b;
-        case 'a': return color.a;
-        default: return 0;
-    }
-}
-
-std::string getRGBA(sf::Image& texture, int imageX, int imageY) {
-    std::string string = std::to_string(getPixelColour(texture, imageX, imageY, 'r')) + ' '
-        + std::to_string(getPixelColour(texture, imageX, imageY, 'g')) + ' '
-        + std::to_string(getPixelColour(texture, imageX, imageY, 'b')) + ' '
-        + std::to_string(getPixelColour(texture, imageX, imageY, 'a'));
-    return string;
-}
-
-std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY) {
-    if (getRGBA(image, (int)std::floor(mouseInMapPosX), (int)std::floor(mouseInMapPosY)) == State::T::RGBA()) {
-        if (mouseInMapPosX > State::T::sx && mouseInMapPosX < State::T::lx
-            && mouseInMapPosY > State::T::sy && mouseInMapPosY < State::T::ly) {
-            return "T";
-        }
-    }
-    return "";
-}
-
-int blinkSpeed = 5;
-int alpha = 254;
-int ra = 1;
-
-sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image) {
-    if (ra > 0 && alpha <= 100) {
-        ra = -1;
-    }
-    else if (ra < 0 && alpha >= 255) {
-        ra = 1;
-    }
-    alpha -= blinkSpeed * ra;
-    alpha = std::max(std::min(alpha, 254), 100);
-    for (const auto& coord : coords) {
-        //int alpha = getPixelColour(image, coord[0], coord[1], 'a');
-        //std::cout << alpha << std::endl;
-        sf::Color ogColor = image.getPixel(coord[0], coord[1]);
-        image.setPixel(coord[0], coord[1], sf::Color(ogColor.r, ogColor.g, ogColor.b, alpha));
-    }
-    return image;
-}
-
-sf::Image cropImage(const sf::Image image, const sf::IntRect& cropArea) {
-    sf::Image cropped_image;
-    cropped_image.create(cropArea.width, cropArea.height, sf::Color::Transparent);
-
-    for (int x = 0; x < cropArea.width; x++) {
-        for (int y = 0; y < cropArea.height; y++) {
-            cropped_image.setPixel(x, y, image.getPixel(cropArea.left + x, cropArea.top + y));
-        }
-    }
-
-    return cropped_image;
-}
+#include "Window.h"
+#include "Colour.h"
 
 sf::Image image;
 
@@ -237,4 +162,4 @@ int main() {
 	return 0;
 }
 
-//Version 1.0.6
+//Version 1.0.7
