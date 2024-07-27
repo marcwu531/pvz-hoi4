@@ -14,7 +14,11 @@
 #include "Resource.h"
 #include "State.h"
 
+sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
+sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
+
 std::atomic<bool> running(true);
+std::atomic<bool> loadingCoords(false);
 std::vector<std::array<int, 2>> targetCoords;
 //std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
 float mapRatio = 20.0f;
@@ -36,7 +40,7 @@ void asyncUpdate() {
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
 
         if (elapsedTime.count() >= 16) { //(int)(1000.0f/60.0f)
-            if (!targetCoords.empty() && !readyToDraw.load() && !clicking_state.empty()) {
+            if (!targetCoords.empty() && !readyToDraw.load() && !clicking_state.empty() && !loadingCoords.load()) {
                 /*int currentBlinkCd = blinkCd.load();
                 //if (currentBlinkCd < 5) {
                     //blinkCd.store(currentBlinkCd + 1);
@@ -51,6 +55,8 @@ void asyncUpdate() {
                 int lx = state_int[clicking_state]["lx"]();
                 int ly = state_int[clicking_state]["ly"]();
 
+                //std::cout << "sx: " << sx << ", sy: " << sy << ", lx: " << lx << ", ly: " << ly << std::endl;
+
                 sf::IntRect cropArea(sx, sy, lx - sx + 1, ly - sy + 1);
                 image_blink = cropImage(image_blink, cropArea);
 
@@ -60,8 +66,9 @@ void asyncUpdate() {
                 }
 
                 texture_blink.update(image_blink);
-
-                world_blink.setPosition(sf::Vector2f(sx * mapRatio, sy * mapRatio));
+                world_blink.setTextureRect(sf::IntRect(0, 0, cropArea.width, cropArea.height));
+                world_blink.setSize(sf::Vector2f(mapRatio * cropArea.width, mapRatio * cropArea.height));
+                world_blink.setPosition(sf::Vector2f(sx * mapRatio, sy * mapRatio)); //view.getCenter().x, view.getCenter().y
 
                 readyToDraw.store(true);
             }
@@ -71,10 +78,30 @@ void asyncUpdate() {
     }
 }
 
-int main() {
-    sf::RenderWindow window(sf::VideoMode(1920, 1046), "Pvz Hoi4", sf::Style::Close | sf::Style::Resize);
+void checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
+    std::string targetState = clickingState(image, mouseInMapPosX, mouseInMapPosY);
 
-    sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
+    //std::cout << targetState << std::endl;
+    if (!targetState.empty() && clicking_state != targetState) {
+        loadingCoords.store(true);
+        clicking_state = targetState;
+        targetCoords.clear();
+
+        //std::cout << "sx: " << state_int[clicking_state]["sx"]() << std::endl;
+        //std::cout << "lx: " << state_int[clicking_state]["lx"]() << std::endl;
+
+        for (int x = state_int[clicking_state]["sx"](); x <= state_int[clicking_state]["lx"](); ++x) {
+            for (int y = state_int[clicking_state]["sy"](); y <= state_int[clicking_state]["ly"](); ++y) {
+                if (getRGBA(image, x, y) == state_rgba[clicking_state]["RGBA"]()) {
+                    targetCoords.push_back({ x, y });
+                }
+            }
+        }
+        loadingCoords.store(false);
+    }
+}
+
+int main() {
     view.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
 
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
@@ -103,22 +130,22 @@ int main() {
                 case sf::Event::Closed:
                     window.close();
                     break;
-                case sf::Event::Resized:
+                /*case sf::Event::Resized:
                     std::cout << "width:" << e.size.width << " height:" << e.size.height << std::endl;
-                    break;
+                    break;*/
                 /*case sf::Event::TextEntered:
                     printf("%c", e.text.unicode);
                     break;*/
-                case sf::Event::MouseWheelScrolled:
-                    zoomViewAt({ e.mouseWheelScroll.x, e.mouseWheelScroll.y }, window, std::pow(1.1f, -e.mouseWheelScroll.delta), view);
-                    view = window.getView();
-                    //std::cout << view.getCenter().x << " " << view.getCenter().y << std::endl;
-                    break;
                 case sf::Event::MouseButtonReleased:
                     //std::cout << "A" << std::endl;
                     if (e.mouseButton.button == sf::Mouse::Left && leftClicking) {
                         leftClicking = false;
                     }
+                    break;
+                case sf::Event::MouseWheelScrolled:
+                    zoomViewAt({ e.mouseWheelScroll.x, e.mouseWheelScroll.y }, window, std::pow(1.1f, -e.mouseWheelScroll.delta), view);
+                    view = window.getView();
+                    //std::cout << view.getCenter().x << " " << view.getCenter().y << std::endl;
                     break;
             }
         }
@@ -164,21 +191,7 @@ int main() {
             //std::cout << mouseInMapPosX << std::endl;
             //std::cout << mouseInMapPosY << std::endl;
 
-            std::string targetState = clickingState(image, mouseInMapPosX, mouseInMapPosY);
-
-            //std::cout << targetState << std::endl;
-            if (targetState == "Taipei" && clicking_state != "Taipei") {
-                clicking_state = "Taipei";
-                targetCoords.clear();
-
-                for (int x = state_int[clicking_state]["sx"](); x <= state_int[clicking_state]["lx"](); ++x) {
-                    for (int y = state_int[clicking_state]["sy"](); y <= state_int[clicking_state]["ly"](); ++y) {
-                        if (getRGBA(image, x, y) == state_rgba[clicking_state]["RGBA"]()) {
-                            targetCoords.push_back({x, y});
-                        }
-                    }
-                }
-            }
+            checkClickingState(mouseInMapPosX, mouseInMapPosY);
         }
 
         window.clear();
@@ -191,10 +204,10 @@ int main() {
         window.draw(world_blink);
         window.display();
     }
-    running = false;
+    running.store(false);
     updateThread.join();
 
 	return 0;
 }
 
-//Version 1.0.8.b
+//Version 1.0.9

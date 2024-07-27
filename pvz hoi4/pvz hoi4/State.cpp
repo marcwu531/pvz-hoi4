@@ -6,18 +6,28 @@
 
 std::unordered_map<std::string, std::unordered_map<std::string, std::function<int()>>> state_int = {
         {"Taipei", {
-            {"r", []() { return State::Taipei::r; }},
             {"sx", []() { return State::Taipei::sx; }},
             {"lx", []() { return State::Taipei::lx; }},
             {"sy", []() { return State::Taipei::sy; }},
             {"ly", []() { return State::Taipei::ly; }}
         }},
-        {"Hualian", {
-            {"r", []() { return State::Hualian::r; }},
-            {"sx", []() { return State::Hualian::sx; }},
-            {"lx", []() { return State::Hualian::lx; }},
-            {"sy", []() { return State::Hualian::sy; }},
-            {"ly", []() { return State::Hualian::ly; }}
+        {"NewTaipei", {
+            {"sx", []() { return State::NewTaipei::sx; }},
+            {"lx", []() { return State::NewTaipei::lx; }},
+            {"sy", []() { return State::NewTaipei::sy; }},
+            {"ly", []() { return State::NewTaipei::ly; }}
+        }},
+    {"Taoyuan", {
+            {"sx", []() { return State::Taoyuan::sx; }},
+            {"lx", []() { return State::Taoyuan::lx; }},
+            {"sy", []() { return State::Taoyuan::sy; }},
+            {"ly", []() { return State::Taoyuan::ly; }}
+        }},
+    {"Keelung", {
+            {"sx", []() { return State::Keelung::sx; }},
+            {"lx", []() { return State::Keelung::lx; }},
+            {"sy", []() { return State::Keelung::sy; }},
+            {"ly", []() { return State::Keelung::ly; }}
         }}
 };
 
@@ -25,7 +35,17 @@ std::unordered_map<std::string, std::unordered_map<std::string, std::function<st
         {"Taipei", {
             {"RGBA", []() { return State::Taipei::RGBA(); }}
         }},
-        {"Hualian", {
-            {"RGBA", []() { return State::Hualian::RGBA(); }}
+        {"NewTaipei", {
+            {"RGBA", []() { return State::NewTaipei::RGBA(); }}
+        }},
+    {"Taoyuan", {
+            {"RGBA", []() { return State::Taoyuan::RGBA(); }}
+        }},
+    {"Keelung", {
+            {"RGBA", []() { return State::Keelung::RGBA(); }}
         }}
 };
+
+std::string clicking_state;
+
+std::string States[4] = {"Taipei", "NewTaipei", "Taoyuan", "Keelung"};

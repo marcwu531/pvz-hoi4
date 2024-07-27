@@ -4,9 +4,11 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
+#include <SFML/Graphics.hpp>
 
-std::unordered_map<std::string, std::unordered_map<std::string, std::function<int()>>> state_int;
-std::unordered_map<std::string, std::unordered_map<std::string, std::function<std::string()>>> state_rgba;
-std::string clicking_state;
+extern std::unordered_map<std::string, std::unordered_map<std::string, std::function<int()>>> state_int;
+extern std::unordered_map<std::string, std::unordered_map<std::string, std::function<std::string()>>> state_rgba;
+extern std::string clicking_state;
+extern std::string States[4];
 
 #endif

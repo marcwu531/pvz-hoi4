@@ -15,6 +15,6 @@
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view);
 std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY);
-sf::Image cropImage(const sf::Image image, const sf::IntRect& cropArea);
+sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea);
 
 #endif
