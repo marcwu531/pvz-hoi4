@@ -5,7 +5,7 @@
 #include <cmath>
 #include <algorithm>
 #include "Colour.h"
-#include "State.hpp"
+#include "State.h"
 #include "Window.h"
 
 //int alpha = 254;
@@ -84,9 +84,9 @@ std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
 }
 
 sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image) {
-    static int lRatio = 1;
-    static int lRatioF = 1;
-    static int blinkSpeed = 2;
+    static int lRatio = 0;
+    static int lRatioF = -1;
+    static int blinkSpeed = 1;
 
     lRatio += lRatioF;
     for (const auto& coord : coords) {
@@ -95,11 +95,11 @@ sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image)
         sf::Color ogColor = image.getPixel(coord[0], coord[1]);
         std::array<int, 3> newColor = RGBtoHSL({ ogColor.r, ogColor.g, ogColor.b });
 
-        if (newColor[2] - blinkSpeed * lRatio < 50) {
+        if (newColor[2] - blinkSpeed * lRatio < 40) {
             lRatio -= 2;
             lRatioF = -1;
         }
-        else if (newColor[2] - blinkSpeed * lRatio > 80) {
+        else if (newColor[2] - blinkSpeed * lRatio > 60) {
             lRatio += 2;
             lRatioF = 1;
         }

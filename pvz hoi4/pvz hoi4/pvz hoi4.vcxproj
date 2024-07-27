@@ -141,12 +141,18 @@
   <ItemGroup>
     <ClCompile Include="Colour.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="State.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Colour.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="State.h" />
     <ClInclude Include="State.hpp" />
     <ClInclude Include="Window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

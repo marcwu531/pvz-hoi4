@@ -3,7 +3,6 @@
 #include <iostream>
 #include <algorithm>
 #include <cstring>
-#include "State.hpp"
 #include <vector>
 #include <array>
 #include <future>
@@ -11,21 +10,23 @@
 #include "Window.h"
 #include "Colour.h"
 #include <atomic>
-
-sf::Image image;
-std::string blinking_state;
+#include <windows.h>
+#include "Resource.h"
+#include "State.h"
 
 std::atomic<bool> running(true);
 std::vector<std::array<int, 2>> targetCoords;
 //std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
 float mapRatio = 20.0f;
-sf::RectangleShape world_blink(sf::Vector2f(mapRatio* (State::T::lx - State::T::sx + 1),
-    mapRatio* (State::T::ly - State::T::sy + 1))); //15s
+sf::RectangleShape world_blink; //(sf::Vector2f(mapRatio* (State::T::lx - State::T::sx + 1), mapRatio* (State::T::ly - State::T::sy + 1))); //15s
 
 //std::atomic<int> blinkCd(0);  //int blinkCd = 0;
 std::atomic<bool> readyToDraw(false);
 
 sf::Texture texture_blink;
+
+HINSTANCE hInstance = GetModuleHandle(NULL);
+sf::Image image = loadImageFromResource(hInstance, WORLD_IMAGE);
 
 void asyncUpdate() {
     auto lastTime = std::chrono::high_resolution_clock::now();
@@ -35,7 +36,7 @@ void asyncUpdate() {
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
 
         if (elapsedTime.count() >= 16) { //(int)(1000.0f/60.0f)
-            if (!targetCoords.empty() && !readyToDraw.load()) {
+            if (!targetCoords.empty() && !readyToDraw.load() && !clicking_state.empty()) {
                 /*int currentBlinkCd = blinkCd.load();
                 //if (currentBlinkCd < 5) {
                     //blinkCd.store(currentBlinkCd + 1);
@@ -45,7 +46,12 @@ void asyncUpdate() {
 
                 sf::Image image_blink = pixelsToBlink(targetCoords, image);
 
-                sf::IntRect cropArea(State::T::sx, State::T::sy, State::T::lx - State::T::sx + 1, State::T::ly - State::T::sy + 1);
+                int sx = state_int[clicking_state]["sx"]();
+                int sy = state_int[clicking_state]["sy"]();
+                int lx = state_int[clicking_state]["lx"]();
+                int ly = state_int[clicking_state]["ly"]();
+
+                sf::IntRect cropArea(sx, sy, lx - sx + 1, ly - sy + 1);
                 image_blink = cropImage(image_blink, cropArea);
 
                 if (texture_blink.getSize().x != static_cast<unsigned int>(cropArea.width) ||
@@ -55,7 +61,7 @@ void asyncUpdate() {
 
                 texture_blink.update(image_blink);
 
-                world_blink.setPosition(sf::Vector2f(State::T::sx * mapRatio, State::T::sy * mapRatio));
+                world_blink.setPosition(sf::Vector2f(sx * mapRatio, sy * mapRatio));
 
                 readyToDraw.store(true);
             }
@@ -74,7 +80,7 @@ int main() {
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //world.setOrigin(93000.0f, 19500.0f);
     sf::Texture texture_world;
-    image.loadFromFile("images/world.png");
+    //image.loadFromFile("images/world.png");
     texture_world.loadFromImage(image); //, sf::IntRect(4555, 920, 200, 200)
     world.setTexture(&texture_world);
 
@@ -161,12 +167,13 @@ int main() {
             std::string targetState = clickingState(image, mouseInMapPosX, mouseInMapPosY);
 
             //std::cout << targetState << std::endl;
-            if (targetState == "T" && blinking_state != "T") {
-                blinking_state = "T";
+            if (targetState == "Taipei" && clicking_state != "Taipei") {
+                clicking_state = "Taipei";
                 targetCoords.clear();
-                for (int x = State::T::sx; x <= State::T::lx; ++x) {
-                    for (int y = State::T::sy; y <= State::T::ly; ++y) {
-                        if (getRGBA(image, x, y) == State::T::RGBA()) {
+
+                for (int x = state_int[clicking_state]["sx"](); x <= state_int[clicking_state]["lx"](); ++x) {
+                    for (int y = state_int[clicking_state]["sy"](); y <= state_int[clicking_state]["ly"](); ++y) {
+                        if (getRGBA(image, x, y) == state_rgba[clicking_state]["RGBA"]()) {
                             targetCoords.push_back({x, y});
                         }
                     }
@@ -190,4 +197,4 @@ int main() {
 	return 0;
 }
 
-//Version 1.0.8.a
+//Version 1.0.8.b

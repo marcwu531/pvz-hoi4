@@ -1,4 +1,7 @@
-﻿  Window.cpp
+﻿  Colour.cpp
   main.cpp
+  State.cpp
+D:\c++\pvz hoi4\pvz hoi4\State.cpp(7,88): error C2374: 'state_int': redefinition; multiple initialization
+D:\c++\pvz hoi4\pvz hoi4\State.cpp(24,96): error C2374: 'state_rgba': redefinition; multiple initialization
+  Window.cpp
   Generating Code...
-  pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Debug\pvz hoi4.exe

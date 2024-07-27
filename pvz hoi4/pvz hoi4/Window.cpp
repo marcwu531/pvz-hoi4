@@ -5,8 +5,46 @@
 #include <array>
 #include <cmath>
 #include "Window.h"
-#include "State.hpp"
 #include "Colour.h"
+#include "windows.h"
+#include <stdexcept>
+#include <exception>
+#include "State.h"
+
+sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID) {
+    // Find the resource
+    sf::Image image;
+
+    HRSRC hRes = FindResource(hInstance, MAKEINTRESOURCE(resourceID), RT_RCDATA);
+    if (!hRes) {
+        throw std::runtime_error("Failed to find resource");
+    }
+
+    // Load the resource data
+    HGLOBAL hResData = LoadResource(hInstance, hRes);
+    if (!hResData) {
+        throw std::runtime_error("Failed to load resource");
+    }
+
+    // Lock the resource to get a pointer to the data
+    void* pResData = LockResource(hResData);
+    if (!pResData) {
+        throw std::runtime_error("Failed to lock resource");
+    }
+
+    // Get the size of the resource data
+    DWORD resSize = SizeofResource(hInstance, hRes);
+    if (resSize == 0) {
+        throw std::runtime_error("Failed to get resource size");
+    }
+
+    // Load image from memory
+    if (!image.loadFromMemory(pResData, resSize)) {
+        throw std::runtime_error("Failed to load image from memory");
+    }
+
+    return image;
+}
 
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view) {
     //std::cout << zoom << std::endl;
@@ -24,9 +62,9 @@ std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMa
     int x = static_cast<int>(std::floor(mouseInMapPosX));
     int y = static_cast<int>(std::floor(mouseInMapPosY));
 
-    if (getRGBA(image, x, y) == State::T::RGBA()) {
-        if (mouseInMapPosX > State::T::sx && mouseInMapPosX < State::T::lx
-            && mouseInMapPosY > State::T::sy && mouseInMapPosY < State::T::ly) {
+    if (getRGBA(image, x, y) == state_rgba[clicking_state]["RGBA"]()) {
+        if (mouseInMapPosX > state_int[clicking_state]["sx"]() && mouseInMapPosX < state_int[clicking_state]["lx"]()
+            && mouseInMapPosY > state_int[clicking_state]["sy"]() && mouseInMapPosY < state_int[clicking_state]["ly"]()) {
             return "T";
         }
     }
