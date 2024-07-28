@@ -94,7 +94,7 @@ void asyncLoadFlag() {
         auto currentTime = std::chrono::high_resolution_clock::now();
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
 
-        if (elapsedTime.count() >= static_cast<unsigned int>(1000 / fps)) { //(int)(1000.0f/60.0f)
+        if (elapsedTime.count() >= static_cast<unsigned int>(1000 / fps)) {
             if (!flag.empty() && !loadFlag_readyToDraw.load()) {
                 if (current_flag != flag) {
                     flag_image.loadFromFile("images/flags/" + flag + ".png");
@@ -270,4 +270,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.10
+//Version 1.0.10.a
