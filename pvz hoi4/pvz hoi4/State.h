@@ -9,6 +9,7 @@
 extern std::unordered_map<std::string, std::unordered_map<std::string, std::function<int()>>> state_int;
 extern std::unordered_map<std::string, std::unordered_map<std::string, std::function<std::string()>>> state_rgba;
 extern std::string clicking_state;
-extern std::string States[4];
+extern std::string flag;
+extern std::unordered_map<std::string, std::vector<std::string>> Regions;
 
 #endif

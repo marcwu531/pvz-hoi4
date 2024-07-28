@@ -58,19 +58,24 @@ void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::Vi
     window.setView(view);
 }
 
-std::string clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY) {
+std::array<std::string, 2> clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY) {
     int x = static_cast<int>(mouseInMapPosX);
     int y = static_cast<int>(mouseInMapPosY);
 
-    for (const std::string& state : States) {
-        if (getRGBA(image, x, y) == state_rgba[state]["RGBA"]()) {
-            if (x >= state_int[state]["sx"]() && x <= state_int[state]["lx"]()
-                && y >= state_int[state]["sy"]() && y <= state_int[state]["ly"]()) {
-                return state;
+    for (const auto& region : Regions) {
+        for (const std::string& state : region.second) {
+            if (state_rgba.find(state) != state_rgba.end() && state_int.find(state) != state_int.end()) {
+                if (getRGBA(image, x, y) == state_rgba[state]["RGBA"]()) {
+                    if (x >= state_int[state]["sx"]() && x <= state_int[state]["lx"]()
+                        && y >= state_int[state]["sy"]() && y <= state_int[state]["ly"]()) {
+                        return { region.first, state };
+                    }
+                }
             }
         }
     }
-    return "";
+
+    return { "", "" };
 }
 
 sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea) {

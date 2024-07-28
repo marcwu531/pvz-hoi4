@@ -4,48 +4,74 @@
 #include "State.hpp"
 #include "State.h"
 
+#define DEFINE_STATE_INT(region, state) \
+    {#state, { \
+        {"sx", []() { return State::region::state::sx; }}, \
+        {"lx", []() { return State::region::state::lx; }}, \
+        {"sy", []() { return State::region::state::sy; }}, \
+        {"ly", []() { return State::region::state::ly; }} \
+    }}
+
+#define DEFINE_STATE_RGBA(region, state) \
+    {#state, { \
+        {"RGBA", []() { return State::region::state::RGBA(); }} \
+    }}
+
 std::unordered_map<std::string, std::unordered_map<std::string, std::function<int()>>> state_int = {
-        {"Taipei", {
-            {"sx", []() { return State::Taipei::sx; }},
-            {"lx", []() { return State::Taipei::lx; }},
-            {"sy", []() { return State::Taipei::sy; }},
-            {"ly", []() { return State::Taipei::ly; }}
-        }},
-        {"NewTaipei", {
-            {"sx", []() { return State::NewTaipei::sx; }},
-            {"lx", []() { return State::NewTaipei::lx; }},
-            {"sy", []() { return State::NewTaipei::sy; }},
-            {"ly", []() { return State::NewTaipei::ly; }}
-        }},
-    {"Taoyuan", {
-            {"sx", []() { return State::Taoyuan::sx; }},
-            {"lx", []() { return State::Taoyuan::lx; }},
-            {"sy", []() { return State::Taoyuan::sy; }},
-            {"ly", []() { return State::Taoyuan::ly; }}
-        }},
-    {"Keelung", {
-            {"sx", []() { return State::Keelung::sx; }},
-            {"lx", []() { return State::Keelung::lx; }},
-            {"sy", []() { return State::Keelung::sy; }},
-            {"ly", []() { return State::Keelung::ly; }}
-        }}
+    DEFINE_STATE_INT(Taiwan, Taipei),
+    DEFINE_STATE_INT(Taiwan, NewTaipei),
+    DEFINE_STATE_INT(Taiwan, Taoyuan),
+    DEFINE_STATE_INT(Taiwan, Taichung),
+    DEFINE_STATE_INT(Taiwan, Tainan),
+    DEFINE_STATE_INT(Taiwan, Kaohsiung),
+    DEFINE_STATE_INT(Taiwan, Keelung),
+    DEFINE_STATE_INT(Taiwan, Hsinchu_City),
+    DEFINE_STATE_INT(Taiwan, Hsinchu_County),
+    DEFINE_STATE_INT(Taiwan, Miaoli),
+    DEFINE_STATE_INT(Taiwan, Changhua),
+    DEFINE_STATE_INT(Taiwan, Nantou),
+    DEFINE_STATE_INT(Taiwan, Yunlin),
+    DEFINE_STATE_INT(Taiwan, Chiayi_City),
+    DEFINE_STATE_INT(Taiwan, Chiayi_County),
+    DEFINE_STATE_INT(Taiwan, Pingtung),
+    DEFINE_STATE_INT(Taiwan, Yilan),
+    DEFINE_STATE_INT(Taiwan, Hualien),
+    DEFINE_STATE_INT(Taiwan, Taitung)
 };
 
 std::unordered_map<std::string, std::unordered_map<std::string, std::function<std::string()>>> state_rgba = {
-        {"Taipei", {
-            {"RGBA", []() { return State::Taipei::RGBA(); }}
-        }},
-        {"NewTaipei", {
-            {"RGBA", []() { return State::NewTaipei::RGBA(); }}
-        }},
-    {"Taoyuan", {
-            {"RGBA", []() { return State::Taoyuan::RGBA(); }}
-        }},
-    {"Keelung", {
-            {"RGBA", []() { return State::Keelung::RGBA(); }}
-        }}
+    DEFINE_STATE_RGBA(Taiwan, Taipei),
+    DEFINE_STATE_RGBA(Taiwan, NewTaipei),
+    DEFINE_STATE_RGBA(Taiwan, Taoyuan),
+    DEFINE_STATE_RGBA(Taiwan, Taichung),
+    DEFINE_STATE_RGBA(Taiwan, Tainan),
+    DEFINE_STATE_RGBA(Taiwan, Kaohsiung),
+    DEFINE_STATE_RGBA(Taiwan, Keelung),
+    DEFINE_STATE_RGBA(Taiwan, Hsinchu_City),
+    DEFINE_STATE_RGBA(Taiwan, Hsinchu_County),
+    DEFINE_STATE_RGBA(Taiwan, Miaoli),
+    DEFINE_STATE_RGBA(Taiwan, Changhua),
+    DEFINE_STATE_RGBA(Taiwan, Nantou),
+    DEFINE_STATE_RGBA(Taiwan, Yunlin),
+    DEFINE_STATE_RGBA(Taiwan, Chiayi_City),
+    DEFINE_STATE_RGBA(Taiwan, Chiayi_County),
+    DEFINE_STATE_RGBA(Taiwan, Pingtung),
+    DEFINE_STATE_RGBA(Taiwan, Yilan),
+    DEFINE_STATE_RGBA(Taiwan, Hualien),
+    DEFINE_STATE_RGBA(Taiwan, Taitung)
 };
 
-std::string clicking_state;
+#undef DEFINE_STATE_INT
+#undef DEFINE_STATE_RGBA
 
-std::string States[4] = {"Taipei", "NewTaipei", "Taoyuan", "Keelung"};
+std::string clicking_state;
+std::string flag;
+
+std::unordered_map<std::string, std::vector<std::string>> Regions = {
+    {"Taiwan", {
+        "Taipei", "NewTaipei", "Taoyuan", "Taichung", "Tainan", "Kaohsiung",
+        "Keelung", "Hsinchu_City", "Hsinchu_County", "Miaoli", "Changhua",
+        "Nantou", "Yunlin", "Chiayi_City", "Chiayi_County", "Pingtung",
+        "Yilan", "Hualien", "Taitung"
+    }}
+};

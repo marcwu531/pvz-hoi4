@@ -83,32 +83,32 @@ std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
              static_cast<int>(std::round(b * 255.0f)) };
 }
 
+int blinkSpeed = 2;
+int lRatio = 0;
+int lRatioF = -1;
 sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image) {
-    static int lRatio = 0;
-    static int lRatioF = -1;
-    static int blinkSpeed = 1;
-
     lRatio += lRatioF;
+    bool flipColour = false;
+
     for (const auto& coord : coords) {
         //int alpha = getPixelColour(image, coord[0], coord[1], 'a');
         //std::cout << alpha << std::endl;
         sf::Color ogColor = image.getPixel(coord[0], coord[1]);
         std::array<int, 3> newColor = RGBtoHSL({ ogColor.r, ogColor.g, ogColor.b });
 
-        if (newColor[2] - blinkSpeed * lRatio < 40) {
-            lRatio -= 2;
-            lRatioF = -1;
-        }
-        else if (newColor[2] - blinkSpeed * lRatio > 60) {
-            lRatio += 2;
-            lRatioF = 1;
-        }
-
         newColor[2] -= blinkSpeed * lRatio;
-        newColor[2] = clamp(newColor[2], 30, 100);
+
+        flipColour = (newColor[2] < 30 && lRatioF > 0) || (newColor[2] > 70 && lRatioF < 0);
+
+        newColor[2] = clamp(newColor[2], 0, 100);
 
         newColor = HSLtoRGB(newColor);
         image.setPixel(coord[0], coord[1], sf::Color(newColor[0], newColor[1], newColor[2]));
+    }
+
+    if (flipColour) {
+        lRatioF = -lRatioF;
+        lRatio += 2 * lRatioF;
     }
     return image;
     /*if (ra > 0 && alpha <= 100) {
