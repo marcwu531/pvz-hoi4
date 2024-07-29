@@ -14,6 +14,8 @@
 #endif
 
 #define WORLD_IMAGE 101
+#define FLAG_TAIWAN_IMAGE 102
+#define BACKGROUND_PVZ_BG1_IMAGE 103
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by Resource.rc

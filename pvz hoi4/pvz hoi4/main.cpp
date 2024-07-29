@@ -33,8 +33,27 @@ sf::Texture texture_blink;
 HINSTANCE hInstance = GetModuleHandle(NULL);
 sf::Image world_image = loadImageFromResource(hInstance, WORLD_IMAGE);
 
+sf::Image flag_Taiwan_image = loadImageFromResource(hInstance, FLAG_TAIWAN_IMAGE);
+
+sf::Image background_pvz_bg1_image = loadImageFromResource(hInstance, BACKGROUND_PVZ_BG1_IMAGE);
+
+std::map<std::string, sf::Image> flagImages = {
+    {"Taiwan", flag_Taiwan_image}
+};
+
+std::map<std::string, std::map<std::string, sf::Image>> backgroundImages = {
+    {"pvz", {
+        {"bg1", background_pvz_bg1_image}
+    }}
+};
+
+sf::Image getFlagImage(std::string country) {
+    return flagImages[country];
+}
+
 int fps = 60;
 
+int blinkCoords[2] = { 0, 0 };
 void asyncBlinkMap() {
     auto lastTime = std::chrono::high_resolution_clock::now();
 
@@ -71,7 +90,9 @@ void asyncBlinkMap() {
                 texture_blink.update(world_image_blink);
                 world_blink.setTextureRect(sf::IntRect(0, 0, cropArea.width, cropArea.height));
                 world_blink.setSize(sf::Vector2f(mapRatio * cropArea.width, mapRatio * cropArea.height));
-                world_blink.setPosition(sf::Vector2f(sx * mapRatio, sy * mapRatio)); //view.getCenter().x, view.getCenter().y
+                blinkCoords[0] = sx;
+                blinkCoords[1] = sy;
+                //world_blink.setPosition(sf::Vector2f(sx * mapRatio, sy * mapRatio)); //view.getCenter().x, view.getCenter().y
 
                 blinkMap_readyToDraw.store(true);
             }
@@ -82,7 +103,6 @@ void asyncBlinkMap() {
 }
 
 std::atomic<bool> loadFlag_readyToDraw(false);
-sf::Image flag_image;
 sf::Texture flag_texture;
 sf::RectangleShape flag_rect;
 std::string current_flag;
@@ -97,25 +117,39 @@ void asyncLoadFlag() {
         if (elapsedTime.count() >= static_cast<unsigned int>(1000 / fps)) {
             if (!flag.empty() && !loadFlag_readyToDraw.load()) {
                 if (current_flag != flag) {
-                    flag_image.loadFromFile("images/flags/" + flag + ".png");
-
                     if (current_flag.empty()) {
                         flag_texture.create(383, 256);
                         flag_rect.setTexture(&flag_texture);
-                        flag_texture.loadFromImage(flag_image);
+                        flag_texture.loadFromImage(getFlagImage(flag));
                     }
                     else {
-                        flag_texture.update(flag_image);
+                        flag_texture.update(getFlagImage(flag));
                     }
 
                     current_flag = flag;
-                    flag_texture.loadFromImage(flag_image);
+                    flag_texture.loadFromImage(getFlagImage(flag));
                 }
 
                 flag_rect.setSize(sf::Vector2f(15 * mapRatio * view.getSize().x / window.getSize().x, 
                     10 * mapRatio * view.getSize().y / window.getSize().y)); //3:2
-                flag_rect.setPosition(view.getCenter().x - view.getSize().x / 2, view.getCenter().y - view.getSize().y / 2);
                 loadFlag_readyToDraw.store(true);
+            }
+            lastTime = currentTime;
+        }
+    }
+}
+
+std::atomic<bool> loadLevelStart_readyToDraw(false);
+void asyncLoadLevelStart() {
+    auto lastTime = std::chrono::high_resolution_clock::now();
+
+    while (running.load()) {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
+
+        if (elapsedTime.count() >= static_cast<unsigned int>(1000 / fps)) {
+            if (!clicking_state.empty() && !loadLevelStart_readyToDraw.load()) {
+                loadLevelStart_readyToDraw.store(true);
             }
             lastTime = currentTime;
         }
@@ -151,14 +185,14 @@ void checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {
+    sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
     view.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
 
-    sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //world.setOrigin(93000.0f, 19500.0f);
     sf::Texture texture_world;
     //world_image.loadFromFile("world_images/world.png");
-    texture_world.loadFromImage(world_image); //, sf::IntRect(4555, 920, 200, 200)
+    texture_world.loadFromImage(world_image); //sf::IntRect(4555, 920, 200, 200)
     world.setTexture(&texture_world);
 
     float tx = 0.0f;
@@ -168,6 +202,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     std::thread thread_asyncBlinkMap(asyncBlinkMap);
     std::thread thread_asyncLoadFlag(asyncLoadFlag);
+    std::thread thread_asyncLoadLevelStart(asyncLoadLevelStart);
+
+    sf::RectangleShape levelStart(sf::Vector2f(view.getSize().x / 2.0f, view.getSize().y));
+    levelStart.setFillColor(sf::Color::White);
+
+    sf::Font font;
+    font.loadFromFile("images/fonts/Brianne_s_hand.ttf");
+
+    sf::Text levelStartText("START", font, 50);
+    levelStartText.setFillColor(sf::Color::Black);
 
     while (window.isOpen())
     {
@@ -207,13 +251,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
         if (!(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) &&
             sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))) {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dtx = -1;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) dtx = 1;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dtx = 1;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) dtx = -1;
         }
         if (!(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) &&
             sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))) {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) dty = -1;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) dty = 1;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) dty = 1;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) dty = -1;
         }
 
         tx += dtx * std::max(std::min(tx, -80.0f), 80.0f);
@@ -223,7 +267,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         ty *= 0.9f;
         float dy = 0.02f * ty * view.getSize().y / 1046.0f;
 
-        view.move(sf::Vector2f(dx, dy));
+        //view.move(sf::Vector2f(dx, dy));
+        world.move(sf::Vector2f(dx, dy));
+        //world_blink.move(sf::Vector2f(dx, dy));
 
         if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !leftClicking) {
             leftClicking = true;
@@ -237,8 +283,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             float x = window.mapPixelToCoords(mx).x;
             auto random = getRGBA(world_image, window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio, 
                 window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio);*/
-            float mouseInMapPosX = window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio;
-            float mouseInMapPosY = window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio;
+            float mouseInMapPosX = (window.mapPixelToCoords(sf::Mouse::getPosition(window)).x - world.getPosition().x) / mapRatio;
+            float mouseInMapPosY = (window.mapPixelToCoords(sf::Mouse::getPosition(window)).y - world.getPosition().y) / mapRatio;
             //std::cout << mouseInMapPosX << std::endl;
             //std::cout << mouseInMapPosY << std::endl;
 
@@ -247,27 +293,50 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
         window.clear();
         window.setView(view);
-        window.draw(world);
+        window.draw(world); //render first: at bottom
 
         if (blinkMap_readyToDraw.load()) {
             world_blink.setTexture(&texture_blink);
             blinkMap_readyToDraw.store(false);
         }
-        if (!clicking_state.empty()) window.draw(world_blink);
+        if (!clicking_state.empty()) {
+            world_blink.setPosition(sf::Vector2f(world.getPosition().x + blinkCoords[0] * mapRatio, 
+                world.getPosition().y + blinkCoords[1] * mapRatio));
+            window.draw(world_blink);
+
+            levelStart.setSize(sf::Vector2f(view.getSize().x / 2.0f, view.getSize().y));
+            levelStart.setPosition(view.getCenter().x - view.getSize().x / 2.0f,
+                view.getCenter().y - view.getSize().y / 2.0f);
+            int size = static_cast<unsigned int>(view.getSize().x / 38.4f);
+            levelStartText.setCharacterSize(size);
+            sf::FloatRect rectBounds = levelStart.getGlobalBounds();
+            sf::FloatRect textBounds = levelStartText.getGlobalBounds();
+            levelStartText.setPosition(
+                rectBounds.left + (rectBounds.width - textBounds.width) / 2.0f - textBounds.left,
+                rectBounds.top + (rectBounds.height - textBounds.height) / 2.0f - textBounds.top
+            );
+
+            window.draw(levelStart);
+            window.draw(levelStartText);
+        }
 
         if (loadFlag_readyToDraw.load()) {
             flag_rect.setTexture(&flag_texture);
             loadFlag_readyToDraw.store(false);
         }
-        if (!flag.empty()) window.draw(flag_rect);
+        if (!flag.empty()) {
+            flag_rect.setPosition(view.getCenter().x - view.getSize().x / 2, view.getCenter().y - view.getSize().y / 2);
+            //window.draw(flag_rect);
+        }
 
         window.display();
     }
     running.store(false);
     thread_asyncBlinkMap.join();
     thread_asyncLoadFlag.join();
+    thread_asyncLoadLevelStart.join();
 
 	return 0;
 }
 
-//Version 1.0.10.a
+//Version 1.0.11

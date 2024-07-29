@@ -17,7 +17,7 @@
         {"RGBA", []() { return State::region::state::RGBA(); }} \
     }}
 
-std::unordered_map<std::string, std::unordered_map<std::string, std::function<int()>>> state_int = {
+std::map<std::string, std::map<std::string, std::function<int()>>> state_int = {
     DEFINE_STATE_INT(Taiwan, Taipei),
     DEFINE_STATE_INT(Taiwan, NewTaipei),
     DEFINE_STATE_INT(Taiwan, Taoyuan),
@@ -39,7 +39,7 @@ std::unordered_map<std::string, std::unordered_map<std::string, std::function<in
     DEFINE_STATE_INT(Taiwan, Taitung)
 };
 
-std::unordered_map<std::string, std::unordered_map<std::string, std::function<std::string()>>> state_rgba = {
+std::map<std::string, std::map<std::string, std::function<std::string()>>> state_rgba = {
     DEFINE_STATE_RGBA(Taiwan, Taipei),
     DEFINE_STATE_RGBA(Taiwan, NewTaipei),
     DEFINE_STATE_RGBA(Taiwan, Taoyuan),
@@ -67,7 +67,7 @@ std::unordered_map<std::string, std::unordered_map<std::string, std::function<st
 std::string clicking_state;
 std::string flag;
 
-std::unordered_map<std::string, std::vector<std::string>> Regions = {
+std::map<std::string, std::vector<std::string>> Regions = {
     {"Taiwan", {
         "Taipei", "NewTaipei", "Taoyuan", "Taichung", "Tainan", "Kaohsiung",
         "Keelung", "Hsinchu_City", "Hsinchu_County", "Miaoli", "Changhua",
