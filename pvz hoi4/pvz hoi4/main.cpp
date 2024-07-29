@@ -129,9 +129,6 @@ void asyncLoadFlag() {
                     current_flag = flag;
                     flag_texture.loadFromImage(getFlagImage(flag));
                 }
-
-                flag_rect.setSize(sf::Vector2f(15 * mapRatio * view.getSize().x / window.getSize().x, 
-                    10 * mapRatio * view.getSize().y / window.getSize().y)); //3:2
                 loadFlag_readyToDraw.store(true);
             }
             lastTime = currentTime;
@@ -212,6 +209,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     sf::Text levelStartText("START", font, 50);
     levelStartText.setFillColor(sf::Color::Black);
+
+    sf::RectangleShape levelStartButton(sf::Vector2f(view.getSize().x / 20.0f, view.getSize().y / 10.0f));
+    levelStartButton.setFillColor(sf::Color::Green);
 
     while (window.isOpen())
     {
@@ -308,13 +308,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             levelStart.setPosition(view.getCenter().x - view.getSize().x / 2.0f,
                 view.getCenter().y - view.getSize().y / 2.0f);
             int size = static_cast<unsigned int>(view.getSize().x / 38.4f);
+
             levelStartText.setCharacterSize(size);
             sf::FloatRect rectBounds = levelStart.getGlobalBounds();
-            sf::FloatRect textBounds = levelStartText.getGlobalBounds();
+            sf::FloatRect textBounds = levelStartText.getLocalBounds();
+            levelStartText.setOrigin(textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f);
             levelStartText.setPosition(
-                rectBounds.left + (rectBounds.width - textBounds.width) / 2.0f - textBounds.left,
-                rectBounds.top + (rectBounds.height - textBounds.height) / 2.0f - textBounds.top
+                rectBounds.left + rectBounds.width / 2.0f,
+                rectBounds.top + rectBounds.height / 2.0f
             );
+            levelStartButton.setPosition(levelStartText.getPosition());
 
             window.draw(levelStart);
             window.draw(levelStartText);
@@ -325,8 +328,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             loadFlag_readyToDraw.store(false);
         }
         if (!flag.empty()) {
+            flag_rect.setSize(sf::Vector2f(15 * mapRatio * view.getSize().x / window.getSize().x,
+                10 * mapRatio * view.getSize().y / window.getSize().y)); //3:2
             flag_rect.setPosition(view.getCenter().x - view.getSize().x / 2, view.getCenter().y - view.getSize().y / 2);
-            //window.draw(flag_rect);
+            window.draw(flag_rect);
         }
 
         window.display();
@@ -339,4 +344,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.11
+//Version 1.0.11.a
