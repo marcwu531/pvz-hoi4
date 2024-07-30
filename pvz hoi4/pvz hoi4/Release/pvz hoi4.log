@@ -1,10 +1,9 @@
 ﻿  Colour.cpp
+  main.cpp
   State.cpp
   Window.cpp
-  main.cpp
   Generating code
-  308 of 2888 functions (10.7%) were compiled, the rest were copied from previous compilation.
-    187 functions were new in current compilation
-    259 functions had inline decision re-evaluated but remain unchanged
+  Previous IPDB not found, fall back to full compilation.
+  All 2833 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
   Finished generating code
   pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Release\pvz hoi4.exe
