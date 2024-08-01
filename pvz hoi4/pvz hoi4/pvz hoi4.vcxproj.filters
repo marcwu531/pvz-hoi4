@@ -50,4 +50,27 @@
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="images\world.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\flags\Taiwan.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\pvz\backgrounds\background1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\pvz\seed_selector\SeedChooser_Background.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\pvz\seed_selector\SeedBank.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="images\pvz\seed_packet\PeashooterSeedPacket.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Release\openal32.dll" />
+  </ItemGroup>
 </Project>

@@ -32,13 +32,15 @@ std::atomic<bool> blinkMap_readyToDraw(false);
 sf::Texture texture_blink;
 
 HINSTANCE hInstance = GetModuleHandle(NULL);
-sf::Image world_image = loadImageFromResource(hInstance, WORLD_IMAGE);
 
-sf::Image flag_Taiwan_image = loadImageFromResource(hInstance, FLAG_TAIWAN_IMAGE);
+HRSRC hResourceInfo = FindResource(hInstance, MAKEINTRESOURCE(OPENAL32), RT_RCDATA);
 
-sf::Image pvz_background_bg1_image = loadImageFromResource(hInstance, PVZ_BACKGROUND_BG1_IMAGE);
-sf::Image pvz_seedSelector_seedChooserBackground_image = loadImageFromResource(hInstance, PVZ_SEEDSELECTOR_SEEDCHOOSERBACKGROUND_IMAGE);
-sf::Image pvz_seedSelector_seedBank_image = loadImageFromResource(hInstance, PVZ_SEEDSELECTOR_SEEDBANK_IMAGE);
+sf::Image world_image = loadImageFromResource(hInstance, 101);
+sf::Image flag_Taiwan_image = loadImageFromResource(hInstance, 102);
+sf::Image pvz_background_bg1_image = loadImageFromResource(hInstance, 103);
+sf::Image pvz_seedSelector_seedChooserBackground_image = loadImageFromResource(hInstance, 104);
+sf::Image pvz_seedSelector_seedBank_image = loadImageFromResource(hInstance, 105);
+sf::Image pvz_seedPacket_peashooter_image = loadImageFromResource(hInstance, 106);
 
 std::map<std::string, sf::Image> flagImages = {
     {"Taiwan", flag_Taiwan_image}
@@ -51,6 +53,9 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     {"seed_selector", {
         {"seedChooser_background", pvz_seedSelector_seedChooserBackground_image},
         {"seedBank", pvz_seedSelector_seedBank_image}
+    }},
+    {"seed_packet", {
+        {"peashooter", pvz_seedPacket_peashooter_image}
     }}
 };
 
@@ -194,7 +199,41 @@ void checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
     }
 }
 
-int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {
+sf::Texture texture_background;
+sf::RectangleShape background;
+sf::Texture texture_seedChooser_background;
+sf::RectangleShape seedChooser_background;
+sf::Texture texture_seedBank;
+sf::RectangleShape seedBank;
+sf::Texture texture_seedPacket_peashooter;
+sf::RectangleShape seedPacket_peashooter;
+
+void initializeScene1() {
+    
+    texture_background.loadFromImage(getPvzImage("background", "bg1"));
+    float bgCamSizeY = view_background.getSize().y;
+    background.setSize(sf::Vector2f(1400.0f / 600.0f * bgCamSizeY, bgCamSizeY)); //1920.0f, 1046.0f -> bg png size 1400 x 600
+    background.setTexture(&texture_background);
+
+    texture_seedChooser_background.loadFromImage(getPvzImage("seed_selector", "seedChooser_background"));
+    seedChooser_background.setSize(sf::Vector2f(465.0f * 1.5f, 513.0f * 1.5f));
+    seedChooser_background.setTexture(&texture_seedChooser_background);
+
+    texture_seedBank.loadFromImage(getPvzImage("seed_selector", "seedBank"));
+    seedBank.setSize(sf::Vector2f(446.0f * 1.75f, 87.0f * 1.75f));
+    seedBank.setTexture(&texture_seedBank);
+
+    texture_seedPacket_peashooter.loadFromImage(getPvzImage("seed_packet", "peashooter"));
+    seedPacket_peashooter.setSize(sf::Vector2f(50.0f * 1.75f, 70.0f * 1.75f));
+    seedPacket_peashooter.setTexture(&texture_seedPacket_peashooter);
+    seedPacket_peashooter.setPosition(seedChooser_background.getPosition());
+
+    background.setOrigin(background.getSize() / 2.0f);
+    seedChooser_background.setOrigin(seedChooser_background.getSize().x / 2.0f, seedChooser_background.getSize().y - bgCamSizeY / 2.0f + 50.0f);
+    seedBank.setOrigin(seedBank.getSize().x / 2.0f, bgCamSizeY / 2.0f - 50.0f);
+}
+
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
     view_world.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
@@ -205,24 +244,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     texture_world.loadFromImage(world_image); //sf::IntRect(4555, 920, 200, 200)
     world.setTexture(&texture_world);
 
-    sf::Texture texture_background;
-    texture_background.loadFromImage(getPvzImage("background", "bg1"));
-    float bgCamSizeY = view_background.getSize().y;
-    sf::RectangleShape background(sf::Vector2f(1400.0f / 600.0f * bgCamSizeY, bgCamSizeY)); //1920.0f, 1046.0f -> bg png size 1400 x 600
-    background.setTexture(&texture_background);
-    background.setOrigin(background.getSize() / 2.0f);
-
-    sf::Texture texture_seedChooser_background;
-    texture_seedChooser_background.loadFromImage(getPvzImage("seed_selector", "seedChooser_background"));
-    sf::RectangleShape seedChooser_background(sf::Vector2f(465.0f * 1.5f, 513.0f * 1.5f));
-    seedChooser_background.setTexture(&texture_seedChooser_background);
-    seedChooser_background.setOrigin(seedChooser_background.getSize().x / 2.0f, seedChooser_background.getSize().y - bgCamSizeY / 2.0f + 50.0f);
-
-    sf::Texture texture_seedBank;
-    texture_seedBank.loadFromImage(getPvzImage("seed_selector", "seedBank"));
-    sf::RectangleShape seedBank(sf::Vector2f(446.0f * 1.75f, 87.0f * 1.75f));
-    seedBank.setTexture(&texture_seedBank);
-    seedBank.setOrigin(seedBank.getSize().x / 2.0f, bgCamSizeY / 2.0f - 50.0f);
+    initializeScene1();
 
     float tx = 0.0f;
     float ty = 0.0f;
@@ -233,13 +255,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     std::thread thread_asyncLoadFlag(asyncLoadFlag);
     std::thread thread_asyncLoadLevelStart(asyncLoadLevelStart);
 
+    sf::Font defaultFont;
+    defaultFont.loadFromFile("images/fonts/Brianne_s_hand.ttf");
+
     sf::RectangleShape levelStart(sf::Vector2f(view_world.getSize().x / 2.0f, view_world.getSize().y));
     levelStart.setFillColor(sf::Color::White);
 
-    sf::Font font;
-    font.loadFromFile("images/fonts/Brianne_s_hand.ttf");
-
-    sf::Text levelStartText("START", font, 50);
+    sf::Text levelStartText("START", defaultFont, 50);
     levelStartText.setFillColor(sf::Color::Black);
 
     sf::RectangleShape levelStartButton(sf::Vector2f(view_world.getSize().x / 20.0f, view_world.getSize().y / 10.0f));
@@ -405,6 +427,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.draw(background);
             window.draw(seedChooser_background);
             window.draw(seedBank);
+            window.draw(seedPacket_peashooter);
             break;
         }
         
@@ -418,4 +441,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.12
+//Version 1.0.13
