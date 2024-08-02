@@ -10,8 +10,6 @@
 #define PVZ_SEEDSELECTOR_SEEDCHOOSERBACKGROUND_IMAGE 104
 #define PVZ_SEEDSELECTOR_SEEDBANK_IMAGE 105
 #define PVZ_SEEDPACKET_PEASHOOTER_IMAGE 106
-#define IDR_RCDATA1                     111
-#define IDR_RCDATA2                     113
 
 // Next default values for new objects
 // 

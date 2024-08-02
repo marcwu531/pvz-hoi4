@@ -311,7 +311,7 @@ std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId) {
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
     initializeScene1();
-    
+
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
     //world.setOrigin(93000.0f, 19500.0f);
@@ -526,12 +526,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.draw(seedPackets.find(seedPacketIdToString[0])->second);
             break;
         }
-        
+
         window.display();
     }
 
     changeScene(-1);
-	return 0;
+    return 0;
 }
 
-//Version 1.0.15
+//Version 1.0.15.a
