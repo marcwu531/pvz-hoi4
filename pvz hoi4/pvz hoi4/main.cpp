@@ -1,75 +1,76 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/Image.hpp>
 #include <iostream>
-#include <algorithm>
-#include <cstring>
 #include <vector>
 #include <array>
-#include <future>
+#include <map>
 #include <thread>
+#include <atomic>
+#include <chrono>
+#include <string>
+#include <windows.h>
 #include "Window.h"
 #include "Colour.h"
-#include <atomic>
-#include <windows.h>
 #include "Resource.h"
 #include "State.h"
+#include <fstream>
+#include <stdexcept>
 
 sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close); //(1920, 1046)
-
 sf::View view_world(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
 sf::View view_background(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
 
+int fps = 60;
+int scene = 0;
+
 std::atomic<bool> running(true);
 std::atomic<bool> blinkMap_loadingCoords(false);
+std::atomic<bool> blinkMap_readyToDraw(false);
+std::atomic<bool> loadFlag_readyToDraw(false);
+std::atomic<bool> loadLevelStart_readyToDraw(false);
+
 std::vector<std::array<int, 2>> targetCoords;
 //std::vector<std::array<int, 2>> nullVector = { {NULL, NULL} };
 float mapRatio = 20.0f;
 sf::RectangleShape world_blink; //(sf::Vector2f(mapRatio* (State::T::lx - State::T::sx + 1), mapRatio* (State::T::ly - State::T::sy + 1))); //15s
-
 //std::atomic<int> blinkCd(0); //int blinkCd = 0;
-std::atomic<bool> blinkMap_readyToDraw(false);
-
 sf::Texture texture_blink;
 
-HINSTANCE hInstance = GetModuleHandle(NULL);
+HINSTANCE nullHInstance = GetModuleHandle(NULL);
 
-HRSRC hResourceInfo = FindResource(hInstance, MAKEINTRESOURCE(OPENAL32), RT_RCDATA);
-
-sf::Image world_image = loadImageFromResource(hInstance, 101);
-sf::Image flag_Taiwan_image = loadImageFromResource(hInstance, 102);
-sf::Image pvz_background_bg1_image = loadImageFromResource(hInstance, 103);
-sf::Image pvz_seedSelector_seedChooserBackground_image = loadImageFromResource(hInstance, 104);
-sf::Image pvz_seedSelector_seedBank_image = loadImageFromResource(hInstance, 105);
-sf::Image pvz_seedPacket_peashooter_image = loadImageFromResource(hInstance, 106);
+sf::Image world_image = loadImageFromResource(nullHInstance, 101);
 
 std::map<std::string, sf::Image> flagImages = {
-    {"Taiwan", flag_Taiwan_image}
+    {"Taiwan", loadImageFromResource(nullHInstance, 102)}
 };
 
 std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     {"background", {
-        {"bg1", pvz_background_bg1_image}
+        {"bg1", loadImageFromResource(nullHInstance, 103)}
     }},
     {"seed_selector", {
-        {"seedChooser_background", pvz_seedSelector_seedChooserBackground_image},
-        {"seedBank", pvz_seedSelector_seedBank_image}
+        {"seedChooser_background", loadImageFromResource(nullHInstance, 104)},
+        {"seedBank", loadImageFromResource(nullHInstance, 105)}
     }},
     {"seed_packet", {
-        {"peashooter", pvz_seedPacket_peashooter_image}
+        {"peashooter", loadImageFromResource(nullHInstance, 106)}
     }}
 };
 
 sf::Image getFlagImage(std::string country) {
-    return flagImages[country];
+    return flagImages.at(country);
 }
 
 sf::Image getPvzImage(std::string type, std::string target) {
-    return pvzImages[type][target];
+    return pvzImages.at(type).at(target);
 }
 
-int fps = 60;
-
-int scene = 0;
+sf::Texture texture_background;
+sf::RectangleShape background;
+sf::Texture texture_seedChooser_background;
+sf::RectangleShape seedChooser_background;
+sf::Texture texture_seedBank;
+sf::RectangleShape seedBank;
+sf::Texture texture_seedPacket_peashooter;
 
 int blinkCoords[2] = { 0, 0 };
 void asyncBlinkMap() {
@@ -120,7 +121,6 @@ void asyncBlinkMap() {
     }
 }
 
-std::atomic<bool> loadFlag_readyToDraw(false);
 sf::Texture flag_texture;
 sf::RectangleShape flag_rect;
 std::string current_flag;
@@ -154,7 +154,6 @@ void asyncLoadFlag() {
     }
 }
 
-std::atomic<bool> loadLevelStart_readyToDraw(false);
 void asyncLoadLevelStart() {
     auto lastTime = std::chrono::high_resolution_clock::now();
 
@@ -199,14 +198,39 @@ void checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
     }
 }
 
-sf::Texture texture_background;
-sf::RectangleShape background;
-sf::Texture texture_seedChooser_background;
-sf::RectangleShape seedChooser_background;
-sf::Texture texture_seedBank;
-sf::RectangleShape seedBank;
-sf::Texture texture_seedPacket_peashooter;
-sf::RectangleShape seedPacket_peashooter;
+const int maxPlantAmount = 1;
+std::array<std::string, maxPlantAmount> seedPacketIdToString = { "seedPacket_peashooter" };
+std::map<std::string, sf::RectangleShape> seedPackets = {
+    {seedPacketIdToString[0], sf::RectangleShape()}
+};
+std::vector<std::map<int, int>> seedPacketState(maxPlantAmount); //state, state1 moving time
+
+void asyncPacketMove() {
+    auto lastTime = std::chrono::high_resolution_clock::now();
+
+    while (running.load()) {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
+
+        if (elapsedTime.count() >= static_cast<unsigned int>(1000 / fps) && scene == 1) {
+            for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+                if (seedPacketState[i].empty()) seedPacketState[i] = std::map<int, int>{ {0, 0} };
+                if (seedPacketState[i][0] == 1) {
+                    seedPacketState[i][1] += static_cast<int>(elapsedTime.count());
+
+                    float distanceMoved = (seedPacketState[i][1] / 1000.0f) * 10.0f;
+                    sf::Vector2f direction(1.0f, 0.0f); // Movement direction
+
+                    sf::Vector2f newPosition = seedPackets.find(seedPacketIdToString[i])->second.getPosition() + direction * distanceMoved;
+                    seedPackets.find(seedPacketIdToString[i])->second.setPosition(newPosition);
+
+                    // seedPacketState[i][1] = 0;
+                }
+            }
+            lastTime = currentTime;
+        }
+    }
+}
 
 void initializeScene1() {
     float zoomSize = 1.7f;
@@ -229,42 +253,96 @@ void initializeScene1() {
         view_background.getCenter().y - view_background.getSize().y / 2.0f + seedBank.getSize().y);
 
     texture_seedPacket_peashooter.loadFromImage(getPvzImage("seed_packet", "peashooter"));
-    seedPacket_peashooter.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
-    seedPacket_peashooter.setTexture(&texture_seedPacket_peashooter);
-    seedPacket_peashooter.setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f, 55.0f));
+    seedPackets.find(seedPacketIdToString[0])->second.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
+    seedPackets.find(seedPacketIdToString[0])->second.setTexture(&texture_seedPacket_peashooter);
+    seedPackets.find(seedPacketIdToString[0])->second.setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f, 55.0f));
 
     background.setOrigin(background.getSize() / 2.0f);
 }
 
+std::thread thread_asyncBlinkMap;
+std::thread thread_asyncLoadFlag;
+std::thread thread_asyncLoadLevelStart;
+std::thread thread_asyncPacketMove;
+
+void stopAllThreads() {
+    running.store(false);
+    if (thread_asyncBlinkMap.joinable()) thread_asyncBlinkMap.join();
+    if (thread_asyncLoadFlag.joinable()) thread_asyncLoadFlag.join();
+    if (thread_asyncLoadLevelStart.joinable()) thread_asyncLoadLevelStart.join();
+    if (thread_asyncPacketMove.joinable()) thread_asyncPacketMove.join();
+    running.store(true);
+}
+
+void changeScene(int targetScene) {
+    stopAllThreads();
+    switch (scene) {
+        break;
+    case 0:
+        stopAllThreads();
+        thread_asyncPacketMove = std::thread(asyncPacketMove);
+    default:
+        break;
+    case 1:
+        break;
+    }
+    scene = targetScene;
+}
+
+std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId) {
+    HRSRC hResource = FindResource(hInstance, MAKEINTRESOURCE(resourceId), RT_RCDATA);
+    if (!hResource) {
+        throw std::runtime_error("Failed to find resource!");
+    }
+
+    HGLOBAL hLoadedResource = LoadResource(hInstance, hResource);
+    if (!hLoadedResource) {
+        throw std::runtime_error("Failed to load resource!");
+    }
+
+    void* pResourceData = LockResource(hLoadedResource);
+    DWORD resourceSize = SizeofResource(hInstance, hResource);
+    if (!pResourceData || resourceSize == 0) {
+        throw std::runtime_error("Failed to lock resource or resource size is zero!");
+    }
+
+    return std::vector<char>(static_cast<char*>(pResourceData), static_cast<char*>(pResourceData) + resourceSize);
+}
+
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
+    initializeScene1();
+    
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
-    view_world.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
-
     //world.setOrigin(93000.0f, 19500.0f);
     sf::Texture texture_world;
     //world_image.loadFromFile("world_images/world.png");
     texture_world.loadFromImage(world_image); //sf::IntRect(4555, 920, 200, 200)
     world.setTexture(&texture_world);
-
-    initializeScene1();
+    view_world.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
+    window.setFramerateLimit(fps);
 
     float tx = 0.0f;
     float ty = 0.0f;
-    bool leftClicking = false;
-    window.setFramerateLimit(fps);
 
-    std::thread thread_asyncBlinkMap(asyncBlinkMap);
-    std::thread thread_asyncLoadFlag(asyncLoadFlag);
-    std::thread thread_asyncLoadLevelStart(asyncLoadLevelStart);
+    thread_asyncBlinkMap = std::thread(asyncBlinkMap);
+    thread_asyncLoadFlag = std::thread(asyncLoadFlag);
+    thread_asyncLoadLevelStart = std::thread(asyncLoadLevelStart);
 
+    std::vector<char> fontData = loadResourceData(nullHInstance, 4);
     sf::Font defaultFont;
-    defaultFont.loadFromFile("images/fonts/Brianne_s_hand.ttf");
+    defaultFont.loadFromMemory(fontData.data(), fontData.size());
 
     sf::RectangleShape levelStart(sf::Vector2f(view_world.getSize().x / 2.0f, view_world.getSize().y));
-  
-    std::vector<sf::RectangleShape> seedPackets = { seedPacket_peashooter };
-    std::vector<std::map<int, int>> seedPacketState; //state, state1 moving time
+    levelStart.setFillColor(sf::Color::White);
+
+    sf::Text levelStartText("START", defaultFont, 50);
+    levelStartText.setFillColor(sf::Color::Black);
+
+    sf::RectangleShape levelStartButton(sf::Vector2f(view_world.getSize().x / 20.0f, view_world.getSize().y / 10.0f));
+    levelStartButton.setFillColor(sf::Color::Green);
+
+    bool leftClicking = false;
 
     while (window.isOpen())
     {
@@ -285,9 +363,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             case 1:
                 switch (e.type) {
                 case sf::Event::KeyPressed:
-                    if (e.key.code == sf::Keyboard::Escape) window.close();
-                    break;
+                    if (e.key.code != sf::Keyboard::Escape) break;
                 case sf::Event::Closed:
+                    changeScene(-1);
                     window.close();
                     break;
                     /*case sf::Event::Resized:
@@ -360,7 +438,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     checkClickingState(mouseInMapPosX, mouseInMapPosY);
                 }
                 else if (levelStartButton.getGlobalBounds().contains(mousePos)) {
-                    scene = 1;
+                    changeScene(1);
                 }
             }
             break;
@@ -371,17 +449,15 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
                 sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
-                for (size_t i = 0; i < seedPackets.size(); ++i) {
-                    if (seedPackets[i].getGlobalBounds().contains(mousePos)) {
-                        if (seedPacketState[i].empty()) seedPacketState[i] = {0, 0};
+                for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+                    if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
                         switch (seedPacketState[i][0]) {
-                        default:
                         case 0: //select place
-                            seedPacketState[i][0] = 1;
-                            break;
-                        case 1: //moving
-                            seedPacketState[i][1]++; //put in async loop thread
                         case 2: //selected
+                            seedPacketState[i][0] = 1;
+                        default:
+                        case 1: //moving
+                            //seedPacketState[i][1]++; //put in async loop thread
                             break;
                         }
                     }
@@ -439,7 +515,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 flag_rect.setSize(sf::Vector2f(15 * mapRatio * view_world.getSize().x / window.getSize().x,
                     10 * mapRatio * view_world.getSize().y / window.getSize().y)); //3:2
                 flag_rect.setPosition(view_world.getCenter().x - view_world.getSize().x / 2, view_world.getCenter().y - view_world.getSize().y / 2);
-                //window.draw(flag_rect);
+                window.draw(flag_rect);
             }
             break;
         case 1:
@@ -447,18 +523,15 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.draw(background);
             window.draw(seedChooser_background);
             window.draw(seedBank);
-            window.draw(seedPacket_peashooter);
+            window.draw(seedPackets.find(seedPacketIdToString[0])->second);
             break;
         }
         
         window.display();
     }
-    running.store(false);
-    thread_asyncBlinkMap.join();
-    thread_asyncLoadFlag.join();
-    thread_asyncLoadLevelStart.join();
 
+    changeScene(-1);
 	return 0;
 }
 
-//Version 1.0.14
+//Version 1.0.15
