@@ -209,28 +209,31 @@ sf::Texture texture_seedPacket_peashooter;
 sf::RectangleShape seedPacket_peashooter;
 
 void initializeScene1() {
-    
+    float zoomSize = 1.7f;
+
     texture_background.loadFromImage(getPvzImage("background", "bg1"));
     float bgCamSizeY = view_background.getSize().y;
     background.setSize(sf::Vector2f(1400.0f / 600.0f * bgCamSizeY, bgCamSizeY)); //1920.0f, 1046.0f -> bg png size 1400 x 600
     background.setTexture(&texture_background);
 
-    texture_seedChooser_background.loadFromImage(getPvzImage("seed_selector", "seedChooser_background"));
-    seedChooser_background.setSize(sf::Vector2f(465.0f * 1.5f, 513.0f * 1.5f));
-    seedChooser_background.setTexture(&texture_seedChooser_background);
-
     texture_seedBank.loadFromImage(getPvzImage("seed_selector", "seedBank"));
-    seedBank.setSize(sf::Vector2f(446.0f * 1.75f, 87.0f * 1.75f));
+    seedBank.setSize(sf::Vector2f(446.0f * zoomSize, 87.0f * zoomSize));
     seedBank.setTexture(&texture_seedBank);
+    seedBank.setPosition(view_background.getCenter().x - view_background.getSize().x / 2.0f,
+        view_background.getCenter().y - view_background.getSize().y / 2.0f);
+
+    texture_seedChooser_background.loadFromImage(getPvzImage("seed_selector", "seedChooser_background"));
+    seedChooser_background.setSize(sf::Vector2f(seedBank.getSize().x, 513.0f / 465.0f * seedBank.getSize().x)); //465 x 513
+    seedChooser_background.setTexture(&texture_seedChooser_background);
+    seedChooser_background.setPosition(view_background.getCenter().x - view_background.getSize().x / 2.0f,
+        view_background.getCenter().y - view_background.getSize().y / 2.0f + seedBank.getSize().y);
 
     texture_seedPacket_peashooter.loadFromImage(getPvzImage("seed_packet", "peashooter"));
-    seedPacket_peashooter.setSize(sf::Vector2f(50.0f * 1.75f, 70.0f * 1.75f));
+    seedPacket_peashooter.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
     seedPacket_peashooter.setTexture(&texture_seedPacket_peashooter);
-    seedPacket_peashooter.setPosition(seedChooser_background.getPosition());
+    seedPacket_peashooter.setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f, 55.0f));
 
     background.setOrigin(background.getSize() / 2.0f);
-    seedChooser_background.setOrigin(seedChooser_background.getSize().x / 2.0f, seedChooser_background.getSize().y - bgCamSizeY / 2.0f + 50.0f);
-    seedBank.setOrigin(seedBank.getSize().x / 2.0f, bgCamSizeY / 2.0f - 50.0f);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
@@ -259,13 +262,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     defaultFont.loadFromFile("images/fonts/Brianne_s_hand.ttf");
 
     sf::RectangleShape levelStart(sf::Vector2f(view_world.getSize().x / 2.0f, view_world.getSize().y));
-    levelStart.setFillColor(sf::Color::White);
-
-    sf::Text levelStartText("START", defaultFont, 50);
-    levelStartText.setFillColor(sf::Color::Black);
-
-    sf::RectangleShape levelStartButton(sf::Vector2f(view_world.getSize().x / 20.0f, view_world.getSize().y / 10.0f));
-    levelStartButton.setFillColor(sf::Color::Green);
+  
+    std::vector<sf::RectangleShape> seedPackets = { seedPacket_peashooter };
+    std::vector<std::map<int, int>> seedPacketState; //state, state1 moving time
 
     while (window.isOpen())
     {
@@ -367,6 +366,27 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             break;
         }
         case 1:
+            if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !leftClicking) {
+                leftClicking = true;
+
+                sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+
+                for (size_t i = 0; i < seedPackets.size(); ++i) {
+                    if (seedPackets[i].getGlobalBounds().contains(mousePos)) {
+                        if (seedPacketState[i].empty()) seedPacketState[i] = {0, 0};
+                        switch (seedPacketState[i][0]) {
+                        default:
+                        case 0: //select place
+                            seedPacketState[i][0] = 1;
+                            break;
+                        case 1: //moving
+                            seedPacketState[i][1]++; //put in async loop thread
+                        case 2: //selected
+                            break;
+                        }
+                    }
+                }
+            }
             break;
         }
 
@@ -441,4 +461,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.13
+//Version 1.0.14
