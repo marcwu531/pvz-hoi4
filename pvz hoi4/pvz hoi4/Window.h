@@ -11,10 +11,14 @@
 #include <future>
 #include <thread>
 #include "windows.h"
+#include <queue>
+#include <shellapi.h>
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view);
 std::array<std::string, 2> clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY);
 sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea);
+extern const std::vector<sf::Keyboard::Key> konamiCode;
+bool isKonamiCodeEntered(const std::queue<sf::Keyboard::Key>& inputs);
 
 #endif

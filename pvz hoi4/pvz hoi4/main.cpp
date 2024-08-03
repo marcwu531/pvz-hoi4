@@ -14,6 +14,8 @@
 #include "State.h"
 #include <fstream>
 #include <stdexcept>
+#include <queue>
+#include <shellapi.h>
 
 sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close); //(1920, 1046)
 sf::View view_world(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
@@ -49,7 +51,9 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     }},
     {"seed_selector", {
         {"seedChooser_background", loadImageFromResource(nullHInstance, 104)},
-        {"seedBank", loadImageFromResource(nullHInstance, 105)}
+        {"seedBank", loadImageFromResource(nullHInstance, 105)},
+        {"seedChooserDisabled", loadImageFromResource(nullHInstance, 107)},
+        {"seedChooserButton", loadImageFromResource(nullHInstance, 108)}
     }},
     {"seed_packet", {
         {"peashooter", loadImageFromResource(nullHInstance, 106)}
@@ -71,6 +75,9 @@ sf::RectangleShape seedChooser_background;
 sf::Texture texture_seedBank;
 sf::RectangleShape seedBank;
 sf::Texture texture_seedPacket_peashooter;
+sf::RectangleShape seedChooserButton;
+sf::Texture texture_seedChooser;
+sf::Texture texture_seedChooserDisabled;
 
 int blinkCoords[2] = { 0, 0 };
 void asyncBlinkMap() {
@@ -199,34 +206,135 @@ void checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 }
 
 const int maxPlantAmount = 1;
+int maxSeedPacketAmount = 1;
 std::array<std::string, maxPlantAmount> seedPacketIdToString = { "seedPacket_peashooter" };
 std::map<std::string, sf::RectangleShape> seedPackets = {
     {seedPacketIdToString[0], sf::RectangleShape()}
 };
 std::vector<std::map<int, int>> seedPacketState(maxPlantAmount); //state, state1 moving time
+int seedPacketSelected = 0;
 
-void asyncPacketMove() {
+void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elapsedTime) {
+    if (elapsedTime <= 0) return;
+
+    if (seedPacketState[i][1] == 0) {
+        seedPacketSelected += 2 - seedPacketState[i][0];
+    }
+
+    seedPacketState[i][1] += elapsedTime;
+
+    float distanceMoved = seedPacketState[i][1] / 5.0f;
+    auto packetIterator = seedPackets.find(seedPacketIdToString[i]);
+    if (packetIterator != seedPackets.end()) {
+        sf::Vector2f currentPosition = packetIterator->second.getPosition();
+
+        sf::Vector2f direction = targetPosition - currentPosition;
+
+        float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        if (length != 0) {
+            direction /= length;
+        }
+
+        sf::Vector2f newPosition = currentPosition + direction * distanceMoved;
+
+        if ((direction.x > 0 && newPosition.x > targetPosition.x) ||
+            (direction.x < 0 && newPosition.x < targetPosition.x) ||
+            (direction.y > 0 && newPosition.y > targetPosition.y) ||
+            (direction.y < 0 && newPosition.y < targetPosition.y)) {
+            newPosition = targetPosition;
+            seedPacketState[i][0] = (seedPacketState[i][0] == 1) ? 2 : 0;
+            seedPacketState[i][1] = 0;
+        }
+
+        packetIterator->second.setPosition(newPosition);
+    }
+}
+
+const std::map<int, sf::Vector2f> stateToTargetPosition = {
+    {1, sf::Vector2f(-570.0f, -480.0f)},
+    {3, sf::Vector2f(-680.0f, -290.0f)}
+};
+
+int pvzScene = 0;
+
+float easeInOutQuad(float t, float easeRatio = 0.4f, float easeAccMax = 2.5f) {
+    t /= 0.5f;
+    t += 0.5f;
+
+    if (t < easeAccMax) {
+        return 0.5f * t * t * easeRatio;
+    }
+
+    t -= (easeAccMax + 0.5f);
+    if (t > 2.0f) t = 2.0f;
+
+    t *= 0.5f;
+    if (t <= 0.25f) {
+        t = 2.0f * (1.0f - 8.0f * t * t);
+    }
+    else if (t <= 0.5f) {
+        t = powf(2.0f * t - 1.5f, 2.0f);
+    }
+    else {
+        t = powf(t - 1.0f, 2.0f);
+    }
+
+    return std::min(1.5f, t * 2.0f * easeRatio);
+}
+
+void asyncPvzSceneUpdate() {
+    int pvzScene1moving = 0;
     auto lastTime = std::chrono::high_resolution_clock::now();
+
+    const int moveAmount = 50;
+    const float duration = moveAmount * (1000.0f / fps) * 0.5f;
+    float elapsedTimeTotal = 0.0f;
 
     while (running.load()) {
         auto currentTime = std::chrono::high_resolution_clock::now();
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
 
         if (elapsedTime.count() >= static_cast<unsigned int>(1000 / fps) && scene == 1) {
-            for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-                if (seedPacketState[i].empty()) seedPacketState[i] = std::map<int, int>{ {0, 0} };
-                if (seedPacketState[i][0] == 1) {
-                    seedPacketState[i][1] += static_cast<int>(elapsedTime.count());
-
-                    float distanceMoved = (seedPacketState[i][1] / 1000.0f) * 10.0f;
-                    sf::Vector2f direction(1.0f, 0.0f); // Movement direction
-
-                    sf::Vector2f newPosition = seedPackets.find(seedPacketIdToString[i])->second.getPosition() + direction * distanceMoved;
-                    seedPackets.find(seedPacketIdToString[i])->second.setPosition(newPosition);
-
-                    // seedPacketState[i][1] = 0;
+            switch (pvzScene) {
+            default:
+            case 0:
+                if (seedPacketSelected == maxSeedPacketAmount) {
+                    seedChooserButton.setTexture(&texture_seedChooser);
                 }
+                else {
+                    seedChooserButton.setTexture(&texture_seedChooserDisabled);
+                }
+
+                for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+                    auto it = stateToTargetPosition.find(seedPacketState[i][0]);
+                    if (it != stateToTargetPosition.end()) {
+                        updatePacketPosition(i, it->second, static_cast<int>(elapsedTime.count()));
+                    }
+                }
+                break;
+            case 1:
+                if (pvzScene1moving < moveAmount) {
+                    pvzScene1moving++;
+                }
+                else {
+                    background.setPosition(495.0f, 0.0f);
+                    pvzScene = 2;
+                    break;
+                }
+                
+                elapsedTimeTotal += elapsedTime.count();
+                float t = elapsedTimeTotal / duration;
+                //if (t > 2.0f) t = 2.0f;
+
+                float easedT = easeInOutQuad(t) * static_cast<float>(elapsedTime.count());
+
+                seedChooser_background.move(0.0f, 2.0f * easedT);
+                seedChooserButton.move(0.0f, 2.0f * easedT);
+                background.move(0.9f * easedT, 0.0f);
+
+                break;
             }
+            
             lastTime = currentTime;
         }
     }
@@ -239,6 +347,7 @@ void initializeScene1() {
     float bgCamSizeY = view_background.getSize().y;
     background.setSize(sf::Vector2f(1400.0f / 600.0f * bgCamSizeY, bgCamSizeY)); //1920.0f, 1046.0f -> bg png size 1400 x 600
     background.setTexture(&texture_background);
+    view_background.move((background.getSize().x - view_background.getSize().x) / 2.0f, 30.0f);
 
     texture_seedBank.loadFromImage(getPvzImage("seed_selector", "seedBank"));
     seedBank.setSize(sf::Vector2f(446.0f * zoomSize, 87.0f * zoomSize));
@@ -256,6 +365,13 @@ void initializeScene1() {
     seedPackets.find(seedPacketIdToString[0])->second.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
     seedPackets.find(seedPacketIdToString[0])->second.setTexture(&texture_seedPacket_peashooter);
     seedPackets.find(seedPacketIdToString[0])->second.setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f, 55.0f));
+
+    texture_seedChooserDisabled.loadFromImage(getPvzImage("seed_selector", "seedChooserDisabled"));
+    texture_seedChooser.loadFromImage(getPvzImage("seed_selector", "seedChooserButton"));
+    seedChooserButton.setSize(sf::Vector2f(278.0f, 72.0f));
+    seedChooserButton.setTexture(&texture_seedChooserDisabled);
+    seedChooserButton.setPosition(seedChooser_background.getPosition().x + (seedChooser_background.getSize().x - seedChooserButton.getSize().x) / 2.0f,
+        seedChooser_background.getPosition().y + seedChooser_background.getSize().y - seedChooserButton.getSize().y - 15.0f);
 
     background.setOrigin(background.getSize() / 2.0f);
 }
@@ -280,7 +396,7 @@ void changeScene(int targetScene) {
         break;
     case 0:
         stopAllThreads();
-        thread_asyncPacketMove = std::thread(asyncPacketMove);
+        thread_asyncPacketMove = std::thread(asyncPvzSceneUpdate);
     default:
         break;
     case 1:
@@ -344,6 +460,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     bool leftClicking = false;
 
+    std::queue<sf::Keyboard::Key> inputs;
+
     while (window.isOpen())
     {
         sf::Event e;
@@ -363,6 +481,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             case 1:
                 switch (e.type) {
                 case sf::Event::KeyPressed:
+                    inputs.push(e.key.code);
+                    if (inputs.size() > konamiCode.size()) {
+                        inputs.pop();
+                    }
+                    if (isKonamiCodeEntered(inputs)) {
+                        ShellExecute(0, 0, L"https://tinyurl.com/marcwu531underphaith706", 0, 0, SW_SHOW);
+                        while (!inputs.empty()) {
+                            inputs.pop();
+                        }
+                    }
+
                     if (e.key.code != sf::Keyboard::Escape) break;
                 case sf::Event::Closed:
                     changeScene(-1);
@@ -453,13 +582,21 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
                         switch (seedPacketState[i][0]) {
                         case 0: //select place
-                        case 2: //selected
                             seedPacketState[i][0] = 1;
+                            break;
+                        case 2: //selected
+                            seedPacketState[i][0] = 3;
                         default:
-                        case 1: //moving
+                        //case 1: //moving
                             //seedPacketState[i][1]++; //put in async loop thread
                             break;
                         }
+                    }
+                }
+
+                if (pvzScene == 0 && seedPacketSelected == maxSeedPacketAmount) {
+                    if (seedChooserButton.getGlobalBounds().contains(mousePos)) {
+                        pvzScene = 1;
                     }
                 }
             }
@@ -521,7 +658,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         case 1:
             window.setView(view_background);
             window.draw(background);
-            window.draw(seedChooser_background);
+
+            if (pvzScene == 0 || pvzScene == 1) {
+                window.draw(seedChooser_background);
+                window.draw(seedChooserButton);
+            }
+
             window.draw(seedBank);
             window.draw(seedPackets.find(seedPacketIdToString[0])->second);
             break;
@@ -534,4 +676,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.15.a
+//Version 1.0.16

@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <exception>
 #include "State.h"
+#include <queue>
+#include <shellapi.h>
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID) {
     // Find the resource
@@ -89,4 +91,27 @@ sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea) {
     }
 
     return cropped_image;
+}
+
+const std::vector<sf::Keyboard::Key> konamiCode = {
+    sf::Keyboard::Up, sf::Keyboard::Up,
+    sf::Keyboard::Down, sf::Keyboard::Down,
+    sf::Keyboard::Left, sf::Keyboard::Right,
+    sf::Keyboard::Left, sf::Keyboard::Right,
+    sf::Keyboard::B, sf::Keyboard::A
+};
+
+bool isKonamiCodeEntered(const std::queue<sf::Keyboard::Key>& inputs) {
+    if (inputs.size() != konamiCode.size()) {
+        return false;
+    }
+
+    std::queue<sf::Keyboard::Key> tempQueue = inputs;
+    for (auto key : konamiCode) {
+        if (tempQueue.front() != key) {
+            return false;
+        }
+        tempQueue.pop();
+    }
+    return true;
 }
