@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include <vector>
 #include <array>
@@ -53,7 +54,10 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
         {"seedChooser_background", loadImageFromResource(nullHInstance, 104)},
         {"seedBank", loadImageFromResource(nullHInstance, 105)},
         {"seedChooserDisabled", loadImageFromResource(nullHInstance, 107)},
-        {"seedChooserButton", loadImageFromResource(nullHInstance, 108)}
+        {"seedChooserButton", loadImageFromResource(nullHInstance, 108)},
+        {"startReady", loadImageFromResource(nullHInstance, 109)},
+        {"startSet", loadImageFromResource(nullHInstance, 110)},
+        {"startPlant", loadImageFromResource(nullHInstance, 111)}
     }},
     {"seed_packet", {
         {"peashooter", loadImageFromResource(nullHInstance, 106)}
@@ -68,6 +72,18 @@ sf::Image getPvzImage(std::string type, std::string target) {
     return pvzImages.at(type).at(target);
 }
 
+sf::Music chooseYourSeeds;
+sf::Music grasswalk;
+sf::Music readysetplant;
+sf::Music battleofwuhan;
+
+sf::Font defaultFont;
+
+sf::Texture flag_texture;
+sf::RectangleShape flag_rect;
+std::string current_flag;
+
+sf::Text pvzSunText("", defaultFont, 50);
 sf::Texture texture_background;
 sf::RectangleShape background;
 sf::Texture texture_seedChooser_background;
@@ -78,6 +94,11 @@ sf::Texture texture_seedPacket_peashooter;
 sf::RectangleShape seedChooserButton;
 sf::Texture texture_seedChooser;
 sf::Texture texture_seedChooserDisabled;
+sf::RectangleShape pvzStartText;
+sf::Texture pvzStartText_ready;
+sf::Texture pvzStartText_set;
+sf::Texture pvzStartText_plant;
+sf::RectangleShape overlayShape;
 
 int blinkCoords[2] = { 0, 0 };
 void asyncBlinkMap() {
@@ -127,10 +148,6 @@ void asyncBlinkMap() {
         //std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
-
-sf::Texture flag_texture;
-sf::RectangleShape flag_rect;
-std::string current_flag;
 
 void asyncLoadFlag() {
     auto lastTime = std::chrono::high_resolution_clock::now();
@@ -213,6 +230,7 @@ std::map<std::string, sf::RectangleShape> seedPackets = {
 };
 std::vector<std::map<int, int>> seedPacketState(maxPlantAmount); //state, state1 moving time
 int seedPacketSelected = 0;
+int pvzSun = 150;
 
 void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elapsedTime) {
     if (elapsedTime <= 0) return;
@@ -289,15 +307,22 @@ void asyncPvzSceneUpdate() {
     const int moveAmount = 50;
     const float duration = moveAmount * (1000.0f / fps) * 0.5f;
     float elapsedTimeTotal = 0.0f;
+    int pvzStartScene = 0;
 
     while (running.load()) {
         auto currentTime = std::chrono::high_resolution_clock::now();
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
 
         if (elapsedTime.count() >= static_cast<unsigned int>(1000 / fps) && scene == 1) {
+            pvzSunText.setString(std::to_string(pvzSun));
+            sf::FloatRect pvzSunTextRect = pvzSunText.getLocalBounds();
+            pvzSunText.setOrigin(pvzSunTextRect.left + pvzSunTextRect.width / 2.0f,
+                pvzSunTextRect.top + pvzSunTextRect.height / 2.0f);
             switch (pvzScene) {
             default:
             case 0:
+                if (chooseYourSeeds.getStatus() != sf::Music::Playing) chooseYourSeeds.play();
+
                 if (seedPacketSelected == maxSeedPacketAmount) {
                     seedChooserButton.setTexture(&texture_seedChooser);
                 }
@@ -312,16 +337,23 @@ void asyncPvzSceneUpdate() {
                     }
                 }
                 break;
-            case 1:
+            case 1: {
+                if (chooseYourSeeds.getStatus() == sf::Music::Playing) chooseYourSeeds.stop();
+
                 if (pvzScene1moving < moveAmount) {
                     pvzScene1moving++;
                 }
                 else {
                     background.setPosition(495.0f, 0.0f);
+                    pvzStartText.setTexture(&pvzStartText_ready);
+                    pvzStartText.setSize(sf::Vector2f(pvzStartText_ready.getSize()));
+                    pvzStartText.setOrigin(pvzStartText.getSize() / 2.0f);
+                    elapsedTimeTotal = 0.0f;
                     pvzScene = 2;
+                    readysetplant.play();
                     break;
                 }
-                
+
                 elapsedTimeTotal += elapsedTime.count();
                 float t = elapsedTimeTotal / duration;
                 //if (t > 2.0f) t = 2.0f;
@@ -332,6 +364,35 @@ void asyncPvzSceneUpdate() {
                 seedChooserButton.move(0.0f, 2.0f * easedT);
                 background.move(0.9f * easedT, 0.0f);
 
+                break;
+            }
+            case 2: {
+                elapsedTimeTotal += elapsedTime.count();
+
+                if (elapsedTimeTotal >= 531.0f) {
+                    if (pvzStartScene >= 2) {
+                        pvzScene = 3;
+                        break;
+                    }
+                    pvzStartScene++;
+                    elapsedTimeTotal = 0.0f;
+                    pvzStartText.setScale(1.0f, 1.0f);
+                    pvzStartText.setTexture(pvzStartScene == 1 ? &pvzStartText_set : &pvzStartText_plant);
+                    pvzStartText.setSize(sf::Vector2f(
+                        pvzStartScene == 1 ? pvzStartText_set.getSize() : pvzStartText_plant.getSize()));
+                }
+
+                if (pvzStartScene < 2) {
+                    pvzStartText.scale(1.0f + elapsedTime.count() / 1350.0f, 1.0f + elapsedTime.count() / 1350.0f);
+                }
+                else {
+                    pvzStartText.setScale(1.5f, 1.5f);
+                }
+
+                break;
+            }
+            case 3:
+                if (grasswalk.getStatus() != sf::Music::Playing) grasswalk.play();
                 break;
             }
             
@@ -373,6 +434,17 @@ void initializeScene1() {
     seedChooserButton.setPosition(seedChooser_background.getPosition().x + (seedChooser_background.getSize().x - seedChooserButton.getSize().x) / 2.0f,
         seedChooser_background.getPosition().y + seedChooser_background.getSize().y - seedChooserButton.getSize().y - 15.0f);
 
+    pvzStartText.setPosition(view_background.getCenter());
+    pvzStartText_ready.loadFromImage(getPvzImage("seed_selector", "startReady"));
+    pvzStartText_set.loadFromImage(getPvzImage("seed_selector", "startSet"));
+    pvzStartText_plant.loadFromImage(getPvzImage("seed_selector", "startPlant"));
+
+    pvzSunText.setFillColor(sf::Color::Black);
+    pvzSunText.setPosition(-633.5f, -370.0f);
+
+    overlayShape.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
+    overlayShape.setFillColor(sf::Color(0, 0, 0, 200));
+
     background.setOrigin(background.getSize() / 2.0f);
 }
 
@@ -393,16 +465,13 @@ void stopAllThreads() {
 void changeScene(int targetScene) {
     stopAllThreads();
     switch (scene) {
-        break;
     case 0:
-        stopAllThreads();
+        if (battleofwuhan.getStatus() == sf::Music::Playing) battleofwuhan.stop();
         thread_asyncPacketMove = std::thread(asyncPvzSceneUpdate);
     default:
-        break;
-    case 1:
+        scene = targetScene;
         break;
     }
-    scene = targetScene;
 }
 
 std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId) {
@@ -426,7 +495,24 @@ std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId) {
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
+    std::vector<char> fontData = loadResourceData(nullHInstance, 4);
+    defaultFont.loadFromMemory(fontData.data(), fontData.size());
+    
     initializeScene1();
+
+    if (!chooseYourSeeds.openFromFile("audio/lawnbgm/lawnbgm(6).mp3")) {
+        return -1;
+    }
+    if (!grasswalk.openFromFile("audio/lawnbgm/lawnbgm(1).mp3")) {
+        return -1;
+    }
+    if (!readysetplant.openFromFile("audio/sounds/readysetplant.ogg")) {
+        return -1;
+    }
+    if (!battleofwuhan.openFromFile("audio/battleofwuhan.ogg")) {
+        return -1;
+    }
+    battleofwuhan.setVolume(25);
 
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
@@ -445,10 +531,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     thread_asyncLoadFlag = std::thread(asyncLoadFlag);
     thread_asyncLoadLevelStart = std::thread(asyncLoadLevelStart);
 
-    std::vector<char> fontData = loadResourceData(nullHInstance, 4);
-    sf::Font defaultFont;
-    defaultFont.loadFromMemory(fontData.data(), fontData.size());
-
     sf::RectangleShape levelStart(sf::Vector2f(view_world.getSize().x / 2.0f, view_world.getSize().y));
     levelStart.setFillColor(sf::Color::White);
 
@@ -461,6 +543,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     bool leftClicking = false;
 
     std::queue<sf::Keyboard::Key> inputs;
+
+    bool pvzDrawPacketShade = false;
 
     while (window.isOpen())
     {
@@ -517,6 +601,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         switch (scene) {
         default:
         case 0: {
+            if (battleofwuhan.getStatus() != sf::Music::Playing) battleofwuhan.play();
             //view = window.getView();
             int dtx = 0;
             int dty = 0;
@@ -577,26 +662,40 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 leftClicking = true;
 
                 sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                sf::Vector2i real = sf::Mouse::getPosition(window);
 
-                for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-                    if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
-                        switch (seedPacketState[i][0]) {
-                        case 0: //select place
-                            seedPacketState[i][0] = 1;
-                            break;
-                        case 2: //selected
-                            seedPacketState[i][0] = 3;
-                        default:
-                        //case 1: //moving
-                            //seedPacketState[i][1]++; //put in async loop thread
-                            break;
+                if (pvzScene == 0) {
+                    for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+                        if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
+                            switch (seedPacketState[i][0]) {
+                            case 0: //select place
+                                seedPacketState[i][0] = 1;
+                                break;
+                            case 2: //selected
+                                seedPacketState[i][0] = 3;
+                            default:
+                                //case 1: //moving
+                                    //seedPacketState[i][1]++; //put in async loop thread
+                                break;
+                            }
+                        }
+                    }
+
+                    if (seedPacketSelected == maxSeedPacketAmount) {
+                        if (seedChooserButton.getGlobalBounds().contains(mousePos)) {
+                            pvzScene = 1;
                         }
                     }
                 }
-
-                if (pvzScene == 0 && seedPacketSelected == maxSeedPacketAmount) {
-                    if (seedChooserButton.getGlobalBounds().contains(mousePos)) {
-                        pvzScene = 1;
+                else if (pvzScene == 3) {
+                    for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+                        if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
+                            if (seedPacketState[i][0] == 2) {
+                                pvzDrawPacketShade = true;
+                                seedPacketState[i][0] = 1;
+                                overlayShape.setPosition(seedPackets.find(seedPacketIdToString[i])->second.getPosition());
+                            }
+                        }
                     }
                 }
             }
@@ -663,9 +762,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 window.draw(seedChooser_background);
                 window.draw(seedChooserButton);
             }
+            else if (pvzScene == 2) {
+                window.draw(pvzStartText);
+            }
 
             window.draw(seedBank);
+            window.draw(pvzSunText);
             window.draw(seedPackets.find(seedPacketIdToString[0])->second);
+
+            if (pvzScene == 3 && pvzDrawPacketShade) {
+                window.draw(overlayShape);
+            }
+
             break;
         }
 
@@ -676,4 +784,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.16
+//Version 1.0.17
