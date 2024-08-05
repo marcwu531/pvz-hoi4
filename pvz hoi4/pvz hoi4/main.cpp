@@ -64,6 +64,16 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     }}
 };
 
+std::map<std::string, std::map<std::string, sf::Music>> audios = {
+    {"lawnbgm", {
+        {"1", loadMusicFromResource(nullHInstance, 112)},
+        {"6", loadMusicFromResource(nullHInstance, 113)}
+    }},
+    {"sounds", {
+        {"readysetplant", loadMusicFromResource(nullHInstance, 114)}
+    }}
+};
+
 sf::Image getFlagImage(std::string country) {
     return flagImages.at(country);
 }
@@ -98,7 +108,7 @@ sf::RectangleShape pvzStartText;
 sf::Texture pvzStartText_ready;
 sf::Texture pvzStartText_set;
 sf::Texture pvzStartText_plant;
-sf::RectangleShape overlayShape;
+sf::RectangleShape overlayShade;
 
 int blinkCoords[2] = { 0, 0 };
 void asyncBlinkMap() {
@@ -442,8 +452,8 @@ void initializeScene1() {
     pvzSunText.setFillColor(sf::Color::Black);
     pvzSunText.setPosition(-633.5f, -370.0f);
 
-    overlayShape.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
-    overlayShape.setFillColor(sf::Color(0, 0, 0, 200));
+    overlayShade.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
+    overlayShade.setFillColor(sf::Color(0, 0, 0, 180));
 
     background.setOrigin(background.getSize() / 2.0f);
 }
@@ -693,7 +703,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                             if (seedPacketState[i][0] == 2) {
                                 pvzDrawPacketShade = true;
                                 seedPacketState[i][0] = 1;
-                                overlayShape.setPosition(seedPackets.find(seedPacketIdToString[i])->second.getPosition());
+                                overlayShade.setPosition(seedPackets.find(seedPacketIdToString[i])->second.getPosition());
                             }
                         }
                     }
@@ -751,7 +761,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 flag_rect.setSize(sf::Vector2f(15 * mapRatio * view_world.getSize().x / window.getSize().x,
                     10 * mapRatio * view_world.getSize().y / window.getSize().y)); //3:2
                 flag_rect.setPosition(view_world.getCenter().x - view_world.getSize().x / 2, view_world.getCenter().y - view_world.getSize().y / 2);
-                window.draw(flag_rect);
+                //window.draw(flag_rect);
             }
             break;
         case 1:
@@ -771,7 +781,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.draw(seedPackets.find(seedPacketIdToString[0])->second);
 
             if (pvzScene == 3 && pvzDrawPacketShade) {
-                window.draw(overlayShape);
+                window.draw(overlayShade);
             }
 
             break;
@@ -784,4 +794,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.17
+//Version 1.0.18
