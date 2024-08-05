@@ -72,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Release\openal32.dll" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="images\fonts\Brianne_s_hand.ttf" />

@@ -17,6 +17,52 @@
 #include <stdexcept>
 #include <queue>
 #include <shellapi.h>
+#include <memory>
+#include <nlohmann/json.hpp>
+#include <fstream>
+
+nlohmann::json loadJson(const std::string& filePath) {
+    std::ifstream file(filePath);
+    nlohmann::json json;
+    file >> json;
+    return json;
+}
+
+struct SpriteFrame {
+    sf::IntRect frameRect;
+    bool rotated;
+    bool trimmed;
+    sf::Vector2i spriteSourceSize;
+    sf::Vector2i sourceSize;
+};
+
+std::map<int, SpriteFrame> parseSpriteSheetData(const nlohmann::json& json) {
+    std::map<int, SpriteFrame> spriteFrames;
+    for (auto& [key, value] : json["frames"].items()) {
+        const auto& frame = value["frame"];
+        SpriteFrame spriteFrame;
+        spriteFrame.frameRect = sf::IntRect(
+            frame["x"].get<int>(),
+            frame["y"].get<int>(),
+            frame["w"].get<int>(),
+            frame["h"].get<int>()
+        );
+        spriteFrame.rotated = value["rotated"].get<bool>();
+        spriteFrame.trimmed = value["trimmed"].get<bool>();
+        spriteFrame.spriteSourceSize = sf::Vector2i(
+            value["spriteSourceSize"]["x"].get<int>(),
+            value["spriteSourceSize"]["y"].get<int>()
+        );
+        spriteFrame.sourceSize = sf::Vector2i(
+            value["sourceSize"]["w"].get<int>(),
+            value["sourceSize"]["h"].get<int>()
+        );
+
+        spriteFrames[std::stoi(key)] = spriteFrame;
+    }
+
+    return spriteFrames;
+}
 
 sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close); //(1920, 1046)
 sf::View view_world(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f));
@@ -64,15 +110,28 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     }}
 };
 
-std::map<std::string, std::map<std::string, sf::Music>> audios = {
-    {"lawnbgm", {
-        {"1", loadMusicFromResource(nullHInstance, 112)},
-        {"6", loadMusicFromResource(nullHInstance, 113)}
-    }},
-    {"sounds", {
-        {"readysetplant", loadMusicFromResource(nullHInstance, 114)}
-    }}
-};
+std::unique_ptr<sf::Music> loadMusicFromResource(HINSTANCE hInstance, int resourceId) {
+    HRSRC resource = FindResource(hInstance, MAKEINTRESOURCE(resourceId), RT_RCDATA);
+    if (!resource) {
+        throw std::runtime_error("Failed to find resource");
+    }
+
+    HGLOBAL resourceData = LoadResource(hInstance, resource);
+    if (!resourceData) {
+        throw std::runtime_error("Failed to load resource");
+    }
+
+    DWORD resourceSize = SizeofResource(hInstance, resource);
+    const void* data = LockResource(resourceData);
+
+    auto music = std::make_unique<sf::Music>();
+    if (!music->openFromMemory(data, resourceSize)) {
+        throw std::runtime_error("Failed to load music from memory");
+    }
+    return music;
+}
+
+std::map<std::string, std::map<std::string, std::unique_ptr<sf::Music>>> audios;
 
 sf::Image getFlagImage(std::string country) {
     return flagImages.at(country);
@@ -81,11 +140,6 @@ sf::Image getFlagImage(std::string country) {
 sf::Image getPvzImage(std::string type, std::string target) {
     return pvzImages.at(type).at(target);
 }
-
-sf::Music chooseYourSeeds;
-sf::Music grasswalk;
-sf::Music readysetplant;
-sf::Music battleofwuhan;
 
 sf::Font defaultFont;
 
@@ -109,6 +163,9 @@ sf::Texture pvzStartText_ready;
 sf::Texture pvzStartText_set;
 sf::Texture pvzStartText_plant;
 sf::RectangleShape overlayShade;
+sf::Texture peashooterIdleSprites;
+sf::Sprite peashooterIdle;
+std::map<int, SpriteFrame> peashooterIdleFrames;
 
 int blinkCoords[2] = { 0, 0 };
 void asyncBlinkMap() {
@@ -331,7 +388,7 @@ void asyncPvzSceneUpdate() {
             switch (pvzScene) {
             default:
             case 0:
-                if (chooseYourSeeds.getStatus() != sf::Music::Playing) chooseYourSeeds.play();
+                if (audios["lawnbgm"]["6"]->getStatus() != sf::Music::Playing) audios["lawnbgm"]["6"]->play();
 
                 if (seedPacketSelected == maxSeedPacketAmount) {
                     seedChooserButton.setTexture(&texture_seedChooser);
@@ -348,7 +405,7 @@ void asyncPvzSceneUpdate() {
                 }
                 break;
             case 1: {
-                if (chooseYourSeeds.getStatus() == sf::Music::Playing) chooseYourSeeds.stop();
+                if (audios["lawnbgm"]["6"]->getStatus() == sf::Music::Playing) audios["lawnbgm"]["6"]->stop();
 
                 if (pvzScene1moving < moveAmount) {
                     pvzScene1moving++;
@@ -360,7 +417,7 @@ void asyncPvzSceneUpdate() {
                     pvzStartText.setOrigin(pvzStartText.getSize() / 2.0f);
                     elapsedTimeTotal = 0.0f;
                     pvzScene = 2;
-                    readysetplant.play();
+                    audios["sounds"]["readysetplant"]->play();
                     break;
                 }
 
@@ -402,7 +459,7 @@ void asyncPvzSceneUpdate() {
                 break;
             }
             case 3:
-                if (grasswalk.getStatus() != sf::Music::Playing) grasswalk.play();
+                if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing) audios["lawnbgm"]["1"]->play();
                 break;
             }
             
@@ -455,6 +512,12 @@ void initializeScene1() {
     overlayShade.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
     overlayShade.setFillColor(sf::Color(0, 0, 0, 180));
 
+    nlohmann::json peashooterIdleJson = loadJson("images/pvz/animations/json/PeaShooter_idle.json");
+    peashooterIdleSprites.loadFromFile("images/pvz/animations/spriteSheet/PeaShooter_idle.png");
+    peashooterIdleFrames = parseSpriteSheetData(peashooterIdleJson);
+    peashooterIdle.setTexture(peashooterIdleSprites);
+    peashooterIdle.setTextureRect(peashooterIdleFrames[0].frameRect);
+
     background.setOrigin(background.getSize() / 2.0f);
 }
 
@@ -476,7 +539,7 @@ void changeScene(int targetScene) {
     stopAllThreads();
     switch (scene) {
     case 0:
-        if (battleofwuhan.getStatus() == sf::Music::Playing) battleofwuhan.stop();
+        if (audios["soundtrack"]["battleofwuhan"]->getStatus() == sf::Music::Playing) audios["soundtrack"]["battleofwuhan"]->stop();
         thread_asyncPacketMove = std::thread(asyncPvzSceneUpdate);
     default:
         scene = targetScene;
@@ -504,25 +567,22 @@ std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId) {
     return std::vector<char>(static_cast<char*>(pResourceData), static_cast<char*>(pResourceData) + resourceSize);
 }
 
+void initializeAudios(HINSTANCE hInstance) {
+    audios["lawnbgm"]["6"] = loadMusicFromResource(nullHInstance, 112);
+    audios["lawnbgm"]["1"] = loadMusicFromResource(nullHInstance, 113);
+    audios["sounds"]["readysetplant"] = loadMusicFromResource(nullHInstance, 114);
+    audios["soundtrack"]["battleofwuhan"] = loadMusicFromResource(nullHInstance, 115);
+}
+
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
+    initializeAudios(hInstance);
+    
     std::vector<char> fontData = loadResourceData(nullHInstance, 4);
     defaultFont.loadFromMemory(fontData.data(), fontData.size());
     
     initializeScene1();
 
-    if (!chooseYourSeeds.openFromFile("audio/lawnbgm/lawnbgm(6).mp3")) {
-        return -1;
-    }
-    if (!grasswalk.openFromFile("audio/lawnbgm/lawnbgm(1).mp3")) {
-        return -1;
-    }
-    if (!readysetplant.openFromFile("audio/sounds/readysetplant.ogg")) {
-        return -1;
-    }
-    if (!battleofwuhan.openFromFile("audio/battleofwuhan.ogg")) {
-        return -1;
-    }
-    battleofwuhan.setVolume(25);
+    audios["soundtrack"]["battleofwuhan"]->setVolume(25);
 
     sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
     //window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
@@ -611,7 +671,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         switch (scene) {
         default:
         case 0: {
-            if (battleofwuhan.getStatus() != sf::Music::Playing) battleofwuhan.play();
+            if (audios["soundtrack"]["battleofwuhan"]->getStatus() != sf::Music::Playing) audios["soundtrack"]["battleofwuhan"]->play();
             //view = window.getView();
             int dtx = 0;
             int dty = 0;
@@ -782,6 +842,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
             if (pvzScene == 3 && pvzDrawPacketShade) {
                 window.draw(overlayShade);
+                window.draw(peashooterIdle);
             }
 
             break;
@@ -794,4 +855,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.18
+//Version 1.0.19
