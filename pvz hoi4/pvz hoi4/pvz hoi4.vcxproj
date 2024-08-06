@@ -143,14 +143,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Async.cpp" />
+    <ClCompile Include="Audio.cpp" />
     <ClCompile Include="Colour.cpp" />
+    <ClCompile Include="Display.cpp" />
+    <ClCompile Include="Json.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Scene1.cpp" />
     <ClCompile Include="State.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Async.h" />
+    <ClInclude Include="Audio.h" />
     <ClInclude Include="Colour.h" />
+    <ClInclude Include="Display.h" />
+    <ClInclude Include="Json.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Scene1.h" />
     <ClInclude Include="State.h" />
     <ClInclude Include="State.hpp" />
     <ClInclude Include="Window.h" />

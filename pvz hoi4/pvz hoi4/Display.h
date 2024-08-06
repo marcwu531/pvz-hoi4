@@ -1,0 +1,75 @@
+#ifndef DISPLAY_H    // To make sure you don't declare the function more than once by including the header multiple times.
+#define DISPLAY_H
+
+#include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+#include <iostream>
+#include <vector>
+#include <array>
+#include <map>
+#include <thread>
+#include <atomic>
+#include <chrono>
+#include <string>
+#include <windows.h>
+#include <fstream>
+#include <stdexcept>
+#include <queue>
+#include <shellapi.h>
+#include <memory>
+#include <nlohmann/json.hpp>
+#include <fstream>
+
+extern sf::Font defaultFont;
+
+extern sf::Texture flag_texture;
+extern sf::RectangleShape flag_rect;
+extern std::string current_flag;
+
+extern sf::Text pvzSunText;
+extern sf::Texture texture_background;
+extern sf::RectangleShape background;
+extern sf::Texture texture_seedChooser_background;
+extern sf::RectangleShape seedChooser_background;
+extern sf::Texture texture_seedBank;
+extern sf::RectangleShape seedBank;
+extern sf::Texture texture_seedPacket_peashooter;
+extern sf::RectangleShape seedChooserButton;
+extern sf::Texture texture_seedChooser;
+extern sf::Texture texture_seedChooserDisabled;
+extern sf::RectangleShape pvzStartText;
+extern sf::Texture pvzStartText_ready;
+extern sf::Texture pvzStartText_set;
+extern sf::Texture pvzStartText_plant;
+extern sf::RectangleShape overlayShade;
+extern sf::Texture peashooterIdleSprites;
+extern sf::Sprite peashooterIdle;
+
+struct SpriteFrame {
+    sf::IntRect frameRect;
+    bool rotated;
+    bool trimmed;
+    sf::Vector2i spriteSourceSize;
+    sf::Vector2i sourceSize;
+};
+extern std::map<int, SpriteFrame> peashooterIdleFrames;
+
+sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
+sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea);
+
+extern HINSTANCE nullHInstance;
+extern sf::Image world_image;
+extern std::map<std::string, sf::Image> flagImages;
+extern std::map<std::string, std::map<std::string, sf::Image>> pvzImages;
+extern sf::Texture texture_blink;
+extern float mapRatio;
+extern sf::RectangleShape world_blink;
+extern sf::RenderWindow window;
+extern sf::View view_world;
+extern sf::View view_background;
+sf::Image getFlagImage(std::string country);
+sf::Image getPvzImage(std::string type, std::string target);
+std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId);
+void checkClickingState(float mouseInMapPosX, float mouseInMapPosY);
+void changeScene(int targetScene);
+#endif

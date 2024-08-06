@@ -1,10 +1,7 @@
-﻿  Colour.cpp
-  main.cpp
-  State.cpp
-  Window.cpp
+﻿  main.cpp
   Generating code
-  2885 of 4831 functions (59.7%) were compiled, the rest were copied from previous compilation.
-    1351 functions were new in current compilation
-    228 functions had inline decision re-evaluated but remain unchanged
+  1 of 4841 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Release\pvz hoi4.exe

@@ -19,6 +19,8 @@
 #define CHOOSEYOURSEEDS_AUDIO 113
 #define READYSETPLANT_AUDIO 114
 #define BATTLEOFWUHAN_AUDIO 115
+#define PEASHOOTERIDLEJSON 116
+#define PEASHOOTERIDLEPNG 117
 
 // Next default values for new objects
 // 
