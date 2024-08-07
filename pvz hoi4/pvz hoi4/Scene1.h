@@ -13,4 +13,11 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
 extern const std::map<int, sf::Vector2f> stateToTargetPosition;
 extern float easeInOutQuad(float t, float easeRatio = 0.4f, float easeAccMax = 2.5f);
 void initializeScene1();
+struct spriteAnim {
+    sf::Sprite sprite;
+    int animId;
+};
+extern std::vector<spriteAnim> plantsOnScene;
+void createPlant(sf::Vector2f pos);
+extern bool canPlant(sf::Vector2f pos);
 #endif

@@ -34,6 +34,8 @@ sf::Texture pvzStartText_plant;
 sf::RectangleShape overlayShade;
 sf::Texture peashooterIdleSprites;
 sf::Sprite peashooterIdle;
+sf::Sprite hoverPlant;
+sf::Sprite hoverShade;
 
 sf::Texture texture_blink;
 
@@ -185,6 +187,7 @@ void changeScene(int targetScene) {
     case 0:
         if (audios["soundtrack"]["battleofwuhan"]->getStatus() == sf::Music::Playing) audios["soundtrack"]["battleofwuhan"]->stop();
         thread_asyncPacketMove = std::thread(asyncPvzSceneUpdate);
+        [[fallthrough]];
     default:
         scene = targetScene;
         break;

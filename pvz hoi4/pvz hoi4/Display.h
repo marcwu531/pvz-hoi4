@@ -44,6 +44,8 @@ extern sf::Texture pvzStartText_plant;
 extern sf::RectangleShape overlayShade;
 extern sf::Texture peashooterIdleSprites;
 extern sf::Sprite peashooterIdle;
+extern sf::Sprite hoverPlant;
+extern sf::Sprite hoverShade;
 
 struct SpriteFrame {
     sf::IntRect frameRect;

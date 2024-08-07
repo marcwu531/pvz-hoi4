@@ -66,8 +66,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     std::queue<sf::Keyboard::Key> inputs;
 
-    bool pvzDrawPacketShade = false;
-
     while (window.isOpen())
     {
         sf::Event e;
@@ -84,6 +82,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     //std::cout << view.getCenter().x << " " << view.getCenter().y << std::endl;
                     break;
                 }
+                [[fallthrough]];
             case 1:
                 switch (e.type) {
                 case sf::Event::KeyPressed:
@@ -99,6 +98,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     }
 
                     if (e.key.code != sf::Keyboard::Escape) break;
+                    [[fallthrough]];
                 case sf::Event::Closed:
                     changeScene(-1);
                     window.close();
@@ -195,6 +195,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                                 break;
                             case 2: //selected
                                 seedPacketState[i][0] = 3;
+                                break;
                             default:
                                 //case 1: //moving
                                     //seedPacketState[i][1]++; //put in async loop thread
@@ -210,14 +211,19 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     }
                 }
                 else if (pvzScene == 3) {
-                    for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-                        if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
-                            if (seedPacketState[i][0] == 2) {
-                                pvzDrawPacketShade = true;
-                                seedPacketState[i][0] = 1;
-                                overlayShade.setPosition(seedPackets.find(seedPacketIdToString[i])->second.getPosition());
+                    if (!pvzPacketOnSelected) {
+                        for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+                            if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
+                                if (seedPacketState[i][0] == 2) {
+                                    pvzPacketOnSelected = true;
+                                    seedPacketState[i][0] = 1;
+                                    overlayShade.setPosition(seedPackets.find(seedPacketIdToString[i])->second.getPosition());
+                                }
                             }
                         }
+                    }
+                    else { //plant Plant
+                        createPlant(hoverPlant.getPosition());
                     }
                 }
             }
@@ -273,7 +279,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 flag_rect.setSize(sf::Vector2f(15 * mapRatio * view_world.getSize().x / window.getSize().x,
                     10 * mapRatio * view_world.getSize().y / window.getSize().y)); //3:2
                 flag_rect.setPosition(view_world.getCenter().x - view_world.getSize().x / 2, view_world.getCenter().y - view_world.getSize().y / 2);
-                window.draw(flag_rect);
+                //window.draw(flag_rect);
             }
             break;
         case 1:
@@ -292,8 +298,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.draw(pvzSunText);
             window.draw(seedPackets.find(seedPacketIdToString[0])->second);
 
-            if (pvzScene == 3 && pvzDrawPacketShade) {
+            if (pvzScene == 3 && pvzPacketOnSelected) {
                 window.draw(overlayShade);
+                if (canPlant(hoverPlant.getPosition())) {
+                    window.draw(hoverPlant);
+                    window.draw(hoverShade);
+                }
+                if (!plantsOnScene.empty()) {
+                    for (auto& plant : plantsOnScene) {
+                        window.draw(plant.sprite);
+                    }
+                }
                 window.draw(peashooterIdle);
             }
 
@@ -307,4 +322,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.20
+//Version 1.0.21

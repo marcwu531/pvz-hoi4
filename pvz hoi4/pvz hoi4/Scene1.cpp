@@ -73,8 +73,8 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
 }
 
 const std::map<int, sf::Vector2f> stateToTargetPosition = {
-    {1, sf::Vector2f(-570.0f, -480.0f)},
-    {3, sf::Vector2f(-680.0f, -290.0f)}
+    {1, sf::Vector2f(-570.0f, -500.0f)},
+    {3, sf::Vector2f(-680.0f, -310.0f)}
 };
 
 float easeInOutQuad(float t, float easeRatio, float easeAccMax) {
@@ -109,7 +109,7 @@ void initializeScene1() {
     float bgCamSizeY = view_background.getSize().y;
     background.setSize(sf::Vector2f(1400.0f / 600.0f * bgCamSizeY, bgCamSizeY)); //1920.0f, 1046.0f -> bg png size 1400 x 600
     background.setTexture(&texture_background);
-    view_background.move((background.getSize().x - view_background.getSize().x) / 2.0f, 30.0f);
+    view_background.move((background.getSize().x - view_background.getSize().x) / 2.0f, 10.0f);
 
     texture_seedBank.loadFromImage(getPvzImage("seed_selector", "seedBank"));
     seedBank.setSize(sf::Vector2f(446.0f * zoomSize, 87.0f * zoomSize));
@@ -141,7 +141,7 @@ void initializeScene1() {
     pvzStartText_plant.loadFromImage(getPvzImage("seed_selector", "startPlant"));
 
     pvzSunText.setFillColor(sf::Color::Black);
-    pvzSunText.setPosition(-633.5f, -370.0f);
+    pvzSunText.setPosition(-633.5f, -390.0f);
 
     overlayShade.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
     overlayShade.setFillColor(sf::Color(0, 0, 0, 180));
@@ -151,6 +151,39 @@ void initializeScene1() {
     peashooterIdleFrames = parseSpriteSheetData(peashooterIdleJson);
     peashooterIdle.setTexture(peashooterIdleSprites);
     peashooterIdle.setTextureRect(peashooterIdleFrames[0].frameRect);
+    peashooterIdle.setScale(zoomSize, zoomSize);
+    peashooterIdle.setOrigin(peashooterIdle.getTextureRect().getSize().x / 2.0f,
+        peashooterIdle.getTextureRect().getSize().y / 2.0f);
+    peashooterIdle.setPosition(10000, 10000);
+
+    hoverPlant.setTexture(peashooterIdleSprites);
+    hoverPlant.setTextureRect(peashooterIdleFrames[0].frameRect);
+    hoverPlant.setScale(zoomSize, zoomSize);
+    hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
+        hoverPlant.getTextureRect().getSize().y / 2.0f);
+    hoverPlant.setPosition(10000, 10000);
+
+    hoverShade.setTexture(peashooterIdleSprites);
+    hoverShade.setTextureRect(peashooterIdleFrames[0].frameRect);
+    hoverShade.setScale(zoomSize, zoomSize);
+    hoverShade.setOrigin(hoverShade.getTextureRect().getSize().x / 2.0f,
+        hoverShade.getTextureRect().getSize().y / 2.0f);
+    hoverShade.setColor(sf::Color(0, 0, 0, 180));
+    hoverShade.setPosition(10000, 10000);
 
     background.setOrigin(background.getSize() / 2.0f);
+}
+
+bool canPlant(sf::Vector2f pos) {
+    return pos.x >= -210 && pos.x <= 910 && pos.y >= -310 && pos.y <= 370;
+}
+
+std::vector<spriteAnim> plantsOnScene;
+
+void createPlant(sf::Vector2f pos) {
+    if (canPlant(hoverPlant.getPosition())) {
+        sf::Sprite newPlant;
+        newPlant = hoverPlant;
+        plantsOnScene.push_back({ newPlant, 0 });
+    }
 }

@@ -39,4 +39,5 @@ extern std::thread thread_asyncLoadFlag;
 extern std::thread thread_asyncLoadLevelStart;
 extern std::thread thread_asyncPacketMove;
 void stopAllThreads();
+extern bool pvzPacketOnSelected;
 #endif

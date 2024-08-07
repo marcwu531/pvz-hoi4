@@ -128,6 +128,8 @@ void asyncLoadLevelStart() {
     }
 }
 
+bool pvzPacketOnSelected = false;
+
 void asyncPvzSceneUpdate() {
     int pvzScene1moving = 0;
     auto lastTime = std::chrono::high_resolution_clock::now();
@@ -221,6 +223,23 @@ void asyncPvzSceneUpdate() {
             }
             case 3:
                 if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing) audios["lawnbgm"]["1"]->play();
+                if (pvzPacketOnSelected) {
+                    peashooterIdle.setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
+                    sf::Vector2f hoverCoords = peashooterIdle.getPosition();
+                    hoverPlant.setPosition(roundf((hoverCoords.x + 70.0f) / 140.0f) * 140.0f - 70.0f,
+                        roundf((hoverCoords.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
+                    hoverShade.setPosition(hoverPlant.getPosition());
+                }
+                if (!plantsOnScene.empty()) {
+                    for (auto& plant : plantsOnScene) {
+                        auto sprite = plant.sprite;
+                        ++plant.animId;
+                        if (plant.animId > 24) plant.animId = 0;
+                        sprite.setTextureRect(peashooterIdleFrames[plant.animId].frameRect);
+                        sprite.setOrigin(sprite.getTextureRect().getSize().x / 2.0f,
+                            sprite.getTextureRect().getSize().y / 2.0f);
+                    }
+                }
                 break;
             }
 
