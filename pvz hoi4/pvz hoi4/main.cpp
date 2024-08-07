@@ -221,7 +221,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                             }
                         }
                     }
-                    else { //plant
+                    else { //plant Plant
                         createPlant(hoverPlant.getPosition());
                     }
                 }
@@ -323,4 +323,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.22
+//Version 1.0.22.a
