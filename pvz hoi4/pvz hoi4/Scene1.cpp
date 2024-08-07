@@ -102,6 +102,12 @@ float easeInOutQuad(float t, float easeRatio, float easeAccMax) {
     return std::min(1.5f, t * 2.0f * easeRatio);
 }
 
+void hideTempPlants() {
+    peashooterIdle.setPosition(10000, 10000);
+    hoverPlant.setPosition(10000, 10000);
+    hoverShade.setPosition(10000, 10000);
+}
+
 void initializeScene1() {
     float zoomSize = 1.7f;
 
@@ -154,24 +160,23 @@ void initializeScene1() {
     peashooterIdle.setScale(zoomSize, zoomSize);
     peashooterIdle.setOrigin(peashooterIdle.getTextureRect().getSize().x / 2.0f,
         peashooterIdle.getTextureRect().getSize().y / 2.0f);
-    peashooterIdle.setPosition(10000, 10000);
 
     hoverPlant.setTexture(peashooterIdleSprites);
     hoverPlant.setTextureRect(peashooterIdleFrames[0].frameRect);
     hoverPlant.setScale(zoomSize, zoomSize);
     hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
         hoverPlant.getTextureRect().getSize().y / 2.0f);
-    hoverPlant.setPosition(10000, 10000);
 
     hoverShade.setTexture(peashooterIdleSprites);
     hoverShade.setTextureRect(peashooterIdleFrames[0].frameRect);
     hoverShade.setScale(zoomSize, zoomSize);
     hoverShade.setOrigin(hoverShade.getTextureRect().getSize().x / 2.0f,
         hoverShade.getTextureRect().getSize().y / 2.0f);
-    hoverShade.setColor(sf::Color(0, 0, 0, 180));
-    hoverShade.setPosition(10000, 10000);
+    hoverShade.setColor(sf::Color(0, 0, 0, 175));
 
     background.setOrigin(background.getSize() / 2.0f);
+
+    hideTempPlants();
 }
 
 bool canPlant(sf::Vector2f pos) {
@@ -185,5 +190,8 @@ void createPlant(sf::Vector2f pos) {
         sf::Sprite newPlant;
         newPlant = hoverPlant;
         plantsOnScene.push_back({ newPlant, 0 });
+        hideTempPlants();
+        pvzSun -= 100;
+        pvzPacketOnSelected = false;
     }
 }

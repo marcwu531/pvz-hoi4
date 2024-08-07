@@ -129,6 +129,7 @@ void asyncLoadLevelStart() {
 }
 
 bool pvzPacketOnSelected = false;
+float animSpeed = 3.5f;//2.75f;
 
 void asyncPvzSceneUpdate() {
     int pvzScene1moving = 0;
@@ -139,11 +140,13 @@ void asyncPvzSceneUpdate() {
     float elapsedTimeTotal = 0.0f;
     int pvzStartScene = 0;
 
+    const std::chrono::milliseconds frameTime(1000 / fps);
+
     while (running.load()) {
         auto currentTime = std::chrono::high_resolution_clock::now();
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
 
-        if (elapsedTime.count() >= static_cast<unsigned int>(1000 / fps) && scene == 1) {
+        if (elapsedTime >= frameTime && scene == 1) {
             pvzSunText.setString(std::to_string(pvzSun));
             sf::FloatRect pvzSunTextRect = pvzSunText.getLocalBounds();
             pvzSunText.setOrigin(pvzSunTextRect.left + pvzSunTextRect.width / 2.0f,
@@ -232,18 +235,21 @@ void asyncPvzSceneUpdate() {
                 }
                 if (!plantsOnScene.empty()) {
                     for (auto& plant : plantsOnScene) {
-                        auto sprite = plant.sprite;
+                        auto& sprite = plant.sprite;
                         ++plant.animId;
-                        if (plant.animId > 24) plant.animId = 0;
-                        sprite.setTextureRect(peashooterIdleFrames[plant.animId].frameRect);
-                        sprite.setOrigin(sprite.getTextureRect().getSize().x / 2.0f,
-                            sprite.getTextureRect().getSize().y / 2.0f);
+                        if (plant.animId > 24.0f * animSpeed) plant.animId = 0;
+                        sprite.setTextureRect(peashooterIdleFrames[
+                            static_cast<int>(std::floor(plant.animId / animSpeed))].frameRect);
                     }
                 }
                 break;
             }
 
             lastTime = currentTime;
+        }
+        auto timeTaken = std::chrono::high_resolution_clock::now() - currentTime;
+        if (timeTaken < frameTime) {
+            std::this_thread::sleep_for(frameTime - timeTaken);
         }
     }
 }

@@ -214,15 +214,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     if (!pvzPacketOnSelected) {
                         for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
                             if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
-                                if (seedPacketState[i][0] == 2) {
-                                    pvzPacketOnSelected = true;
-                                    seedPacketState[i][0] = 1;
-                                    overlayShade.setPosition(seedPackets.find(seedPacketIdToString[i])->second.getPosition());
-                                }
+                                //if (seedPacketState[i][0] == 2) {
+                                pvzPacketOnSelected = true;
+                                //seedPacketState[i][0] = 1;
+                                overlayShade.setPosition(seedPackets.find(seedPacketIdToString[i])->second.getPosition());
                             }
                         }
                     }
-                    else { //plant Plant
+                    else { //plant
                         createPlant(hoverPlant.getPosition());
                     }
                 }
@@ -298,18 +297,20 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.draw(pvzSunText);
             window.draw(seedPackets.find(seedPacketIdToString[0])->second);
 
-            if (pvzScene == 3 && pvzPacketOnSelected) {
-                window.draw(overlayShade);
-                if (canPlant(hoverPlant.getPosition())) {
-                    window.draw(hoverPlant);
-                    window.draw(hoverShade);
+            if (pvzScene == 3) {
+                if (pvzPacketOnSelected) {
+                    window.draw(overlayShade);
+                    if (canPlant(hoverPlant.getPosition())) {
+                        window.draw(hoverPlant);
+                        window.draw(hoverShade);
+                    }
+                    window.draw(peashooterIdle);
                 }
                 if (!plantsOnScene.empty()) {
                     for (auto& plant : plantsOnScene) {
                         window.draw(plant.sprite);
                     }
                 }
-                window.draw(peashooterIdle);
             }
 
             break;
@@ -322,4 +323,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.21
+//Version 1.0.22
