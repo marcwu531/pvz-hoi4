@@ -1,19 +1,36 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/Image.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include <vector>
 #include <array>
-#include <cmath>
-#include "Window.h"
-#include "Colour.h"
-#include "windows.h"
+#include <map>
+#include <thread>
+#include <atomic>
+#include <chrono>
+#include <string>
+#include <windows.h>
+#include <fstream>
 #include <stdexcept>
-#include <exception>
-#include "State.h"
 #include <queue>
 #include <shellapi.h>
+#include <memory>
+#include <nlohmann/json.hpp>
+
+#ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
+#include <vld.h>
+#endif
+
+#include "Window.h"
+#include "Colour.h"
+#include "Resource.h"
+#include "State.h"
+#include "Display.h"
+#include "Async.h"
+#include "Scene1.h"
+#include "Audio.h"
+#include "Json.h"
 
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view) {
     //std::cout << zoom << std::endl;

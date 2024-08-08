@@ -1,25 +1,6 @@
 #ifndef DISPLAY_H    // To make sure you don't declare the function more than once by including the header multiple times.
 #define DISPLAY_H
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
-#include <iostream>
-#include <vector>
-#include <array>
-#include <map>
-#include <thread>
-#include <atomic>
-#include <chrono>
-#include <string>
-#include <windows.h>
-#include <fstream>
-#include <stdexcept>
-#include <queue>
-#include <shellapi.h>
-#include <memory>
-#include <nlohmann/json.hpp>
-#include <fstream>
-
 extern sf::Font defaultFont;
 
 extern sf::Texture flag_texture;
@@ -28,8 +9,8 @@ extern std::string current_flag;
 
 struct SpriteFrame {
     sf::IntRect frameRect;
-    bool rotated;
-    bool trimmed;
+    bool rotated = false;
+    bool trimmed = false;
     sf::Vector2i spriteSourceSize;
     sf::Vector2i sourceSize;
 };
@@ -72,8 +53,8 @@ extern sf::RectangleShape world_blink;
 extern sf::RenderWindow window;
 extern sf::View view_world;
 extern sf::View view_background;
-sf::Image getFlagImage(std::string country);
-sf::Image getPvzImage(std::string type, std::string target);
+sf::Image getFlagImage(const std::string& country);
+sf::Image getPvzImage(const std::string& type, std::string target);
 std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId);
 void checkClickingState(float mouseInMapPosX, float mouseInMapPosY);
 void changeScene(int targetScene);

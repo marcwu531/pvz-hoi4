@@ -15,14 +15,22 @@
 #include <shellapi.h>
 #include <memory>
 #include <nlohmann/json.hpp>
-#include <fstream>
-#include "State.h"
-#include "Colour.h"
-#include "Display.h"
-#include "Async.h"
-#include "Audio.h"
+
+#ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
+#include <vld.h>
+#endif
+
+#include "Window.h"
+#include "Colour.h"
+#include "Resource.h"
+#include "State.h"
+#include "Display.h"
+#include "Async.h"
+#include "Scene1.h"
+#include "Audio.h"
+#include "Json.h"
 
 std::vector<std::array<int, 2>> targetCoords;
 

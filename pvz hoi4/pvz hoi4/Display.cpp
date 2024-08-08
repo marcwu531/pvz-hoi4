@@ -1,17 +1,36 @@
-#include "Display.h"
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include <vector>
 #include <array>
-#include <cmath>
-#include <algorithm>
-#include "Colour.h"
-#include "State.h"
-#include "Window.h"
-#include "Async.h"
-#include "Audio.h"
+#include <map>
+#include <thread>
+#include <atomic>
+#include <chrono>
+#include <string>
+#include <windows.h>
+#include <fstream>
+#include <stdexcept>
+#include <queue>
+#include <shellapi.h>
+#include <memory>
+#include <nlohmann/json.hpp>
+
+#ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
+#include <vld.h>
+#endif
+
+#include "Window.h"
+#include "Colour.h"
+#include "Resource.h"
+#include "State.h"
+#include "Display.h"
+#include "Async.h"
+#include "Scene1.h"
+#include "Audio.h"
+#include "Json.h"
 
 sf::Font defaultFont;
 sf::Texture flag_texture;
@@ -132,11 +151,11 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     }}
 };
 
-sf::Image getFlagImage(std::string country) {
+sf::Image getFlagImage(const std::string& country) {
     return flagImages.at(country);
 }
 
-sf::Image getPvzImage(std::string type, std::string target) {
+sf::Image getPvzImage(const std::string& type, std::string target) {
     return pvzImages.at(type).at(target);
 }
 
@@ -181,9 +200,7 @@ void checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
             }
         }
 
-        if (flag != target[0]) {
-            flag = target[0];
-        }
+        flag = target[0];
         blinkMap_loadingCoords.store(false);
     }
 }

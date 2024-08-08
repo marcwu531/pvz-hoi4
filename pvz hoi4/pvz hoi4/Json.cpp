@@ -9,24 +9,28 @@
 #include <chrono>
 #include <string>
 #include <windows.h>
-#include "Window.h"
-#include "Colour.h"
-#include "Resource.h"
-#include "State.h"
 #include <fstream>
 #include <stdexcept>
 #include <queue>
 #include <shellapi.h>
 #include <memory>
 #include <nlohmann/json.hpp>
-#include <fstream>
+
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#include <vld.h>
+#endif
+
+#include "Window.h"
+#include "Colour.h"
+#include "Resource.h"
+#include "State.h"
 #include "Display.h"
 #include "Async.h"
 #include "Scene1.h"
 #include "Audio.h"
 #include "Json.h"
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
 
 nlohmann::json loadJson(const std::string& filePath) {
     std::ifstream file(filePath);

@@ -9,27 +9,34 @@
 #include <chrono>
 #include <string>
 #include <windows.h>
-#include "Window.h"
-#include "Colour.h"
-#include "Resource.h"
-#include "State.h"
 #include <fstream>
 #include <stdexcept>
 #include <queue>
 #include <shellapi.h>
 #include <memory>
 #include <nlohmann/json.hpp>
-#include <fstream>
+
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#include <vld.h>
+#endif
+
+#include "Window.h"
+#include "Colour.h"
+#include "Resource.h"
+#include "State.h"
 #include "Display.h"
 #include "Async.h"
 #include "Scene1.h"
 #include "Audio.h"
 #include "Json.h"
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
+    #ifdef _DEBUG
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    #endif
+
     srand(static_cast<unsigned>(time(0)));
     
     initializeAudios(hInstance);
@@ -71,7 +78,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     std::queue<sf::Keyboard::Key> inputs;
 
-    //changeScene(1); //DEBUG
+    changeScene(1); //DEBUG
 
     while (window.isOpen())
     {
@@ -198,7 +205,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !leftClicking) {
                 leftClicking = true;
 
-                sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
                 sf::Vector2i real = sf::Mouse::getPosition(window);
 
                 if (pvzScene == 0) {
@@ -333,8 +339,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     }
 
     changeScene(-1);
+
+    #ifdef _DEBUG
     _CrtDumpMemoryLeaks();
+    #endif
+
     return 0;
 }
 
-//Version 1.0.23.a
+//Version 1.0.24

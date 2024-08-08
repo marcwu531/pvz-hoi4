@@ -1,10 +1,38 @@
+#include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+#include <iostream>
+#include <vector>
+#include <array>
+#include <map>
+#include <thread>
+#include <atomic>
+#include <chrono>
 #include <string>
-#include <unordered_map>
-#include <functional>
-#include "State.hpp"
-#include "State.h"
+#include <windows.h>
+#include <fstream>
+#include <stdexcept>
+#include <queue>
+#include <shellapi.h>
+#include <memory>
+#include <nlohmann/json.hpp>
+
+#ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
+#include <vld.h>
+#endif
+
+#include "Window.h"
+#include "Colour.h"
+#include "Resource.h"
+#include "State.h"
+#include "Display.h"
+#include "Async.h"
+#include "Scene1.h"
+#include "Audio.h"
+#include "Json.h"
+
+#include "State.hpp"
 
 #define DEFINE_STATE_INT(region, state) \
     {#state, { \

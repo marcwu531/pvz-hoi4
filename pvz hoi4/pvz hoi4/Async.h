@@ -1,26 +1,6 @@
 #ifndef ASYNC_H    // To make sure you don't declare the function more than once by including the header multiple times.
 #define ASYNC_H
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
-#include <iostream>
-#include <vector>
-#include <array>
-#include <map>
-#include <thread>
-#include <atomic>
-#include <chrono>
-#include <string>
-#include <windows.h>
-#include <fstream>
-#include <stdexcept>
-#include <queue>
-#include <shellapi.h>
-#include <memory>
-#include <nlohmann/json.hpp>
-#include <fstream>
-#include "Scene1.h"
-
 extern std::atomic<bool> running;
 extern std::atomic<bool> blinkMap_loadingCoords;
 extern std::atomic<bool> blinkMap_readyToDraw;

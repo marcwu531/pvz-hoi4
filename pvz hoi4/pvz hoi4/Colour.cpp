@@ -1,14 +1,36 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include <vector>
 #include <array>
-#include <cmath>
-#include <algorithm>
-#include "Colour.h"
-#include "State.h"
-#include "Window.h"
+#include <map>
+#include <thread>
+#include <atomic>
+#include <chrono>
+#include <string>
+#include <windows.h>
+#include <fstream>
+#include <stdexcept>
+#include <queue>
+#include <shellapi.h>
+#include <memory>
+#include <nlohmann/json.hpp>
+
+#ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
+#include <vld.h>
+#endif
+
+#include "Window.h"
+#include "Colour.h"
+#include "Resource.h"
+#include "State.h"
+#include "Display.h"
+#include "Async.h"
+#include "Scene1.h"
+#include "Audio.h"
+#include "Json.h"
 
 //int alpha = 254;
 //int ra = 1;
@@ -54,10 +76,6 @@ std::array<int, 3> RGBtoHSL(const std::array<int, 3> rgb) {
 }
 
 std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
-    float h = hsl[0] / 360.0f;
-    float s = hsl[1] / 100.0f;
-    float l = hsl[2] / 100.0f;
-
     auto hueToRGB = [](float p, float q, float t) -> float {
         if (t < 0) t += 1;
         if (t > 1) t -= 1;
@@ -68,6 +86,10 @@ std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
         };
 
     float r, g, b;
+
+    float h = hsl[0] / 360.0f;
+    float s = hsl[1] / 100.0f;
+    float l = hsl[2] / 100.0f;
 
     if (s == 0) {
         r = g = b = l; // achromatic
@@ -88,7 +110,7 @@ std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
 int blinkSpeed = 2;
 int lRatio = 0;
 int lRatioF = -1;
-sf::Image pixelsToBlink(std::vector<std::array<int, 2>> coords, sf::Image image) {
+sf::Image pixelsToBlink(const std::vector<std::array<int, 2>>& coords, sf::Image image) {
     lRatio += lRatioF;
     bool flipColour = false;
 

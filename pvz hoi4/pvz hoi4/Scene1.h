@@ -1,8 +1,6 @@
 #ifndef SCENE1_H    // To make sure you don't declare the function more than once by including the header multiple times.
 #define SCENE1_H
 
-#include <SFML/Graphics.hpp>
-
 extern int pvzScene;
 extern int pvzSun;
 extern int seedPacketSelected;
