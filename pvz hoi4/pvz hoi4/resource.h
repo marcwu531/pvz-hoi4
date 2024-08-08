@@ -21,6 +21,8 @@
 #define BATTLEOFWUHAN_AUDIO 115
 #define PEASHOOTERIDLEJSON 116
 #define PEASHOOTERIDLEPNG 117
+#define ZOMBIEIDLEJSON 118
+#define ZOMBIEIDLEPNG 119
 
 // Next default values for new objects
 // 

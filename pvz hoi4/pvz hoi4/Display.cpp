@@ -34,8 +34,12 @@ sf::Texture pvzStartText_plant;
 sf::RectangleShape overlayShade;
 sf::Texture peashooterIdleSprites;
 sf::Sprite peashooterIdle;
+std::map<int, SpriteFrame> peashooterIdleFrames;
 sf::Sprite hoverPlant;
 sf::Sprite hoverShade;
+sf::Texture zombieIdleSprites;
+sf::Sprite zombieIdle;
+std::map<int, SpriteFrame> zombieIdleFrames;
 
 sf::Texture texture_blink;
 
@@ -45,8 +49,6 @@ sf::View view_background(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(1920.0f, 1046.0f
 
 float mapRatio = 20.0f;
 sf::RectangleShape world_blink; //(sf::Vector2f(mapRatio* (State::T::lx - State::T::sx + 1), mapRatio* (State::T::ly - State::T::sy + 1))); //15s
-
-std::map<int, SpriteFrame> peashooterIdleFrames;
 
 sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea) {
     sf::Image cropped_image;
@@ -121,7 +123,8 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
         {"peashooter", loadImageFromResource(nullHInstance, 106)}
     }},
     {"animations", {
-        {"peashooterIdle", loadImageFromResource(nullHInstance, 117)}
+        {"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
+        {"zombieIdle", loadImageFromResource(nullHInstance, 119)}
     }}
 };
 

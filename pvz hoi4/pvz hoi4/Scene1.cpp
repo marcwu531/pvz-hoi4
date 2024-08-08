@@ -174,6 +174,15 @@ void initializeScene1() {
         hoverShade.getTextureRect().getSize().y / 2.0f);
     hoverShade.setColor(sf::Color(0, 0, 0, 175));
 
+    nlohmann::json zombieIdleJson = loadJsonFromResource(118);
+    zombieIdleSprites.loadFromImage(getPvzImage("animations", "zombieIdle"));
+    zombieIdleFrames = parseSpriteSheetData(zombieIdleJson);
+    zombieIdle.setTexture(zombieIdleSprites);
+    zombieIdle.setTextureRect(zombieIdleFrames[0].frameRect);
+    zombieIdle.setScale(zoomSize, zoomSize);
+    zombieIdle.setOrigin(zombieIdle.getTextureRect().getSize().x / 2.0f,
+        zombieIdle.getTextureRect().getSize().y / 2.0f);
+
     background.setOrigin(background.getSize() / 2.0f);
 
     hideTempPlants();
@@ -184,14 +193,40 @@ bool canPlant(sf::Vector2f pos) {
 }
 
 std::vector<spriteAnim> plantsOnScene;
+std::vector<spriteAnim> zombiesOnScene;
 
 void createPlant(sf::Vector2f pos) {
     if (canPlant(hoverPlant.getPosition())) {
         sf::Sprite newPlant;
         newPlant = hoverPlant;
-        plantsOnScene.push_back({ newPlant, 0 });
+        plantsOnScene.push_back({ newPlant, 0, 0 });
         hideTempPlants();
         pvzSun -= 100;
         pvzPacketOnSelected = false;
+    }
+}
+
+void createZombie(sf::Vector2f pos) {
+    sf::Sprite newZombie;
+    newZombie = zombieIdle;
+    newZombie.setPosition(pos);
+    zombiesOnScene.push_back({ newZombie, 0, rand() % 28 });
+}
+
+void selectSeedPacket(sf::Vector2f mousePos) {
+    for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+        if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
+            selectSeedPacket(i);
+        }
+    }
+}
+
+void selectSeedPacket(int id) {
+    //--id;
+    if (seedPackets.find(seedPacketIdToString[id]) != seedPackets.end()) {
+            //if (seedPacketState[i][0] == 2) {
+            pvzPacketOnSelected = true;
+            //seedPacketState[i][0] = 1;
+            overlayShade.setPosition(seedPackets.find(seedPacketIdToString[id])->second.getPosition());
     }
 }

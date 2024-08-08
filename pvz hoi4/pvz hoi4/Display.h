@@ -26,6 +26,14 @@ extern sf::Texture flag_texture;
 extern sf::RectangleShape flag_rect;
 extern std::string current_flag;
 
+struct SpriteFrame {
+    sf::IntRect frameRect;
+    bool rotated;
+    bool trimmed;
+    sf::Vector2i spriteSourceSize;
+    sf::Vector2i sourceSize;
+};
+
 extern sf::Text pvzSunText;
 extern sf::Texture texture_background;
 extern sf::RectangleShape background;
@@ -44,17 +52,12 @@ extern sf::Texture pvzStartText_plant;
 extern sf::RectangleShape overlayShade;
 extern sf::Texture peashooterIdleSprites;
 extern sf::Sprite peashooterIdle;
+extern std::map<int, SpriteFrame> peashooterIdleFrames;
 extern sf::Sprite hoverPlant;
 extern sf::Sprite hoverShade;
-
-struct SpriteFrame {
-    sf::IntRect frameRect;
-    bool rotated;
-    bool trimmed;
-    sf::Vector2i spriteSourceSize;
-    sf::Vector2i sourceSize;
-};
-extern std::map<int, SpriteFrame> peashooterIdleFrames;
+extern sf::Texture zombieIdleSprites;
+extern sf::Sprite zombieIdle;
+extern std::map<int, SpriteFrame> zombieIdleFrames;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea);

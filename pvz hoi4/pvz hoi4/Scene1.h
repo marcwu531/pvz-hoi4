@@ -18,8 +18,13 @@ void initializeScene1();
 struct spriteAnim {
     sf::Sprite sprite;
     int animId;
+    int frameId;
 };
 extern std::vector<spriteAnim> plantsOnScene;
+extern std::vector<spriteAnim> zombiesOnScene;
 void createPlant(sf::Vector2f pos);
+void createZombie(sf::Vector2f pos);
 extern bool canPlant(sf::Vector2f pos);
+void selectSeedPacket(sf::Vector2f mousePos);
+void selectSeedPacket(int id);
 #endif

@@ -27,6 +27,8 @@
 #include "Json.h"
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
+    srand(static_cast<unsigned>(time(0)));
+    
     initializeAudios(hInstance);
     
     std::vector<char> fontData = loadResourceData(nullHInstance, 4);
@@ -66,9 +68,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     std::queue<sf::Keyboard::Key> inputs;
 
+    changeScene(1); //DEBUG
+
     while (window.isOpen())
     {
         sf::Event e;
+        sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
         while (window.pollEvent(e))
         {
@@ -96,6 +101,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                             inputs.pop();
                         }
                     }
+
+                    /*if (e.key.code == 27) {
+                        int a = e.key.code;
+                        int b = e.key.code;
+                        //e.key.code >= 27 && <= ?
+                    }*/
+
+                    if (scene == 1 && pvzScene == 3 && !pvzPacketOnSelected && e.key.code == 27) selectSeedPacket(e.key.code - 27);
 
                     if (e.key.code != sf::Keyboard::Escape) break;
                     [[fallthrough]];
@@ -163,7 +176,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                         auto random = getRGBA(world_image, window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
                             window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio);*/
                 sf::FloatRect rectBounds = levelStart.getGlobalBounds();
-                sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
                 if (clicking_state.empty() || !rectBounds.contains(mousePos)) {
                     float mouseInMapPosX = (mousePos.x - world.getPosition().x) / mapRatio;
@@ -212,14 +224,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 }
                 else if (pvzScene == 3) {
                     if (!pvzPacketOnSelected) {
-                        for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-                            if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
-                                //if (seedPacketState[i][0] == 2) {
-                                pvzPacketOnSelected = true;
-                                //seedPacketState[i][0] = 1;
-                                overlayShade.setPosition(seedPackets.find(seedPacketIdToString[i])->second.getPosition());
-                            }
-                        }
+                        selectSeedPacket(mousePos);
                     }
                     else { //plant Plant
                         createPlant(hoverPlant.getPosition());
@@ -278,7 +283,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 flag_rect.setSize(sf::Vector2f(15 * mapRatio * view_world.getSize().x / window.getSize().x,
                     10 * mapRatio * view_world.getSize().y / window.getSize().y)); //3:2
                 flag_rect.setPosition(view_world.getCenter().x - view_world.getSize().x / 2, view_world.getCenter().y - view_world.getSize().y / 2);
-                //window.draw(flag_rect);
+                window.draw(flag_rect);
             }
             break;
         case 1:
@@ -286,6 +291,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.draw(background);
 
             if (pvzScene == 0 || pvzScene == 1) {
+                if (!zombiesOnScene.empty()) {
+                    for (auto& zombie : zombiesOnScene) {
+                        window.draw(zombie.sprite);
+                    }
+                }
                 window.draw(seedChooser_background);
                 window.draw(seedChooserButton);
             }
@@ -323,4 +333,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.22.a
+//Version 1.0.23
