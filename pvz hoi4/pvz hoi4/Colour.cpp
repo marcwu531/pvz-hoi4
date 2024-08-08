@@ -7,6 +7,8 @@
 #include "Colour.h"
 #include "State.h"
 #include "Window.h"
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 
 //int alpha = 254;
 //int ra = 1;

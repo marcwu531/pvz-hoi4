@@ -25,6 +25,8 @@
 #include "Scene1.h"
 #include "Audio.h"
 #include "Json.h"
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 
 nlohmann::json loadJson(const std::string& filePath) {
     std::ifstream file(filePath);

@@ -21,6 +21,8 @@
 #include "Display.h"
 #include "Async.h"
 #include "Audio.h"
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 
 std::vector<std::array<int, 2>> targetCoords;
 
@@ -152,10 +154,10 @@ void asyncPvzSceneUpdate() {
 
     const std::chrono::milliseconds frameTime(1000 / fps);
 
-    int repeatTimes = 5 + rand() % 6;
+    int repeatSpawnZombiesTimes = 5 + rand() % 6;
     std::vector<float> yCoords;
 
-    for (int i = 0; i < repeatTimes; i++) {
+    for (int i = 0; i < repeatSpawnZombiesTimes; i++) {
         float yCoord = static_cast<float>(-350 + (45 + rand() % 11) * (rand() % 15));
         yCoords.push_back(yCoord);
     }
@@ -212,6 +214,7 @@ void asyncPvzSceneUpdate() {
                     pvzStartText.setOrigin(pvzStartText.getSize() / 2.0f);
                     elapsedTimeTotal = 0.0f;
                     pvzScene = 2;
+                    zombiesOnScene.clear();
                     audios["sounds"]["readysetplant"]->play();
                     break;
                 }

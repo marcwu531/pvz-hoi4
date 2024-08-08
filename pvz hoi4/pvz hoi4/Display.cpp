@@ -10,6 +10,8 @@
 #include "Window.h"
 #include "Async.h"
 #include "Audio.h"
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 
 sf::Font defaultFont;
 sf::Texture flag_texture;
@@ -90,7 +92,9 @@ sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID) {
         throw std::runtime_error("Failed to get resource size");
     }
 
-    // Load image from memory
+    // Load image from 
+
+
     if (!image.loadFromMemory(pResData, resSize)) {
         throw std::runtime_error("Failed to load image from memory");
     }

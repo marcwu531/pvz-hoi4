@@ -3,6 +3,8 @@
 #include <functional>
 #include "State.hpp"
 #include "State.h"
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 
 #define DEFINE_STATE_INT(region, state) \
     {#state, { \

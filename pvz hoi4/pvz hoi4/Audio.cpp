@@ -24,6 +24,8 @@
 #include "Async.h"
 #include "Scene1.h"
 #include "Audio.h"
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 
 std::unique_ptr<sf::Music> loadMusicFromResource(HINSTANCE hInstance, int resourceId) {
     HRSRC resource = FindResource(hInstance, MAKEINTRESOURCE(resourceId), RT_RCDATA);

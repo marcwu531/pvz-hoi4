@@ -24,6 +24,8 @@
 #include "Async.h"
 #include "Scene1.h"
 #include "Json.h"
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 
 int pvzScene = 0;
 int pvzSun = 150;

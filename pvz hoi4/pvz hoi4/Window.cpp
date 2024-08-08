@@ -12,6 +12,8 @@
 #include "State.h"
 #include <queue>
 #include <shellapi.h>
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view) {
     //std::cout << zoom << std::endl;
