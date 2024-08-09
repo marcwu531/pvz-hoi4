@@ -16,7 +16,7 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
-#ifdef _DEBUG
+#ifdef RUN_DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #include <vld.h>
@@ -33,7 +33,7 @@
 #include "Json.h"
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
-    #ifdef _DEBUG
+    #ifdef RUN_DEBUG
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     #endif
 
@@ -340,11 +340,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     changeScene(-1);
 
-    #ifdef _DEBUG
+    #ifdef RUN_DEBUG
     _CrtDumpMemoryLeaks();
     #endif
 
     return 0;
 }
 
-//Version 1.0.24
+//Version 1.0.25

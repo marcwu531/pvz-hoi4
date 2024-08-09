@@ -39,6 +39,9 @@ extern sf::Sprite hoverShade;
 extern sf::Texture zombieIdleSprites;
 extern sf::Sprite zombieIdle;
 extern std::map<int, SpriteFrame> zombieIdleFrames;
+extern sf::Texture zombieIdle1Sprites;
+extern sf::Sprite zombieIdle1;
+extern std::map<int, SpriteFrame> zombieIdle1Frames;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea);

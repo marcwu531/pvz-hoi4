@@ -16,12 +16,6 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
-#ifdef _DEBUG
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#include <vld.h>
-#endif
-
 #include "Window.h"
 #include "Colour.h"
 #include "Resource.h"
@@ -141,13 +135,44 @@ void asyncLoadLevelStart() {
 bool pvzPacketOnSelected = false;
 float animSpeed = 3.5f;
 
+std::map<int, SpriteFrame> getAnimFrameFromId(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return zombieIdleFrames;
+    case 1:
+        return zombieIdle1Frames;
+    }
+};
+
+int getMaxAnimFramesById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return 27;
+    case 1:
+        return 13;
+    }
+}
+
+float getAnimRatioById(int id) {
+    switch (id) {
+    default:
+        return 1.125f;
+    }
+}
+
 void updateZombieAnim() {
     for (auto& zombie : zombiesOnScene) {
         auto& sprite = zombie.sprite;
         ++zombie.frameId;
-        if (zombie.frameId > 27.0f * animSpeed) zombie.frameId = 0;
-        sprite.setTextureRect(zombieIdleFrames[
-            static_cast<int>(std::floor(zombie.frameId / animSpeed))].frameRect);
+
+        if (zombie.frameId > (float)getMaxAnimFramesById(zombie.animId) * animSpeed 
+            * getAnimRatioById(zombie.animId)) zombie.frameId = 0;
+       
+        sprite.setTextureRect(getAnimFrameFromId(zombie.animId)[
+            static_cast<int>(std::floor(zombie.frameId / animSpeed 
+                / getAnimRatioById(zombie.animId)))].frameRect);
     }
 }
 

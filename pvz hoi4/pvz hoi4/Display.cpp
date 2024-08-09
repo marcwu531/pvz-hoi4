@@ -16,12 +16,6 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
-#ifdef _DEBUG
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#include <vld.h>
-#endif
-
 #include "Window.h"
 #include "Colour.h"
 #include "Resource.h"
@@ -61,6 +55,9 @@ sf::Sprite hoverShade;
 sf::Texture zombieIdleSprites;
 sf::Sprite zombieIdle;
 std::map<int, SpriteFrame> zombieIdleFrames;
+sf::Texture zombieIdle1Sprites;
+sf::Sprite zombieIdle1;
+std::map<int, SpriteFrame> zombieIdle1Frames;
 
 sf::Texture texture_blink;
 
@@ -147,7 +144,8 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     }},
     {"animations", {
         {"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
-        {"zombieIdle", loadImageFromResource(nullHInstance, 119)}
+        {"zombieIdle", loadImageFromResource(nullHInstance, 119)},
+        {"zombieIdle1", loadImageFromResource(nullHInstance, 121)}
     }}
 };
 

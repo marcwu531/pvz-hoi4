@@ -23,6 +23,8 @@
 #define PEASHOOTERIDLEPNG 117
 #define ZOMBIEIDLEJSON 118
 #define ZOMBIEIDLEPNG 119
+#define ZOMBIEIDLE1JSON 120
+#define ZOMBIEIDLE1PNG 121
 
 // Next default values for new objects
 // 

@@ -16,12 +16,6 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
-#ifdef _DEBUG
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#include <vld.h>
-#endif
-
 #include "Window.h"
 #include "Colour.h"
 #include "Resource.h"

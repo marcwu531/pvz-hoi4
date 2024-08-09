@@ -16,12 +16,6 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
-#ifdef _DEBUG
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#include <vld.h>
-#endif
-
 #include "Window.h"
 #include "Colour.h"
 #include "Resource.h"
@@ -190,6 +184,15 @@ void initializeScene1() {
     zombieIdle.setOrigin(zombieIdle.getTextureRect().getSize().x / 2.0f,
         zombieIdle.getTextureRect().getSize().y / 2.0f);
 
+    nlohmann::json zombieIdle1Json = loadJsonFromResource(120);
+    zombieIdle1Sprites.loadFromImage(getPvzImage("animations", "zombieIdle1"));
+    zombieIdle1Frames = parseSpriteSheetData(zombieIdle1Json);
+    zombieIdle1.setTexture(zombieIdle1Sprites);
+    zombieIdle1.setTextureRect(zombieIdle1Frames[0].frameRect);
+    zombieIdle1.setScale(zoomSize, zoomSize);
+    zombieIdle1.setOrigin(zombieIdle1.getTextureRect().getSize().x / 2.0f,
+        zombieIdle1.getTextureRect().getSize().y / 2.0f);
+
     background.setOrigin(background.getSize() / 2.0f);
 
     hideTempPlants();
@@ -213,11 +216,22 @@ void createPlant(sf::Vector2f pos) {
     }
 }
 
+sf::Sprite getSpriteById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return zombieIdle;
+    case 1:
+        return zombieIdle1;
+    }
+}
+
 void createZombie(sf::Vector2f pos) {
     sf::Sprite newZombie;
-    newZombie = zombieIdle;
+    int animId = rand() % 2;
+    newZombie = getSpriteById(animId);
     newZombie.setPosition(pos);
-    zombiesOnScene.push_back({ newZombie, 0, rand() % 28 });
+    zombiesOnScene.push_back({ newZombie, animId, rand() % 28 });
 }
 
 void selectSeedPacket(sf::Vector2f mousePos) {
