@@ -17,12 +17,26 @@ struct spriteAnim {
     sf::Sprite sprite;
     int animId;
     int frameId;
+    int row;
 };
-extern std::vector<spriteAnim> plantsOnScene;
+struct plantState {
+    spriteAnim anim;
+    bool attack;
+};
+struct projectileState {
+    sf::Sprite sprite;
+    int id;
+    int row;
+};
+extern std::vector<plantState> plantsOnScene;
 extern std::vector<spriteAnim> zombiesOnScene;
+extern std::vector<projectileState> projectilesOnScene;
 void createPlant(sf::Vector2f pos);
 void createZombie(sf::Vector2f pos);
 extern bool canPlant(sf::Vector2f pos);
 void selectSeedPacket(sf::Vector2f mousePos);
 void selectSeedPacket(int id);
+void createZombie(sf::Vector2f pos, int style);
+void createRandomZombie();
+void createProjectile(int type, sf::Vector2f pos);
 #endif

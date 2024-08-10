@@ -31,7 +31,7 @@ sf::Texture flag_texture;
 sf::RectangleShape flag_rect;
 std::string current_flag;
 
-sf::Text pvzSunText("", defaultFont, 50);
+sf::Text pvzSunText;
 sf::Texture texture_background;
 sf::RectangleShape background;
 sf::Texture texture_seedChooser_background;
@@ -48,8 +48,10 @@ sf::Texture pvzStartText_set;
 sf::Texture pvzStartText_plant;
 sf::RectangleShape overlayShade;
 sf::Texture peashooterIdleSprites;
+sf::Texture peashooterShootSprites;
 sf::Sprite peashooterIdle;
 std::map<int, SpriteFrame> peashooterIdleFrames;
+std::map<int, SpriteFrame> peashooterShootFrames;
 sf::Sprite hoverPlant;
 sf::Sprite hoverShade;
 sf::Texture zombieIdleSprites;
@@ -58,6 +60,8 @@ std::map<int, SpriteFrame> zombieIdleFrames;
 sf::Texture zombieIdle1Sprites;
 sf::Sprite zombieIdle1;
 std::map<int, SpriteFrame> zombieIdle1Frames;
+sf::Texture peaTexture;
+sf::Sprite pea;
 
 sf::Texture texture_blink;
 
@@ -144,8 +148,12 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     }},
     {"animations", {
         {"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
+        {"peashooterShoot", loadImageFromResource(nullHInstance, 124)},
         {"zombieIdle", loadImageFromResource(nullHInstance, 119)},
         {"zombieIdle1", loadImageFromResource(nullHInstance, 121)}
+    }},
+    {"projectiles", {
+        {"pea", loadImageFromResource(nullHInstance, 122)}
     }}
 };
 

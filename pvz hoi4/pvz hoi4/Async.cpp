@@ -156,10 +156,10 @@ int getMaxAnimFramesById(int id) {
 }
 
 float getAnimRatioById(int id) {
-    switch (id) {
-    default:
+    //switch (id) {
+   //default:
         return 1.125f;
-    }
+    //}
 }
 
 void updateZombieAnim() {
@@ -207,10 +207,6 @@ void asyncPvzSceneUpdate() {
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastTime);
 
         if (elapsedTime >= frameTime && scene == 1) {
-            pvzSunText.setString(std::to_string(pvzSun));
-            sf::FloatRect pvzSunTextRect = pvzSunText.getLocalBounds();
-            pvzSunText.setOrigin(pvzSunTextRect.left + pvzSunTextRect.width / 2.0f,
-                pvzSunTextRect.top + pvzSunTextRect.height / 2.0f);
             switch (pvzScene) {
             default:
             case 0:
@@ -296,7 +292,12 @@ void asyncPvzSceneUpdate() {
                 break;
             }
             case 3:
-                if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing) audios["lawnbgm"]["1"]->play();
+                if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing) {
+                    audios["lawnbgm"]["1"]->play();
+                    for (int i = 0; i < 3; i++) {
+                        createRandomZombie();
+                    }
+                }
                 if (pvzPacketOnSelected) {
                     peashooterIdle.setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
                     sf::Vector2f hoverCoords = peashooterIdle.getPosition();
@@ -304,15 +305,63 @@ void asyncPvzSceneUpdate() {
                         roundf((hoverCoords.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
                     hoverShade.setPosition(hoverPlant.getPosition());
                 }
-                if (!plantsOnScene.empty()) {
-                    for (auto& plant : plantsOnScene) {
-                        auto& sprite = plant.sprite;
-                        ++plant.frameId;
-                        if (plant.frameId > 24.0f * animSpeed) plant.frameId = 0;
-                        sprite.setTextureRect(peashooterIdleFrames[
-                            static_cast<int>(std::floor(plant.frameId / animSpeed))].frameRect);
+                if (!zombiesOnScene.empty()) {
+                    updateZombieAnim();
+                    for (auto& zombie : zombiesOnScene) {
+                        zombie.sprite.move(-0.5f, 0.0f);
                     }
                 }
+                if (!plantsOnScene.empty()) {
+                    for (auto& plant : plantsOnScene) {
+                        auto& sprite = plant.anim.sprite;
+                        ++plant.anim.frameId;
+                        if (plant.anim.frameId > 24.0f * animSpeed) plant.anim.frameId = 0;
+
+                        int frame = static_cast<int>(std::floor(plant.anim.frameId / animSpeed));
+
+                        if (!zombiesOnScene.empty()) {
+                            if (frame >= 20) {
+                                plant.attack = false;
+                                for (auto& zombie : zombiesOnScene) {
+                                    if (plant.anim.row == zombie.row) {
+                                        plant.attack = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (plant.attack) {
+                            sprite.setTexture(peashooterShootSprites);
+                            sprite.setTextureRect(peashooterShootFrames[frame].frameRect);
+                        }
+                        else {
+                            sprite.setTexture(peashooterIdleSprites);
+                            sprite.setTextureRect(peashooterIdleFrames[frame].frameRect);
+                        }
+
+                        if (plant.attack) {
+                            if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f) createProjectile(0, plant.anim.sprite.getPosition());
+                        }
+                    }
+                }
+                projectilesOnScene.erase(std::remove_if(projectilesOnScene.begin(), projectilesOnScene.end(),
+                    [&](const projectileState& projectile) {
+                        const_cast<sf::Sprite&>(projectile.sprite).move(10.0f, 0.0f);
+
+                        for (auto& zombie : zombiesOnScene) {
+                            sf::FloatRect projectileBounds = projectile.sprite.getGlobalBounds();
+                            sf::FloatRect zombieBounds = zombie.sprite.getGlobalBounds();
+
+                            bool isTouching = projectileBounds.left < zombieBounds.left + zombieBounds.width &&
+                                projectileBounds.left + projectileBounds.width > zombieBounds.left;
+
+                            if (isTouching && projectile.row == zombie.row) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }), projectilesOnScene.end());
                 break;
             }
 

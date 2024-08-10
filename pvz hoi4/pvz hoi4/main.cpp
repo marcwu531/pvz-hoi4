@@ -78,7 +78,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     std::queue<sf::Keyboard::Key> inputs;
 
-    changeScene(1); //DEBUG
+    //changeScene(1); //DEBUG
 
     while (window.isOpen())
     {
@@ -299,18 +299,28 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.setView(view_background);
             window.draw(background);
 
-            if (pvzScene == 0 || pvzScene == 1) {
-                if (!zombiesOnScene.empty()) {
-                    for (auto& zombie : zombiesOnScene) {
-                        window.draw(zombie.sprite);
-                    }
+            if (!zombiesOnScene.empty()) {
+                for (auto& zombie : zombiesOnScene) {
+                    std::sort(zombiesOnScene.begin(), zombiesOnScene.end(), [](const auto& a, const auto& b) {
+                        return a.row < b.row;
+                    });
+                    window.draw(zombie.sprite);
                 }
+            }
+
+            if (pvzScene == 0 || pvzScene == 1) {
                 window.draw(seedChooser_background);
                 window.draw(seedChooserButton);
             }
-            else if (pvzScene == 2) {
+            
+            if (pvzScene == 2) {
                 window.draw(pvzStartText);
             }
+
+            pvzSunText.setString(std::to_string(pvzSun));
+            sf::FloatRect pvzSunTextRect = pvzSunText.getLocalBounds();
+            pvzSunText.setOrigin(pvzSunTextRect.left + pvzSunTextRect.width / 2.0f,
+                pvzSunTextRect.top + pvzSunTextRect.height / 2.0f);
 
             window.draw(seedBank);
             window.draw(pvzSunText);
@@ -327,7 +337,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 }
                 if (!plantsOnScene.empty()) {
                     for (auto& plant : plantsOnScene) {
-                        window.draw(plant.sprite);
+                        window.draw(plant.anim.sprite);
+                    }
+                }
+                if (!projectilesOnScene.empty()) {
+                    for (auto& projectile : projectilesOnScene) {
+                        window.draw(projectile.sprite);
                     }
                 }
             }
@@ -347,4 +362,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.25
+//Version 1.0.26

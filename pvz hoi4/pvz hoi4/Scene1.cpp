@@ -147,6 +147,7 @@ void initializeScene1() {
     pvzStartText_set.loadFromImage(getPvzImage("seed_selector", "startSet"));
     pvzStartText_plant.loadFromImage(getPvzImage("seed_selector", "startPlant"));
 
+    pvzSunText = sf::Text("", defaultFont, 50);
     pvzSunText.setFillColor(sf::Color::Black);
     pvzSunText.setPosition(-633.5f, -390.0f);
 
@@ -161,6 +162,10 @@ void initializeScene1() {
     peashooterIdle.setScale(zoomSize, zoomSize);
     peashooterIdle.setOrigin(peashooterIdle.getTextureRect().getSize().x / 2.0f,
         peashooterIdle.getTextureRect().getSize().y / 2.0f);
+
+    nlohmann::json peashooterShootJson = loadJsonFromResource(123);
+    peashooterShootFrames = parseSpriteSheetData(peashooterShootJson);
+    peashooterShootSprites.loadFromImage(getPvzImage("animations", "peashooterShoot"));
 
     hoverPlant.setTexture(peashooterIdleSprites);
     hoverPlant.setTextureRect(peashooterIdleFrames[0].frameRect);
@@ -193,6 +198,9 @@ void initializeScene1() {
     zombieIdle1.setOrigin(zombieIdle1.getTextureRect().getSize().x / 2.0f,
         zombieIdle1.getTextureRect().getSize().y / 2.0f);
 
+    peaTexture.loadFromImage(getPvzImage("projectiles", "pea"));
+    pea.setTexture(peaTexture);
+
     background.setOrigin(background.getSize() / 2.0f);
 
     hideTempPlants();
@@ -202,14 +210,31 @@ bool canPlant(sf::Vector2f pos) {
     return pos.x >= -210 && pos.x <= 910 && pos.y >= -310 && pos.y <= 370;
 }
 
-std::vector<spriteAnim> plantsOnScene;
+std::vector<plantState> plantsOnScene;
 std::vector<spriteAnim> zombiesOnScene;
+std::vector<projectileState> projectilesOnScene;
+
+int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
+    switch((int)posY) {
+    case -310:
+    default:
+        return 0;
+    case -140:
+        return 1;
+    case 30:
+        return 2;
+    case 200:
+        return 3;
+    case 370:
+        return 4;
+    }
+}
 
 void createPlant(sf::Vector2f pos) {
     if (canPlant(hoverPlant.getPosition())) {
         sf::Sprite newPlant;
         newPlant = hoverPlant;
-        plantsOnScene.push_back({ newPlant, 0, 0 });
+        plantsOnScene.push_back({ {newPlant, 0, 0, getRowByY(pos.y)}, false });
         hideTempPlants();
         pvzSun -= 100;
         pvzPacketOnSelected = false;
@@ -227,11 +252,40 @@ sf::Sprite getSpriteById(int id) {
 }
 
 void createZombie(sf::Vector2f pos) {
+    createZombie(pos, 0);
+}
+
+void createRandomZombie() {
+    createZombie(sf::Vector2f((float)(900 + rand() % 200), (float)(-310 + 170 * (rand() % 5))), 1);
+}
+
+void createZombie(sf::Vector2f pos, int style) {
     sf::Sprite newZombie;
-    int animId = rand() % 2;
+    int animId = 0;
+    int row = 0;
+
+    if (style == 0) {
+        animId = rand() % 2;
+    }
+    else if (style == 1) {
+        animId = 2;
+        row = getRowByY(pos.y);
+    }
+
     newZombie = getSpriteById(animId);
     newZombie.setPosition(pos);
-    zombiesOnScene.push_back({ newZombie, animId, rand() % 28 });
+    zombiesOnScene.push_back({ newZombie, animId, rand() % 28, row });
+}
+
+void createProjectile(int type, sf::Vector2f pos) {
+    if (type == 0) {
+        sf::Sprite newProjectile;
+        int row = getRowByY(pos.y);
+
+        newProjectile = pea;
+        newProjectile.setPosition(pos);
+        projectilesOnScene.push_back({ newProjectile, type, row });
+    }
 }
 
 void selectSeedPacket(sf::Vector2f mousePos) {
