@@ -161,7 +161,7 @@ void initializeScene1() {
     peashooterIdle.setTextureRect(peashooterIdleFrames[0].frameRect);
     peashooterIdle.setScale(zoomSize, zoomSize);
     peashooterIdle.setOrigin(peashooterIdle.getTextureRect().getSize().x / 2.0f,
-        peashooterIdle.getTextureRect().getSize().y / 2.0f);
+        (float)peashooterIdle.getTextureRect().getSize().y);
 
     nlohmann::json peashooterShootJson = loadJsonFromResource(123);
     peashooterShootFrames = parseSpriteSheetData(peashooterShootJson);
@@ -198,8 +198,19 @@ void initializeScene1() {
     zombieIdle1.setOrigin(zombieIdle1.getTextureRect().getSize().x / 2.0f,
         zombieIdle1.getTextureRect().getSize().y / 2.0f);
 
+    nlohmann::json zombieWalkJson = loadJsonFromResource(125);
+    zombieWalkSprites.loadFromImage(getPvzImage("animations", "zombieWalk"));
+    zombieWalkFrames = parseSpriteSheetData(zombieWalkJson);
+    zombieWalk.setTexture(zombieWalkSprites);
+    zombieWalk.setTextureRect(zombieWalkFrames[0].frameRect);
+    zombieWalk.setScale(zoomSize, zoomSize);
+    zombieWalk.setOrigin(zombieWalk.getTextureRect().getSize().x / 2.0f,
+        zombieWalk.getTextureRect().getSize().y / 4.0f * 3.0f);
+
     peaTexture.loadFromImage(getPvzImage("projectiles", "pea"));
     pea.setTexture(peaTexture);
+    pea.setScale(1.5f, 1.5f);
+    pea.setOrigin(pea.getGlobalBounds().width / 2.0f, pea.getGlobalBounds().height / 2.0f + 10.0f);
 
     background.setOrigin(background.getSize() / 2.0f);
 
@@ -211,7 +222,7 @@ bool canPlant(sf::Vector2f pos) {
 }
 
 std::vector<plantState> plantsOnScene;
-std::vector<spriteAnim> zombiesOnScene;
+std::vector<zombieState> zombiesOnScene;
 std::vector<projectileState> projectilesOnScene;
 
 int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
@@ -248,6 +259,8 @@ sf::Sprite getSpriteById(int id) {
         return zombieIdle;
     case 1:
         return zombieIdle1;
+    case 2:
+        return zombieWalk;
     }
 }
 
@@ -256,7 +269,7 @@ void createZombie(sf::Vector2f pos) {
 }
 
 void createRandomZombie() {
-    createZombie(sf::Vector2f((float)(900 + rand() % 200), (float)(-310 + 170 * (rand() % 5))), 1);
+    createZombie(sf::Vector2f((float)(1300 + rand() % 200), (float)(-310 + 170 * (rand() % 5))), 1);
 }
 
 void createZombie(sf::Vector2f pos, int style) {
@@ -274,7 +287,7 @@ void createZombie(sf::Vector2f pos, int style) {
 
     newZombie = getSpriteById(animId);
     newZombie.setPosition(pos);
-    zombiesOnScene.push_back({ newZombie, animId, rand() % 28, row });
+    zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200 });
 }
 
 void createProjectile(int type, sf::Vector2f pos) {
@@ -304,4 +317,18 @@ void selectSeedPacket(int id) {
             //seedPacketState[i][0] = 1;
             overlayShade.setPosition(seedPackets.find(seedPacketIdToString[id])->second.getPosition());
     }
+}
+
+int getProjectileDamageById(int id) {
+    switch (id) {
+    case 0:
+        return 20;
+    default:
+        return 0;
+    }
+}
+
+bool damageZombie(projectileState projectile, zombieState& zombie) {
+    zombie.hp -= getProjectileDamageById(projectile.id);
+    return (zombie.hp <= 0);
 }

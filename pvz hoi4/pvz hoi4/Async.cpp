@@ -135,23 +135,27 @@ void asyncLoadLevelStart() {
 bool pvzPacketOnSelected = false;
 float animSpeed = 3.5f;
 
-std::map<int, SpriteFrame> getAnimFrameFromId(int id) {
+std::map<int, SpriteFrame> getZombieAnimFrameFromId(int id) {
     switch (id) {
     default:
     case 0:
         return zombieIdleFrames;
     case 1:
         return zombieIdle1Frames;
+    case 2:
+        return zombieWalkFrames;
     }
 };
 
-int getMaxAnimFramesById(int id) {
+int getZombieMaxAnimFramesById(int id) {
     switch (id) {
     default:
     case 0:
         return 27;
     case 1:
         return 13;
+    case 2:
+        return 45;
     }
 }
 
@@ -164,15 +168,15 @@ float getAnimRatioById(int id) {
 
 void updateZombieAnim() {
     for (auto& zombie : zombiesOnScene) {
-        auto& sprite = zombie.sprite;
-        ++zombie.frameId;
+        auto& sprite = zombie.anim.sprite;
+        ++zombie.anim.frameId;
 
-        if (zombie.frameId > (float)getMaxAnimFramesById(zombie.animId) * animSpeed 
-            * getAnimRatioById(zombie.animId)) zombie.frameId = 0;
+        if (zombie.anim.frameId > (float)getZombieMaxAnimFramesById(zombie.anim.animId) * animSpeed
+            * getAnimRatioById(zombie.anim.animId)) zombie.anim.frameId = 0;
        
-        sprite.setTextureRect(getAnimFrameFromId(zombie.animId)[
-            static_cast<int>(std::floor(zombie.frameId / animSpeed 
-                / getAnimRatioById(zombie.animId)))].frameRect);
+        sprite.setTextureRect(getZombieAnimFrameFromId(zombie.anim.animId)[
+            static_cast<int>(std::floor(zombie.anim.frameId / animSpeed
+                / getAnimRatioById(zombie.anim.animId)))].frameRect);
     }
 }
 
@@ -201,6 +205,8 @@ void asyncPvzSceneUpdate() {
         float x = static_cast<float>(775 + (30 + rand() % 11) * (rand() % 11));
         createZombie(sf::Vector2f(x, y));
     }
+
+    int zombieSpawnTimer = 0;
 
     while (running.load()) {
         auto currentTime = std::chrono::high_resolution_clock::now();
@@ -260,7 +266,7 @@ void asyncPvzSceneUpdate() {
                 if (!zombiesOnScene.empty()) {
                     updateZombieAnim();
                     for (auto& zombie : zombiesOnScene) {
-                        zombie.sprite.move(0.9f * easedT, 0.0f);
+                        zombie.anim.sprite.move(0.9f * easedT, 0.0f);
                     }
                 }
 
@@ -294,13 +300,20 @@ void asyncPvzSceneUpdate() {
             case 3:
                 if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing) {
                     audios["lawnbgm"]["1"]->play();
-                    for (int i = 0; i < 3; i++) {
+                }
+                if (zombieSpawnTimer <= 0) {
+                    zombieSpawnTimer = 1000 + rand() % 500;
+                    for (int i = 0; i < 3 + rand() % 5; i++) {
                         createRandomZombie();
                     }
                 }
+                else {
+                    --zombieSpawnTimer;
+                }
                 if (pvzPacketOnSelected) {
-                    peashooterIdle.setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)));
-                    sf::Vector2f hoverCoords = peashooterIdle.getPosition();
+                    peashooterIdle.setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)) +
+                        sf::Vector2f(0.0f, 36.0f));
+                    sf::Vector2f hoverCoords = window.mapPixelToCoords(sf::Mouse::getPosition(window));
                     hoverPlant.setPosition(roundf((hoverCoords.x + 70.0f) / 140.0f) * 140.0f - 70.0f,
                         roundf((hoverCoords.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
                     hoverShade.setPosition(hoverPlant.getPosition());
@@ -308,7 +321,7 @@ void asyncPvzSceneUpdate() {
                 if (!zombiesOnScene.empty()) {
                     updateZombieAnim();
                     for (auto& zombie : zombiesOnScene) {
-                        zombie.sprite.move(-0.5f, 0.0f);
+                        zombie.anim.sprite.move(-0.5f, 0.0f);
                     }
                 }
                 if (!plantsOnScene.empty()) {
@@ -319,14 +332,13 @@ void asyncPvzSceneUpdate() {
 
                         int frame = static_cast<int>(std::floor(plant.anim.frameId / animSpeed));
 
-                        if (!zombiesOnScene.empty()) {
-                            if (frame >= 20) {
-                                plant.attack = false;
-                                for (auto& zombie : zombiesOnScene) {
-                                    if (plant.anim.row == zombie.row) {
-                                        plant.attack = true;
-                                        break;
-                                    }
+                        if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
+                            plant.attack = false;
+                            for (auto& zombie : zombiesOnScene) {
+                                if (plant.anim.row == zombie.anim.row 
+                                    && zombie.anim.sprite.getPosition().x <= 1300) {
+                                    plant.attack = true;
+                                    break;
                                 }
                             }
                         }
@@ -340,8 +352,14 @@ void asyncPvzSceneUpdate() {
                             sprite.setTextureRect(peashooterIdleFrames[frame].frameRect);
                         }
 
+                        sf::FloatRect bounds = sprite.getGlobalBounds();
+                        sprite.setOrigin(sprite.getTextureRect().getSize().x / 2.0f,
+                            sprite.getTextureRect().getSize().y - 36.0f); //fix for 2nd plant
+
                         if (plant.attack) {
-                            if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f) createProjectile(0, plant.anim.sprite.getPosition());
+                            if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f)
+                                createProjectile(0, plant.anim.sprite.getPosition() 
+                                    + sf::Vector2f(72.0f, 0.0f));
                         }
                     }
                 }
@@ -349,14 +367,17 @@ void asyncPvzSceneUpdate() {
                     [&](const projectileState& projectile) {
                         const_cast<sf::Sprite&>(projectile.sprite).move(10.0f, 0.0f);
 
-                        for (auto& zombie : zombiesOnScene) {
+                        for (auto it = zombiesOnScene.begin(); it != zombiesOnScene.end(); ++it) {
                             sf::FloatRect projectileBounds = projectile.sprite.getGlobalBounds();
-                            sf::FloatRect zombieBounds = zombie.sprite.getGlobalBounds();
+                            sf::FloatRect zombieBounds = it->anim.sprite.getGlobalBounds();
 
                             bool isTouching = projectileBounds.left < zombieBounds.left + zombieBounds.width &&
                                 projectileBounds.left + projectileBounds.width > zombieBounds.left;
 
-                            if (isTouching && projectile.row == zombie.row) {
+                            if (isTouching && projectile.row == it->anim.row) {
+                                if (damageZombie(projectile, *it)) {
+                                    zombiesOnScene.erase(it);
+                                }
                                 return true;
                             }
                         }

@@ -28,6 +28,8 @@
 #define PVZ_PROJECTILES_PEA_IMAGE 122
 #define PEASHOOTERSHOOTJSON 123
 #define PEASHOOTERSHOOTPNG 124
+#define ZOMBIEWALKJSON 125
+#define ZOMBIEWALKPNG 126
 
 // Next default values for new objects
 // 

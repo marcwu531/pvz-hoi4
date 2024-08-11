@@ -28,8 +28,12 @@ struct projectileState {
     int id;
     int row;
 };
+struct zombieState {
+    spriteAnim anim;
+    int hp;
+};
 extern std::vector<plantState> plantsOnScene;
-extern std::vector<spriteAnim> zombiesOnScene;
+extern std::vector<zombieState> zombiesOnScene;
 extern std::vector<projectileState> projectilesOnScene;
 void createPlant(sf::Vector2f pos);
 void createZombie(sf::Vector2f pos);
@@ -39,4 +43,5 @@ void selectSeedPacket(int id);
 void createZombie(sf::Vector2f pos, int style);
 void createRandomZombie();
 void createProjectile(int type, sf::Vector2f pos);
+bool damageZombie(projectileState projectile, zombieState& zombie);
 #endif
