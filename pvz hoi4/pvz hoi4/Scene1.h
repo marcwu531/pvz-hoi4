@@ -31,10 +31,17 @@ struct projectileState {
 struct zombieState {
     spriteAnim anim;
     int hp;
+    int damagedCd;
+    sf::Vector2f movementSpeed;
+};
+struct vanishProjState {
+    projectileState proj;
+    int frame;
 };
 extern std::vector<plantState> plantsOnScene;
 extern std::vector<zombieState> zombiesOnScene;
 extern std::vector<projectileState> projectilesOnScene;
+extern std::vector<vanishProjState> vanishProjectilesOnScene;
 void createPlant(sf::Vector2f pos);
 void createZombie(sf::Vector2f pos);
 extern bool canPlant(sf::Vector2f pos);
@@ -44,4 +51,5 @@ void createZombie(sf::Vector2f pos, int style);
 void createRandomZombie();
 void createProjectile(int type, sf::Vector2f pos);
 bool damageZombie(projectileState projectile, zombieState& zombie);
+void createProjectileVanishAnim(projectileState proj);
 #endif

@@ -212,6 +212,15 @@ void initializeScene1() {
     pea.setScale(1.5f, 1.5f);
     pea.setOrigin(pea.getGlobalBounds().width / 2.0f, pea.getGlobalBounds().height / 2.0f + 10.0f);
 
+    nlohmann::json peaSplatsJson = loadJsonFromResource(127);
+    peaSplatsSprites.loadFromImage(getPvzImage("animations", "peaSplats"));
+    peaSplatsFrames = parseSpriteSheetData(peaSplatsJson);
+    peaSplats.setTexture(peaSplatsSprites);
+    peaSplats.setTextureRect(peaSplatsFrames[0].frameRect);
+    peaSplats.setScale(zoomSize, zoomSize);
+    peaSplats.setOrigin(peaSplats.getTextureRect().getSize().x / 2.0f,
+        peaSplats.getTextureRect().getSize().y / 2.0f + 10.0f);
+
     background.setOrigin(background.getSize() / 2.0f);
 
     hideTempPlants();
@@ -224,6 +233,7 @@ bool canPlant(sf::Vector2f pos) {
 std::vector<plantState> plantsOnScene;
 std::vector<zombieState> zombiesOnScene;
 std::vector<projectileState> projectilesOnScene;
+std::vector<vanishProjState> vanishProjectilesOnScene;
 
 int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
     switch((int)posY) {
@@ -287,7 +297,8 @@ void createZombie(sf::Vector2f pos, int style) {
 
     newZombie = getSpriteById(animId);
     newZombie.setPosition(pos);
-    zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200 });
+    zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200, 0, 
+        sf::Vector2f(-0.5f - (rand() % 26) / 100.0f, 0.0f) });
 }
 
 void createProjectile(int type, sf::Vector2f pos) {
@@ -331,4 +342,11 @@ int getProjectileDamageById(int id) {
 bool damageZombie(projectileState projectile, zombieState& zombie) {
     zombie.hp -= getProjectileDamageById(projectile.id);
     return (zombie.hp <= 0);
+}
+
+void createProjectileVanishAnim(projectileState proj) {
+    projectileState vanishAnim;
+    vanishAnim.sprite = peaSplats;
+    vanishAnim.sprite.setPosition(proj.sprite.getPosition());
+    vanishProjectilesOnScene.push_back({ vanishAnim, 0 });
 }

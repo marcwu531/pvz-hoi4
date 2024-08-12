@@ -101,7 +101,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Release\openal32.dll" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

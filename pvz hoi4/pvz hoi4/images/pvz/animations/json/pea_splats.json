@@ -1,0 +1,38 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 24, "h": 24 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 24, "h": 24 },
+      "sourceSize": { "w": 24, "h": 24 }
+    },
+    "1": {
+      "frame": { "x": 24, "y": 0, "w": 24, "h": 24 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 24, "h": 24 },
+      "sourceSize": { "w": 24, "h": 24 }
+    },
+    "2": {
+      "frame": { "x": 48, "y": 0, "w": 24, "h": 24 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 24, "h": 24 },
+      "sourceSize": { "w": 24, "h": 24 }
+    },
+    "3": {
+      "frame": { "x": 72, "y": 0, "w": 24, "h": 24 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 24, "h": 24 },
+      "sourceSize": { "w": 24, "h": 24 }
+    }
+  },
+  "meta": {
+    "image": "pea_splats.png",
+    "format": "RGBA8888",
+    "size": { "w": 96, "h": 24 },
+    "scale": "1"
+  }
+}

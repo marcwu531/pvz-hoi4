@@ -263,6 +263,7 @@ void asyncPvzSceneUpdate() {
                 seedChooser_background.move(0.0f, 2.0f * easedT);
                 seedChooserButton.move(0.0f, 2.0f * easedT);
                 background.move(0.9f * easedT, 0.0f);
+
                 if (!zombiesOnScene.empty()) {
                     updateZombieAnim();
                     for (auto& zombie : zombiesOnScene) {
@@ -321,7 +322,26 @@ void asyncPvzSceneUpdate() {
                 if (!zombiesOnScene.empty()) {
                     updateZombieAnim();
                     for (auto& zombie : zombiesOnScene) {
-                        zombie.anim.sprite.move(-0.5f, 0.0f);
+                        bool isColliding = false;
+
+                        if (!plantsOnScene.empty()) {
+                            for (auto& plant : plantsOnScene) {
+                                if (plant.anim.row == zombie.anim.row) {
+                                    sf::FloatRect plantBounds = plant.anim.sprite.getGlobalBounds();
+                                    sf::FloatRect zombieBounds = zombie.anim.sprite.getGlobalBounds();
+                                    if (plantBounds.left < zombieBounds.left + zombieBounds.width &&
+                                        plantBounds.left + plantBounds.width > zombieBounds.left) {
+                                        isColliding = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!isColliding) zombie.anim.sprite.move(zombie.movementSpeed);
+                        if (zombie.damagedCd > 0) {
+                            --zombie.damagedCd;
+                        }
                     }
                 }
                 if (!plantsOnScene.empty()) {
@@ -378,6 +398,10 @@ void asyncPvzSceneUpdate() {
                                 if (damageZombie(projectile, *it)) {
                                     zombiesOnScene.erase(it);
                                 }
+                                else {
+                                    it->damagedCd = 10;
+                                }
+                                createProjectileVanishAnim(projectile);
                                 return true;
                             }
                         }

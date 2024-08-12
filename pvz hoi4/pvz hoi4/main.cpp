@@ -80,6 +80,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
     //changeScene(1); //DEBUG
 
+    sf::Shader brightness_shader;
+    std::vector<char> brightness_shader_data = loadResourceData(nullHInstance, 129);
+    std::string brightness_shader_str(brightness_shader_data.begin(), brightness_shader_data.end());
+    brightness_shader.loadFromMemory(brightness_shader_str, sf::Shader::Fragment);
+    brightness_shader.setUniform("texture", sf::Shader::CurrentTexture);
+    brightness_shader.setUniform("brightness", 1.75f);
+
     while (window.isOpen())
     {
         sf::Event e;
@@ -199,6 +206,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     changeScene(1);
                 }
             }
+            changeScene(1); //RUN_DEBUG
             break;
         }
         case 1:
@@ -304,7 +312,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     std::sort(zombiesOnScene.begin(), zombiesOnScene.end(), [](const auto& a, const auto& b) {
                         return a.anim.row < b.anim.row;
                     });
-                    window.draw(zombie.anim.sprite);
+
+                    if (zombie.damagedCd > 0) {
+                        window.draw(zombie.anim.sprite, &brightness_shader);
+                    }
+                    else {
+                        window.draw(zombie.anim.sprite);
+                    }
                 }
             }
 
@@ -345,6 +359,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                         window.draw(projectile.sprite);
                     }
                 }
+                if (!vanishProjectilesOnScene.empty()) {
+                    vanishProjectilesOnScene.erase(
+                        std::remove_if(vanishProjectilesOnScene.begin(), vanishProjectilesOnScene.end(),
+                            [&](vanishProjState& vanish_projectile) {
+                                vanish_projectile.proj.sprite.setTextureRect(
+                                    peaSplatsFrames[std::min(vanish_projectile.frame, 3)].frameRect);
+                                window.draw(vanish_projectile.proj.sprite);
+                                return ++vanish_projectile.frame >= 13;
+                            }),
+                        vanishProjectilesOnScene.end()
+                    );
+                }
             }
 
             break;
@@ -362,4 +388,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.27
+//Version 1.0.28

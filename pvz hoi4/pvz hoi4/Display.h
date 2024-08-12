@@ -49,6 +49,9 @@ extern sf::Sprite pea;
 extern sf::Texture zombieWalkSprites;
 extern sf::Sprite zombieWalk;
 extern std::map<int, SpriteFrame> zombieWalkFrames;
+extern sf::Sprite peaSplats;
+extern std::map<int, SpriteFrame> peaSplatsFrames;
+extern sf::Texture peaSplatsSprites;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea);
