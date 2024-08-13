@@ -68,6 +68,9 @@ sf::Texture zombieWalkSprites;
 sf::Sprite peaSplats;
 std::map<int, SpriteFrame> peaSplatsFrames;
 sf::Texture peaSplatsSprites;
+sf::Sprite zombieEat;
+std::map<int, SpriteFrame> zombieEatFrames;
+sf::Texture zombieEatSprites;
 
 sf::Texture texture_blink;
 
@@ -158,7 +161,8 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
         {"zombieIdle", loadImageFromResource(nullHInstance, 119)},
         {"zombieIdle1", loadImageFromResource(nullHInstance, 121)},
         {"zombieWalk", loadImageFromResource(nullHInstance, 126)},
-        {"peaSplats", loadImageFromResource(nullHInstance, 128)}
+        {"peaSplats", loadImageFromResource(nullHInstance, 128)},
+        {"zombieEat", loadImageFromResource(nullHInstance, 131)}
     }},
     {"projectiles", {
         {"pea", loadImageFromResource(nullHInstance, 122)}

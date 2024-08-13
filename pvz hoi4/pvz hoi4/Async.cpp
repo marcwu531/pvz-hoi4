@@ -144,6 +144,8 @@ std::map<int, SpriteFrame> getZombieAnimFrameFromId(int id) {
         return zombieIdle1Frames;
     case 2:
         return zombieWalkFrames;
+    case 3:
+        return zombieEatFrames;
     }
 };
 
@@ -156,14 +158,32 @@ int getZombieMaxAnimFramesById(int id) {
         return 13;
     case 2:
         return 45;
+    case 3:
+        return 38;
+    }
+}
+
+sf::Texture& getZombieTextureById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return zombieIdleSprites;
+    case 1:
+        return zombieIdle1Sprites;
+    case 2:
+        return zombieWalkSprites;
+    case 3:
+        return zombieEatSprites;
     }
 }
 
 float getAnimRatioById(int id) {
-    //switch (id) {
-   //default:
+    switch (id) {
+    default:
         return 1.125f;
-    //}
+    case 3:
+        return 1.0f;
+    }
 }
 
 void updateZombieAnim() {
@@ -174,6 +194,10 @@ void updateZombieAnim() {
         if (zombie.anim.frameId > (float)getZombieMaxAnimFramesById(zombie.anim.animId) * animSpeed
             * getAnimRatioById(zombie.anim.animId)) zombie.anim.frameId = 0;
        
+        if (&getZombieTextureById(zombie.anim.animId) != zombie.anim.sprite.getTexture()) {
+            zombie.anim.sprite.setTexture(getZombieTextureById(zombie.anim.animId));
+        }
+
         sprite.setTextureRect(getZombieAnimFrameFromId(zombie.anim.animId)[
             static_cast<int>(std::floor(zombie.anim.frameId / animSpeed
                 / getAnimRatioById(zombie.anim.animId)))].frameRect);
@@ -332,13 +356,39 @@ void asyncPvzSceneUpdate() {
                                     if (plantBounds.left < zombieBounds.left + zombieBounds.width &&
                                         plantBounds.left + plantBounds.width > zombieBounds.left) {
                                         isColliding = true;
+                                        zombie.targetPlant = &plant;
                                         break;
                                     }
                                 }
                             }
                         }
 
-                        if (!isColliding) zombie.anim.sprite.move(zombie.movementSpeed);
+                        //zombie.eating = isColliding;
+                        if (isColliding) {
+                            zombie.anim.animId = 3;
+                            if (zombie.targetPlant != nullptr && 
+                                (zombie.anim.frameId == std::roundf(12 * animSpeed 
+                                    * getAnimRatioById(zombie.anim.animId) - 0.5f) ||
+                                    zombie.anim.frameId == std::roundf(33 * animSpeed 
+                                        * getAnimRatioById(zombie.anim.animId) - 0.5f))) {
+                                if (damagePlant(*zombie.targetPlant)) {
+                                    plantsOnScene.erase(std::remove_if(plantsOnScene.begin(), plantsOnScene.end(),
+                                        [&](const plantState& plant) {
+                                            return &plant == zombie.targetPlant;
+                                        }),
+                                        plantsOnScene.end());
+                                }
+                                else {
+                                    zombie.targetPlant->damagedCd = 10;
+                                }
+                            }
+                        }
+                        else {
+                            zombie.anim.animId = 2;
+                            zombie.anim.sprite.move(zombie.movementSpeed);
+                            zombie.targetPlant = nullptr;
+                        }
+
                         if (zombie.damagedCd > 0) {
                             --zombie.damagedCd;
                         }
@@ -346,6 +396,10 @@ void asyncPvzSceneUpdate() {
                 }
                 if (!plantsOnScene.empty()) {
                     for (auto& plant : plantsOnScene) {
+                        if (plant.damagedCd > 0) {
+                            --plant.damagedCd;
+                        }
+
                         auto& sprite = plant.anim.sprite;
                         ++plant.anim.frameId;
                         if (plant.anim.frameId > 24.0f * animSpeed) plant.anim.frameId = 0;

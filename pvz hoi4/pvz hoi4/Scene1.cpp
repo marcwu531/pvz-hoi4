@@ -221,6 +221,15 @@ void initializeScene1() {
     peaSplats.setOrigin(peaSplats.getTextureRect().getSize().x / 2.0f,
         peaSplats.getTextureRect().getSize().y / 2.0f + 10.0f);
 
+    nlohmann::json zombieEatJson = loadJsonFromResource(130);
+    zombieEatSprites.loadFromImage(getPvzImage("animations", "zombieEat"));
+    zombieEatFrames = parseSpriteSheetData(zombieEatJson);
+    zombieEat.setTexture(zombieEatSprites);
+    zombieEat.setTextureRect(zombieEatFrames[0].frameRect);
+    zombieEat.setScale(zoomSize, zoomSize);
+    zombieEat.setOrigin(zombieEat.getTextureRect().getSize().x / 2.0f,
+        zombieEat.getTextureRect().getSize().y / 4.0f * 3.0f);
+
     background.setOrigin(background.getSize() / 2.0f);
 
     hideTempPlants();
@@ -255,7 +264,7 @@ void createPlant(sf::Vector2f pos) {
     if (canPlant(hoverPlant.getPosition())) {
         sf::Sprite newPlant;
         newPlant = hoverPlant;
-        plantsOnScene.push_back({ {newPlant, 0, 0, getRowByY(pos.y)}, false });
+        plantsOnScene.push_back({ {newPlant, 0, 0, getRowByY(pos.y)}, false, 300, 0 });
         hideTempPlants();
         pvzSun -= 100;
         pvzPacketOnSelected = false;
@@ -298,7 +307,7 @@ void createZombie(sf::Vector2f pos, int style) {
     newZombie = getSpriteById(animId);
     newZombie.setPosition(pos);
     zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200, 0, 
-        sf::Vector2f(-0.5f - (rand() % 26) / 100.0f, 0.0f) });
+        sf::Vector2f(-0.5f - (rand() % 26) / 100.0f, 0.0f), nullptr });
 }
 
 void createProjectile(int type, sf::Vector2f pos) {
@@ -349,4 +358,9 @@ void createProjectileVanishAnim(projectileState proj) {
     vanishAnim.sprite = peaSplats;
     vanishAnim.sprite.setPosition(proj.sprite.getPosition());
     vanishProjectilesOnScene.push_back({ vanishAnim, 0 });
+}
+
+bool damagePlant(plantState& plant) {
+    plant.hp -= 36;
+    return (plant.hp <= 0);
 }

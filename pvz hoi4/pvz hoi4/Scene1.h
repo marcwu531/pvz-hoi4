@@ -22,6 +22,8 @@ struct spriteAnim {
 struct plantState {
     spriteAnim anim;
     bool attack;
+    int hp;
+    int damagedCd;
 };
 struct projectileState {
     sf::Sprite sprite;
@@ -33,6 +35,7 @@ struct zombieState {
     int hp;
     int damagedCd;
     sf::Vector2f movementSpeed;
+    plantState* targetPlant;
 };
 struct vanishProjState {
     projectileState proj;
@@ -51,5 +54,6 @@ void createZombie(sf::Vector2f pos, int style);
 void createRandomZombie();
 void createProjectile(int type, sf::Vector2f pos);
 bool damageZombie(projectileState projectile, zombieState& zombie);
+bool damagePlant(plantState& plant);
 void createProjectileVanishAnim(projectileState proj);
 #endif

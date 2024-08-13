@@ -75,6 +75,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     levelStartButton.setFillColor(sf::Color::Green);
 
     bool leftClicking = false;
+    bool rightClicking = false;
 
     std::queue<sf::Keyboard::Key> inputs;
 
@@ -143,6 +144,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     //std::cout << "A" << std::endl;
                     if (e.mouseButton.button == sf::Mouse::Left && leftClicking) {
                         leftClicking = false;
+                    }
+                    
+                    if (e.mouseButton.button == sf::Mouse::Right && rightClicking) {
+                        rightClicking = false;
                     }
                     break;
                 }
@@ -351,7 +356,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 }
                 if (!plantsOnScene.empty()) {
                     for (auto& plant : plantsOnScene) {
-                        window.draw(plant.anim.sprite);
+                        if (plant.damagedCd > 0) {
+                            window.draw(plant.anim.sprite, &brightness_shader);
+                        }
+                        else {
+                            window.draw(plant.anim.sprite);
+                        }
                     }
                 }
                 if (!projectilesOnScene.empty()) {
@@ -388,4 +398,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.28
+//Version 1.0.29
