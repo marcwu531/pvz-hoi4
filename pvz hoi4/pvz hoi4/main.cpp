@@ -223,22 +223,22 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                 if (pvzScene == 0) {
                     for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
                         if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
-                            switch (seedPacketState[i][0]) {
+                            switch ((int)seedPacketState[i][0]) {
                             case 0: //select place
                                 seedPacketState[i][0] = 1;
                                 break;
                             case 2: //selected
                                 seedPacketState[i][0] = 3;
-                                break;
+                                [[fallthrough]];
                             default:
-                                //case 1: //moving
-                                    //seedPacketState[i][1]++; //put in async loop thread
                                 break;
+                            //case 1: //moving
+                                //seedPacketState[i][1]++; //put in async loop thread
                             }
                         }
                     }
 
-                    if (seedPacketSelected == maxSeedPacketAmount) {
+                    if (seedPacketSelected == maxPlantAmount) {
                         if (seedChooserButton.getGlobalBounds().contains(mousePos)) {
                             pvzScene = 1;
                         }
@@ -343,7 +343,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
             window.draw(seedBank);
             window.draw(pvzSunText);
-            window.draw(seedPackets.find(seedPacketIdToString[0])->second);
+
+            for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+                window.draw(seedPackets.find(seedPacketIdToString[i])->second);
+            }
 
             if (pvzScene == 3) {
                 if (pvzPacketOnSelected) {
@@ -398,4 +401,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.29
+//Version 1.0.30

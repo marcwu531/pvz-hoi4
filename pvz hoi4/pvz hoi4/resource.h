@@ -34,6 +34,8 @@ constexpr auto PEASPLATSPNG = 128;
 constexpr auto SHADER_BRIGHTNESS = 129;
 constexpr auto ZOMBIEEATJSON = 130;
 constexpr auto ZOMBIEEATPNG = 131;
+constexpr auto PVZ_SEEDPACKET_SUNFLOWER_IMAGE = 132;
+constexpr auto CENSORED = 133;
 
 // Next default values for new objects
 // 

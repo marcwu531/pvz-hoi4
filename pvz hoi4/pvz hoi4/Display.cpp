@@ -38,7 +38,6 @@ sf::Texture texture_seedChooser_background;
 sf::RectangleShape seedChooser_background;
 sf::Texture texture_seedBank;
 sf::RectangleShape seedBank;
-sf::Texture texture_seedPacket_peashooter;
 sf::RectangleShape seedChooserButton;
 sf::Texture texture_seedChooser;
 sf::Texture texture_seedChooserDisabled;
@@ -139,6 +138,40 @@ std::map<std::string, sf::Image> flagImages = {
     {"Taiwan", loadImageFromResource(nullHInstance, 102)}
 };
 
+//#define CENSORED
+
+#ifdef CENSORED
+std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
+        {"background", {
+        {"bg1", loadImageFromResource(nullHInstance, 133)}
+    }},
+    {"seed_selector", {
+        {"seedChooser_background", loadImageFromResource(nullHInstance, 133)},
+        {"seedBank", loadImageFromResource(nullHInstance, 133)},
+        {"seedChooserDisabled", loadImageFromResource(nullHInstance, 133)},
+        {"seedChooserButton", loadImageFromResource(nullHInstance, 133)},
+        {"startReady", loadImageFromResource(nullHInstance, 133)},
+        {"startSet", loadImageFromResource(nullHInstance, 133)},
+        {"startPlant", loadImageFromResource(nullHInstance, 133)}
+    }},
+    {"seed_packet", {
+        {"peashooter", loadImageFromResource(nullHInstance, 133)},
+        {"sunflower", loadImageFromResource(nullHInstance, 133)}
+    }},
+    {"animations", {
+        {"peashooterIdle", loadImageFromResource(nullHInstance, 133)},
+        {"peashooterShoot", loadImageFromResource(nullHInstance, 133)},
+        {"zombieIdle", loadImageFromResource(nullHInstance, 133)},
+        {"zombieIdle1", loadImageFromResource(nullHInstance, 133)},
+        {"zombieWalk", loadImageFromResource(nullHInstance, 133)},
+        {"peaSplats", loadImageFromResource(nullHInstance, 133)},
+        {"zombieEat", loadImageFromResource(nullHInstance, 133)}
+    }},
+    {"projectiles", {
+        {"pea", loadImageFromResource(nullHInstance, 133)}
+    }}
+};
+#else
 std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
     {"background", {
         {"bg1", loadImageFromResource(nullHInstance, 103)}
@@ -153,7 +186,8 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
         {"startPlant", loadImageFromResource(nullHInstance, 111)}
     }},
     {"seed_packet", {
-        {"peashooter", loadImageFromResource(nullHInstance, 106)}
+        {"peashooter", loadImageFromResource(nullHInstance, 106)},
+        {"sunflower", loadImageFromResource(nullHInstance, 132)}
     }},
     {"animations", {
         {"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
@@ -168,6 +202,7 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
         {"pea", loadImageFromResource(nullHInstance, 122)}
     }}
 };
+#endif
 
 sf::Image getFlagImage(const std::string& country) {
     return flagImages.at(country);

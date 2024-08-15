@@ -4,14 +4,14 @@
 extern int pvzScene;
 extern int pvzSun;
 extern int seedPacketSelected;
-const int maxPlantAmount = 1;
-extern int maxSeedPacketAmount;
+const int maxPlantAmount = 2;
 extern std::array<std::string, maxPlantAmount> seedPacketIdToString;
 extern std::map<std::string, sf::RectangleShape> seedPackets;
-extern std::vector<std::map<int, int>> seedPacketState;
+extern std::vector<std::map<int, float>> seedPacketState;
 void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elapsedTime);
 extern const std::map<int, sf::Vector2f> stateToTargetPosition;
 extern float easeInOutQuad(float t, float easeRatio = 0.4f, float easeAccMax = 2.5f);
+extern float scene1ZoomSize;
 void initializeScene1();
 struct spriteAnim {
     sf::Sprite sprite;
@@ -56,4 +56,5 @@ void createProjectile(int type, sf::Vector2f pos);
 bool damageZombie(projectileState projectile, zombieState& zombie);
 bool damagePlant(plantState& plant);
 void createProjectileVanishAnim(projectileState proj);
+extern int seedPacketSelectedId;
 #endif

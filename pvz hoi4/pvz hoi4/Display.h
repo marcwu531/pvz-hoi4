@@ -22,7 +22,6 @@ extern sf::Texture texture_seedChooser_background;
 extern sf::RectangleShape seedChooser_background;
 extern sf::Texture texture_seedBank;
 extern sf::RectangleShape seedBank;
-extern sf::Texture texture_seedPacket_peashooter;
 extern sf::RectangleShape seedChooserButton;
 extern sf::Texture texture_seedChooser;
 extern sf::Texture texture_seedChooserDisabled;

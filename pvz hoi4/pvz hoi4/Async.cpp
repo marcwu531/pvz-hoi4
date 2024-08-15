@@ -242,7 +242,7 @@ void asyncPvzSceneUpdate() {
             case 0:
                 if (audios["lawnbgm"]["6"]->getStatus() != sf::Music::Playing) audios["lawnbgm"]["6"]->play();
 
-                if (seedPacketSelected == maxSeedPacketAmount) {
+                if (seedPacketSelected == maxPlantAmount) {
                     seedChooserButton.setTexture(&texture_seedChooser);
                 }
                 else {
@@ -250,9 +250,32 @@ void asyncPvzSceneUpdate() {
                 }
 
                 for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-                    auto it = stateToTargetPosition.find(seedPacketState[i][0]);
+                    auto it = stateToTargetPosition.find((int)seedPacketState[i][0]);
                     if (it != stateToTargetPosition.end()) {
-                        updatePacketPosition(i, it->second, static_cast<int>(elapsedTime.count()));
+                        if (seedPacketState[i][0] == 3 && seedPacketState[i][1] == 0) {
+                            //sf::Mouse::setPosition(sf::Vector2i(175, 300));
+                            for (size_t j = 0; j < static_cast<size_t>(maxPlantAmount); ++j) {
+                                if (i == j) continue;
+                                if (seedPacketState[j][0] == 2) {
+                                    seedPacketState[j][0] = 4;
+                                    seedPacketState[j][2] = seedPackets.find(seedPacketIdToString[j])->second.getPosition().x
+                                        - seedPackets.find(seedPacketIdToString[i])->second.getSize().x; //-570.0f
+                                    seedPacketState[j][3] = seedPackets.find(seedPacketIdToString[j])->second.getPosition().y;
+                                }
+                                else if (seedPacketState[j][0] == 1) {
+                                    seedPacketState[j][1] = 0;
+                                    seedPacketState[j][0] = 4;
+                                    seedPacketState[j][2] = stateToTargetPosition.find(1)->second.x + 50.0f * scene1ZoomSize * seedPacketSelected;
+                                    seedPacketState[j][3] = seedPackets.find(seedPacketIdToString[i])->second.getPosition().y;
+                                }
+                            }
+                        }
+                        updatePacketPosition(i, it->second + sf::Vector2f(50.0f * scene1ZoomSize * (seedPacketState[i][0] == 3 ? 
+                            i : (seedPacketSelected - 1)), 0.0f),
+                            static_cast<int>(elapsedTime.count()));
+                    }
+                    else if (seedPacketState[i][0] == 4) {
+                        updatePacketPosition(i, sf::Vector2f(seedPacketState[i][2], seedPacketState[i][3]), static_cast<int>(elapsedTime.count()));
                     }
                 }
 
@@ -339,6 +362,11 @@ void asyncPvzSceneUpdate() {
                     peashooterIdle.setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)) +
                         sf::Vector2f(0.0f, 36.0f));
                     sf::Vector2f hoverCoords = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                    hoverPlant.setTexture(peashooterIdleSprites);
+                    hoverPlant.setTextureRect(peashooterIdleFrames[0].frameRect);
+                    hoverPlant.setScale(scene1ZoomSize, scene1ZoomSize);
+                    hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
+                        hoverPlant.getTextureRect().getSize().y / 2.0f);
                     hoverPlant.setPosition(roundf((hoverCoords.x + 70.0f) / 140.0f) * 140.0f - 70.0f,
                         roundf((hoverCoords.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
                     hoverShade.setPosition(hoverPlant.getPosition());

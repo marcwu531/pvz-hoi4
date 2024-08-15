@@ -29,19 +29,21 @@
 int pvzScene = 0;
 int pvzSun = 150;
 int seedPacketSelected = 0;
-int maxSeedPacketAmount = 1;
 
-std::array<std::string, maxPlantAmount> seedPacketIdToString = { "seedPacket_peashooter" };
+std::array<std::string, maxPlantAmount> seedPacketIdToString = { "seedPacket_peashooter", "seedPacket_sunflower"};
 std::map<std::string, sf::RectangleShape> seedPackets = {
-    {seedPacketIdToString[0], sf::RectangleShape()}
+    {seedPacketIdToString[0], sf::RectangleShape()},
+    {seedPacketIdToString[1], sf::RectangleShape()}
 };
-std::vector<std::map<int, int>> seedPacketState(maxPlantAmount); //state, state1 moving time
+std::vector<std::map<int, float>> seedPacketState(maxPlantAmount); //state, state1 moving time
+
+int seedPacketSelectedId;
 
 void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elapsedTime) {
     if (elapsedTime <= 0) return;
 
-    if (seedPacketState[i][1] == 0) {
-        seedPacketSelected += 2 - seedPacketState[i][0];
+    if (seedPacketState[i][1] == 0 && seedPacketState[i][0] != 4) {
+        seedPacketSelected += 2 - (int)seedPacketState[i][0];
     }
 
     seedPacketState[i][1] += elapsedTime;
@@ -65,8 +67,8 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
             (direction.y > 0 && newPosition.y > targetPosition.y) ||
             (direction.y < 0 && newPosition.y < targetPosition.y)) {
             newPosition = targetPosition;
-            seedPacketState[i][0] = (seedPacketState[i][0] == 1) ? 2 : 0;
-            seedPacketState[i][1] = 0;
+            seedPacketState[i][0] = seedPacketState[i][0] == 1.0f || seedPacketState[i][0] == 4.0f ? 2.0f : 0.0f;
+            seedPacketState[i][1] = 0.0f;
         }
 
         packetIterator->second.setPosition(newPosition);
@@ -109,9 +111,20 @@ void hideTempPlants() {
     hoverShade.setPosition(10000, 10000);
 }
 
-void initializeScene1() {
-    float zoomSize = 1.7f;
+std::string getPlantNameById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return "peashooter";
+    case 1:
+        return "sunflower";
+    }
+}
 
+std::map<int, sf::Texture> seedPacketsTexture;
+
+float scene1ZoomSize = 1.7f;
+void initializeScene1() {
     texture_background.loadFromImage(getPvzImage("background", "bg1"));
     float bgCamSizeY = view_background.getSize().y;
     background.setSize(sf::Vector2f(1400.0f / 600.0f * bgCamSizeY, bgCamSizeY)); //1920.0f, 1046.0f -> bg png size 1400 x 600
@@ -119,7 +132,7 @@ void initializeScene1() {
     view_background.move((background.getSize().x - view_background.getSize().x) / 2.0f, 10.0f);
 
     texture_seedBank.loadFromImage(getPvzImage("seed_selector", "seedBank"));
-    seedBank.setSize(sf::Vector2f(446.0f * zoomSize, 87.0f * zoomSize));
+    seedBank.setSize(sf::Vector2f(446.0f * scene1ZoomSize, 87.0f * scene1ZoomSize));
     seedBank.setTexture(&texture_seedBank);
     seedBank.setPosition(view_background.getCenter().x - view_background.getSize().x / 2.0f,
         view_background.getCenter().y - view_background.getSize().y / 2.0f);
@@ -129,12 +142,7 @@ void initializeScene1() {
     seedChooser_background.setTexture(&texture_seedChooser_background);
     seedChooser_background.setPosition(view_background.getCenter().x - view_background.getSize().x / 2.0f,
         view_background.getCenter().y - view_background.getSize().y / 2.0f + seedBank.getSize().y);
-
-    texture_seedPacket_peashooter.loadFromImage(getPvzImage("seed_packet", "peashooter"));
-    seedPackets.find(seedPacketIdToString[0])->second.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
-    seedPackets.find(seedPacketIdToString[0])->second.setTexture(&texture_seedPacket_peashooter);
-    seedPackets.find(seedPacketIdToString[0])->second.setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f, 55.0f));
-
+    
     texture_seedChooserDisabled.loadFromImage(getPvzImage("seed_selector", "seedChooserDisabled"));
     texture_seedChooser.loadFromImage(getPvzImage("seed_selector", "seedChooserButton"));
     seedChooserButton.setSize(sf::Vector2f(278.0f, 72.0f));
@@ -151,7 +159,7 @@ void initializeScene1() {
     pvzSunText.setFillColor(sf::Color::Black);
     pvzSunText.setPosition(-633.5f, -390.0f);
 
-    overlayShade.setSize(sf::Vector2f(50.0f * zoomSize, 70.0f * zoomSize));
+    overlayShade.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
     overlayShade.setFillColor(sf::Color(0, 0, 0, 180));
 
     nlohmann::json peashooterIdleJson = loadJsonFromResource(116);
@@ -159,7 +167,7 @@ void initializeScene1() {
     peashooterIdleFrames = parseSpriteSheetData(peashooterIdleJson);
     peashooterIdle.setTexture(peashooterIdleSprites);
     peashooterIdle.setTextureRect(peashooterIdleFrames[0].frameRect);
-    peashooterIdle.setScale(zoomSize, zoomSize);
+    peashooterIdle.setScale(scene1ZoomSize, scene1ZoomSize);
     peashooterIdle.setOrigin(peashooterIdle.getTextureRect().getSize().x / 2.0f,
         (float)peashooterIdle.getTextureRect().getSize().y);
 
@@ -167,15 +175,9 @@ void initializeScene1() {
     peashooterShootFrames = parseSpriteSheetData(peashooterShootJson);
     peashooterShootSprites.loadFromImage(getPvzImage("animations", "peashooterShoot"));
 
-    hoverPlant.setTexture(peashooterIdleSprites);
-    hoverPlant.setTextureRect(peashooterIdleFrames[0].frameRect);
-    hoverPlant.setScale(zoomSize, zoomSize);
-    hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
-        hoverPlant.getTextureRect().getSize().y / 2.0f);
-
     hoverShade.setTexture(peashooterIdleSprites);
     hoverShade.setTextureRect(peashooterIdleFrames[0].frameRect);
-    hoverShade.setScale(zoomSize, zoomSize);
+    hoverShade.setScale(scene1ZoomSize, scene1ZoomSize);
     hoverShade.setOrigin(hoverShade.getTextureRect().getSize().x / 2.0f,
         hoverShade.getTextureRect().getSize().y / 2.0f);
     hoverShade.setColor(sf::Color(0, 0, 0, 175));
@@ -185,7 +187,7 @@ void initializeScene1() {
     zombieIdleFrames = parseSpriteSheetData(zombieIdleJson);
     zombieIdle.setTexture(zombieIdleSprites);
     zombieIdle.setTextureRect(zombieIdleFrames[0].frameRect);
-    zombieIdle.setScale(zoomSize, zoomSize);
+    zombieIdle.setScale(scene1ZoomSize, scene1ZoomSize);
     zombieIdle.setOrigin(zombieIdle.getTextureRect().getSize().x / 2.0f,
         zombieIdle.getTextureRect().getSize().y / 2.0f);
 
@@ -194,7 +196,7 @@ void initializeScene1() {
     zombieIdle1Frames = parseSpriteSheetData(zombieIdle1Json);
     zombieIdle1.setTexture(zombieIdle1Sprites);
     zombieIdle1.setTextureRect(zombieIdle1Frames[0].frameRect);
-    zombieIdle1.setScale(zoomSize, zoomSize);
+    zombieIdle1.setScale(scene1ZoomSize, scene1ZoomSize);
     zombieIdle1.setOrigin(zombieIdle1.getTextureRect().getSize().x / 2.0f,
         zombieIdle1.getTextureRect().getSize().y / 2.0f);
 
@@ -203,7 +205,7 @@ void initializeScene1() {
     zombieWalkFrames = parseSpriteSheetData(zombieWalkJson);
     zombieWalk.setTexture(zombieWalkSprites);
     zombieWalk.setTextureRect(zombieWalkFrames[0].frameRect);
-    zombieWalk.setScale(zoomSize, zoomSize);
+    zombieWalk.setScale(scene1ZoomSize, scene1ZoomSize);
     zombieWalk.setOrigin(zombieWalk.getTextureRect().getSize().x / 2.0f,
         zombieWalk.getTextureRect().getSize().y / 4.0f * 3.0f);
 
@@ -217,7 +219,7 @@ void initializeScene1() {
     peaSplatsFrames = parseSpriteSheetData(peaSplatsJson);
     peaSplats.setTexture(peaSplatsSprites);
     peaSplats.setTextureRect(peaSplatsFrames[0].frameRect);
-    peaSplats.setScale(zoomSize, zoomSize);
+    peaSplats.setScale(scene1ZoomSize, scene1ZoomSize);
     peaSplats.setOrigin(peaSplats.getTextureRect().getSize().x / 2.0f,
         peaSplats.getTextureRect().getSize().y / 2.0f + 10.0f);
 
@@ -226,9 +228,16 @@ void initializeScene1() {
     zombieEatFrames = parseSpriteSheetData(zombieEatJson);
     zombieEat.setTexture(zombieEatSprites);
     zombieEat.setTextureRect(zombieEatFrames[0].frameRect);
-    zombieEat.setScale(zoomSize, zoomSize);
+    zombieEat.setScale(scene1ZoomSize, scene1ZoomSize);
     zombieEat.setOrigin(zombieEat.getTextureRect().getSize().x / 2.0f,
         zombieEat.getTextureRect().getSize().y / 4.0f * 3.0f);
+
+    for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+        seedPacketsTexture[i].loadFromImage(getPvzImage("seed_packet", getPlantNameById(i)));
+        seedPackets.find(seedPacketIdToString[i])->second.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
+        seedPackets.find(seedPacketIdToString[i])->second.setTexture(&seedPacketsTexture[i]);
+        seedPackets.find(seedPacketIdToString[i])->second.setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
+    }
 
     background.setOrigin(background.getSize() / 2.0f);
 
@@ -334,6 +343,7 @@ void selectSeedPacket(int id) {
     if (seedPackets.find(seedPacketIdToString[id]) != seedPackets.end()) {
             //if (seedPacketState[i][0] == 2) {
             pvzPacketOnSelected = true;
+            seedPacketSelectedId = id;
             //seedPacketState[i][0] = 1;
             overlayShade.setPosition(seedPackets.find(seedPacketIdToString[id])->second.getPosition());
     }
