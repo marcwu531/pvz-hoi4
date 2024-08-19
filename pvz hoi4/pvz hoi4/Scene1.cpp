@@ -31,10 +31,13 @@ int pvzSun = 150;
 int seedPacketSelected = 0;
 
 std::array<std::string, maxPlantAmount> idlePlantToString = { "peashooter", "sunflower" };
-std::array<std::string, maxPlantAmount> seedPacketIdToString = { "seedPacket_" + idlePlantToString[0], "seedPacket_" + idlePlantToString[1] };
+std::string seedPacketIdToString(int id) {
+    return "seedPacket_" + idlePlantToString[id];
+}
+
 std::map<std::string, sf::RectangleShape> seedPackets = {
-    {seedPacketIdToString[0], sf::RectangleShape()},
-    {seedPacketIdToString[1], sf::RectangleShape()}
+    {seedPacketIdToString(0), sf::RectangleShape()},
+    {seedPacketIdToString(1), sf::RectangleShape()}
 };
 std::map<std::string, sf::Sprite> idlePlants = {
     {idlePlantToString[0], sf::Sprite()},
@@ -54,7 +57,7 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
     seedPacketState[i][1] += elapsedTime;
 
     float distanceMoved = seedPacketState[i][1] / 5.0f;
-    auto packetIterator = seedPackets.find(seedPacketIdToString[i]);
+    auto packetIterator = seedPackets.find(seedPacketIdToString(i));
     if (packetIterator != seedPackets.end()) {
         sf::Vector2f currentPosition = packetIterator->second.getPosition();
 
@@ -229,10 +232,6 @@ void initializeScene1() {
     overlayShade.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
     overlayShade.setFillColor(sf::Color(0, 0, 0, 180));
 
-    nlohmann::json peashooterShootJson = loadJsonFromResource(123);
-    peashooterShootFrames = parseSpriteSheetData(peashooterShootJson);
-    peashooterShootSprites.loadFromImage(getPvzImage("animations", "peashooterShoot"));
-
     hoverShade.setTexture(peashooterIdleSprites);
     hoverShade.setTextureRect(peashooterIdleFrames[0].frameRect);
     hoverShade.setScale(scene1ZoomSize, scene1ZoomSize);
@@ -290,6 +289,10 @@ void initializeScene1() {
     zombieEat.setOrigin(zombieEat.getTextureRect().getSize().x / 2.0f,
         zombieEat.getTextureRect().getSize().y / 4.0f * 3.0f);
 
+    nlohmann::json peashooterShootJson = loadJsonFromResource(123);
+    peashooterShootFrames = parseSpriteSheetData(peashooterShootJson);
+    peashooterShootSprites.loadFromImage(getPvzImage("animations", "peashooterShoot"));
+
     for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
         nlohmann::json tempPlantJson = loadJsonFromResource(getPlantJsonIdById(i));
 
@@ -302,9 +305,9 @@ void initializeScene1() {
             (float)idlePlants[idlePlantToString[i]].getTextureRect().getSize().y);
 
         seedPacketsTexture[i].loadFromImage(getPvzImage("seed_packet", getPlantNameById(i)));
-        seedPackets.find(seedPacketIdToString[i])->second.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
-        seedPackets.find(seedPacketIdToString[i])->second.setTexture(&seedPacketsTexture[i]);
-        seedPackets.find(seedPacketIdToString[i])->second.setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
+        seedPackets.find(seedPacketIdToString(i))->second.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
+        seedPackets.find(seedPacketIdToString(i))->second.setTexture(&seedPacketsTexture[i]);
+        seedPackets.find(seedPacketIdToString(i))->second.setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
     }
 
     background.setOrigin(background.getSize() / 2.0f);
@@ -405,14 +408,14 @@ void createProjectile(int type, sf::Vector2f pos) {
 
 void selectSeedPacket(sf::Vector2f mousePos) {
     for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-        if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
+        if (seedPackets.find(seedPacketIdToString(i))->second.getGlobalBounds().contains(mousePos)) {
             selectSeedPacket(i);
         }
     }
 }
 
 void selectSeedPacket(int id) { //--id;
-    if (seedPackets.find(seedPacketIdToString[id]) != seedPackets.end()) {
+    if (seedPackets.find(seedPacketIdToString(id)) != seedPackets.end()) {
             //if (seedPacketState[i][0] == 2) {
             pvzPacketOnSelected = true;
             seedPacketSelectedId = id;
@@ -424,7 +427,7 @@ void selectSeedPacket(int id) { //--id;
                 hoverPlant.getTextureRect().getSize().y / 2.0f);
 
             //seedPacketState[i][0] = 1;
-            overlayShade.setPosition(seedPackets.find(seedPacketIdToString[id])->second.getPosition());
+            overlayShade.setPosition(seedPackets.find(seedPacketIdToString(id))->second.getPosition());
     }
 }
 

@@ -5,7 +5,7 @@ extern int pvzScene;
 extern int pvzSun;
 extern int seedPacketSelected;
 const int maxPlantAmount = 2;
-extern std::array<std::string, maxPlantAmount> seedPacketIdToString;
+std::string seedPacketIdToString(int id);
 extern std::map<std::string, sf::RectangleShape> seedPackets;
 extern std::vector<std::map<int, float>> seedPacketState;
 void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elapsedTime);

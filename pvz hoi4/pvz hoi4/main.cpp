@@ -223,7 +223,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
                 if (pvzScene == 0) {
                     for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-                        if (seedPackets.find(seedPacketIdToString[i])->second.getGlobalBounds().contains(mousePos)) {
+                        if (seedPackets.find(seedPacketIdToString(i))->second.getGlobalBounds().contains(mousePos)) {
                             switch ((int)seedPacketState[i][0]) {
                             case 0: //select place
                                 seedPacketState[i][0] = 1;
@@ -346,7 +346,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
             window.draw(pvzSunText);
 
             for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-                window.draw(seedPackets.find(seedPacketIdToString[i])->second);
+                window.draw(seedPackets.find(seedPacketIdToString(i))->second);
             }
 
             if (pvzScene == 3) {
@@ -402,4 +402,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.31
+//Version 1.0.31.a

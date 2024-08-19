@@ -258,15 +258,15 @@ void asyncPvzSceneUpdate() {
                                 if (i == j) continue;
                                 if (seedPacketState[j][0] == 2) {
                                     seedPacketState[j][0] = 4;
-                                    seedPacketState[j][2] = seedPackets.find(seedPacketIdToString[j])->second.getPosition().x
-                                        - seedPackets.find(seedPacketIdToString[i])->second.getSize().x; //-570.0f
-                                    seedPacketState[j][3] = seedPackets.find(seedPacketIdToString[j])->second.getPosition().y;
+                                    seedPacketState[j][2] = seedPackets.find(seedPacketIdToString(j))->second.getPosition().x
+                                        - seedPackets.find(seedPacketIdToString(i))->second.getSize().x; //-570.0f
+                                    seedPacketState[j][3] = seedPackets.find(seedPacketIdToString(j))->second.getPosition().y;
                                 }
                                 else if (seedPacketState[j][0] == 1) {
                                     seedPacketState[j][1] = 0;
                                     seedPacketState[j][0] = 4;
                                     seedPacketState[j][2] = stateToTargetPosition.find(1)->second.x + 50.0f * scene1ZoomSize * seedPacketSelected;
-                                    seedPacketState[j][3] = seedPackets.find(seedPacketIdToString[i])->second.getPosition().y;
+                                    seedPacketState[j][3] = seedPackets.find(seedPacketIdToString(i))->second.getPosition().y;
                                 }
                             }
                         }
