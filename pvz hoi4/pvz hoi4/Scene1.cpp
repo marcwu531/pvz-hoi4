@@ -30,10 +30,15 @@ int pvzScene = 0;
 int pvzSun = 150;
 int seedPacketSelected = 0;
 
-std::array<std::string, maxPlantAmount> seedPacketIdToString = { "seedPacket_peashooter", "seedPacket_sunflower"};
+std::array<std::string, maxPlantAmount> idlePlantToString = { "peashooter", "sunflower" };
+std::array<std::string, maxPlantAmount> seedPacketIdToString = { "seedPacket_" + idlePlantToString[0], "seedPacket_" + idlePlantToString[1] };
 std::map<std::string, sf::RectangleShape> seedPackets = {
     {seedPacketIdToString[0], sf::RectangleShape()},
     {seedPacketIdToString[1], sf::RectangleShape()}
+};
+std::map<std::string, sf::Sprite> idlePlants = {
+    {idlePlantToString[0], sf::Sprite()},
+    {idlePlantToString[1], sf::Sprite()}
 };
 std::vector<std::map<int, float>> seedPacketState(maxPlantAmount); //state, state1 moving time
 
@@ -106,9 +111,12 @@ float easeInOutQuad(float t, float easeRatio, float easeAccMax) {
 }
 
 void hideTempPlants() {
-    peashooterIdle.setPosition(10000, 10000);
     hoverPlant.setPosition(10000, 10000);
     hoverShade.setPosition(10000, 10000);
+
+    for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+        idlePlants[idlePlantToString[i]].setPosition(10000, 10000); //idlePlants[0]
+    }
 }
 
 std::string getPlantNameById(int id) {
@@ -122,6 +130,65 @@ std::string getPlantNameById(int id) {
 }
 
 std::map<int, sf::Texture> seedPacketsTexture;
+
+sf::Texture* getPlantIdleTextureById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return &peashooterIdleSprites;
+    case 1:
+        return &sunflowerIdleSprites;
+    }
+}
+
+std::map<int, SpriteFrame>* getPlantIdleFrameById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return &peashooterIdleFrames;
+    case 1:
+        return &sunflowerIdleFrames;
+    }
+}
+
+sf::Texture* getPlantAttackTextureById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return &peashooterShootSprites;
+    case 1:
+        return &sunflowerIdleSprites;
+    }
+}
+
+std::map<int, SpriteFrame>* getPlantAttackFrameById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return &peashooterShootFrames;
+    case 1:
+        return &sunflowerIdleFrames;
+    }
+}
+
+int getPlantJsonIdById(int id) {
+    switch (id) {
+    default:
+    case 0:
+        return 116;
+    case 1:
+        return 134;
+    }
+}
+
+int getPlantMaxFrameById(int id) {
+    switch (id) {
+    default:
+    case 0:
+    case 1:
+        return 24;
+    }
+}
 
 float scene1ZoomSize = 1.7f;
 void initializeScene1() {
@@ -161,15 +228,6 @@ void initializeScene1() {
 
     overlayShade.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
     overlayShade.setFillColor(sf::Color(0, 0, 0, 180));
-
-    nlohmann::json peashooterIdleJson = loadJsonFromResource(116);
-    peashooterIdleSprites.loadFromImage(getPvzImage("animations", "peashooterIdle"));
-    peashooterIdleFrames = parseSpriteSheetData(peashooterIdleJson);
-    peashooterIdle.setTexture(peashooterIdleSprites);
-    peashooterIdle.setTextureRect(peashooterIdleFrames[0].frameRect);
-    peashooterIdle.setScale(scene1ZoomSize, scene1ZoomSize);
-    peashooterIdle.setOrigin(peashooterIdle.getTextureRect().getSize().x / 2.0f,
-        (float)peashooterIdle.getTextureRect().getSize().y);
 
     nlohmann::json peashooterShootJson = loadJsonFromResource(123);
     peashooterShootFrames = parseSpriteSheetData(peashooterShootJson);
@@ -233,6 +291,16 @@ void initializeScene1() {
         zombieEat.getTextureRect().getSize().y / 4.0f * 3.0f);
 
     for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+        nlohmann::json tempPlantJson = loadJsonFromResource(getPlantJsonIdById(i));
+
+        getPlantIdleTextureById(i)->loadFromImage(getPvzImage("animations", idlePlantToString[i] + "Idle"));
+        *getPlantIdleFrameById(i) = parseSpriteSheetData(tempPlantJson);
+        idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
+        idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
+        idlePlants[idlePlantToString[i]].setScale(scene1ZoomSize, scene1ZoomSize);
+        idlePlants[idlePlantToString[i]].setOrigin(idlePlants[idlePlantToString[i]].getTextureRect().getSize().x / 2.0f,
+            (float)idlePlants[idlePlantToString[i]].getTextureRect().getSize().y);
+
         seedPacketsTexture[i].loadFromImage(getPvzImage("seed_packet", getPlantNameById(i)));
         seedPackets.find(seedPacketIdToString[i])->second.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
         seedPackets.find(seedPacketIdToString[i])->second.setTexture(&seedPacketsTexture[i]);
@@ -269,18 +337,22 @@ int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
     }
 }
 
-void createPlant(sf::Vector2f pos) {
+void getSunByTypeAndId(int type, int id) { //type 0: plant
+    
+}
+
+void createPlant(sf::Vector2f pos, int id) {
     if (canPlant(hoverPlant.getPosition())) {
         sf::Sprite newPlant;
         newPlant = hoverPlant;
-        plantsOnScene.push_back({ {newPlant, 0, 0, getRowByY(pos.y)}, false, 300, 0 });
+        plantsOnScene.push_back({ {newPlant, id, 0, getRowByY(pos.y)}, false, 300, 0 });
         hideTempPlants();
         pvzSun -= 100;
         pvzPacketOnSelected = false;
     }
 }
 
-sf::Sprite getSpriteById(int id) {
+sf::Sprite getZombieSpriteById(int id) {
     switch (id) {
     default:
     case 0:
@@ -295,6 +367,7 @@ sf::Sprite getSpriteById(int id) {
 void createZombie(sf::Vector2f pos) {
     createZombie(pos, 0);
 }
+
 
 void createRandomZombie() {
     createZombie(sf::Vector2f((float)(1300 + rand() % 200), (float)(-310 + 170 * (rand() % 5))), 1);
@@ -313,7 +386,7 @@ void createZombie(sf::Vector2f pos, int style) {
         row = getRowByY(pos.y);
     }
 
-    newZombie = getSpriteById(animId);
+    newZombie = getZombieSpriteById(animId);
     newZombie.setPosition(pos);
     zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200, 0, 
         sf::Vector2f(-0.5f - (rand() % 26) / 100.0f, 0.0f), nullptr });
@@ -338,12 +411,18 @@ void selectSeedPacket(sf::Vector2f mousePos) {
     }
 }
 
-void selectSeedPacket(int id) {
-    //--id;
+void selectSeedPacket(int id) { //--id;
     if (seedPackets.find(seedPacketIdToString[id]) != seedPackets.end()) {
             //if (seedPacketState[i][0] == 2) {
             pvzPacketOnSelected = true;
             seedPacketSelectedId = id;
+
+            hoverPlant.setTexture(*idlePlants[idlePlantToString[id]].getTexture());
+            hoverPlant.setTextureRect(idlePlants[idlePlantToString[id]].getTextureRect());
+            hoverPlant.setScale(scene1ZoomSize, scene1ZoomSize);
+            hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
+                hoverPlant.getTextureRect().getSize().y / 2.0f);
+
             //seedPacketState[i][0] = 1;
             overlayShade.setPosition(seedPackets.find(seedPacketIdToString[id])->second.getPosition());
     }

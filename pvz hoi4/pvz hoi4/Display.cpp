@@ -26,6 +26,8 @@
 #include "Audio.h"
 #include "Json.h"
 
+//#define CENSORED
+
 sf::Font defaultFont;
 sf::Texture flag_texture;
 sf::RectangleShape flag_rect;
@@ -48,7 +50,6 @@ sf::Texture pvzStartText_plant;
 sf::RectangleShape overlayShade;
 sf::Texture peashooterIdleSprites;
 sf::Texture peashooterShootSprites;
-sf::Sprite peashooterIdle;
 std::map<int, SpriteFrame> peashooterIdleFrames;
 std::map<int, SpriteFrame> peashooterShootFrames;
 sf::Sprite hoverPlant;
@@ -70,6 +71,9 @@ sf::Texture peaSplatsSprites;
 sf::Sprite zombieEat;
 std::map<int, SpriteFrame> zombieEatFrames;
 sf::Texture zombieEatSprites;
+sf::Texture sunflowerIdleSprites;
+sf::Sprite sunflowerIdle;
+std::map<int, SpriteFrame> sunflowerIdleFrames;
 
 sf::Texture texture_blink;
 
@@ -138,8 +142,6 @@ std::map<std::string, sf::Image> flagImages = {
     {"Taiwan", loadImageFromResource(nullHInstance, 102)}
 };
 
-//#define CENSORED
-
 #ifdef CENSORED
 std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
         {"background", {
@@ -190,13 +192,14 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
         {"sunflower", loadImageFromResource(nullHInstance, 132)}
     }},
     {"animations", {
-        {"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
         {"peashooterShoot", loadImageFromResource(nullHInstance, 124)},
         {"zombieIdle", loadImageFromResource(nullHInstance, 119)},
         {"zombieIdle1", loadImageFromResource(nullHInstance, 121)},
         {"zombieWalk", loadImageFromResource(nullHInstance, 126)},
         {"peaSplats", loadImageFromResource(nullHInstance, 128)},
-        {"zombieEat", loadImageFromResource(nullHInstance, 131)}
+        {"zombieEat", loadImageFromResource(nullHInstance, 131)},
+        {"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
+        {"sunflowerIdle", loadImageFromResource(nullHInstance, 135)}
     }},
     {"projectiles", {
         {"pea", loadImageFromResource(nullHInstance, 122)}

@@ -126,7 +126,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                         //e.key.code >= 27 && <= ?
                     }*/
 
-                    if (scene == 1 && pvzScene == 3 && !pvzPacketOnSelected && e.key.code == 27) selectSeedPacket(e.key.code - 27);
+                    if (scene == 1 && pvzScene == 3 && !pvzPacketOnSelected && e.key.code >= 27 && e.key.code <= 26 + maxPlantAmount) 
+                        selectSeedPacket(e.key.code - 27);
 
                     if (e.key.code != sf::Keyboard::Escape) break;
                     [[fallthrough]];
@@ -249,7 +250,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                         selectSeedPacket(mousePos);
                     }
                     else { //plant Plant
-                        createPlant(hoverPlant.getPosition());
+                        createPlant(hoverPlant.getPosition(), seedPacketSelectedId);
                     }
                 }
             }
@@ -355,7 +356,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                         window.draw(hoverPlant);
                         window.draw(hoverShade);
                     }
-                    window.draw(peashooterIdle);
+                    window.draw(idlePlants[idlePlantToString[seedPacketSelectedId]]);
                 }
                 if (!plantsOnScene.empty()) {
                     for (auto& plant : plantsOnScene) {
@@ -372,17 +373,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                         window.draw(projectile.sprite);
                     }
                 }
-                if (!vanishProjectilesOnScene.empty()) {
-                    vanishProjectilesOnScene.erase(
-                        std::remove_if(vanishProjectilesOnScene.begin(), vanishProjectilesOnScene.end(),
-                            [&](vanishProjState& vanish_projectile) {
-                                vanish_projectile.proj.sprite.setTextureRect(
-                                    peaSplatsFrames[std::min(vanish_projectile.frame, 3)].frameRect);
-                                window.draw(vanish_projectile.proj.sprite);
-                                return ++vanish_projectile.frame >= 13;
-                            }),
-                        vanishProjectilesOnScene.end()
-                    );
+                auto it = vanishProjectilesOnScene.begin();
+                while (it != vanishProjectilesOnScene.end()) {
+                    it->proj.sprite.setTextureRect(peaSplatsFrames[std::min(it->frame, 3)].frameRect);
+                    window.draw(it->proj.sprite);
+
+                    if (++it->frame >= 13) {
+                        it = vanishProjectilesOnScene.erase(it);
+                    }
+                    else {
+                        ++it;
+                    }
                 }
             }
 
@@ -401,4 +402,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     return 0;
 }
 
-//Version 1.0.30
+//Version 1.0.31

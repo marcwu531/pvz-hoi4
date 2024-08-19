@@ -358,15 +358,10 @@ void asyncPvzSceneUpdate() {
                 else {
                     --zombieSpawnTimer;
                 }
-                if (pvzPacketOnSelected) {
-                    peashooterIdle.setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)) +
+                if (pvzPacketOnSelected) { //getPlantSpriteById(seedPacketSelectedId)
+                    idlePlants[idlePlantToString[seedPacketSelectedId]].setPosition(window.mapPixelToCoords(sf::Mouse::getPosition(window)) +
                         sf::Vector2f(0.0f, 36.0f));
                     sf::Vector2f hoverCoords = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-                    hoverPlant.setTexture(peashooterIdleSprites);
-                    hoverPlant.setTextureRect(peashooterIdleFrames[0].frameRect);
-                    hoverPlant.setScale(scene1ZoomSize, scene1ZoomSize);
-                    hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
-                        hoverPlant.getTextureRect().getSize().y / 2.0f);
                     hoverPlant.setPosition(roundf((hoverCoords.x + 70.0f) / 140.0f) * 140.0f - 70.0f,
                         roundf((hoverCoords.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
                     hoverShade.setPosition(hoverPlant.getPosition());
@@ -430,28 +425,32 @@ void asyncPvzSceneUpdate() {
 
                         auto& sprite = plant.anim.sprite;
                         ++plant.anim.frameId;
-                        if (plant.anim.frameId > 24.0f * animSpeed) plant.anim.frameId = 0;
+                        if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId) * animSpeed) plant.anim.frameId = 0;
 
                         int frame = static_cast<int>(std::floor(plant.anim.frameId / animSpeed));
 
-                        if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
-                            plant.attack = false;
-                            for (auto& zombie : zombiesOnScene) {
-                                if (plant.anim.row == zombie.anim.row 
-                                    && zombie.anim.sprite.getPosition().x <= 1300) {
-                                    plant.attack = true;
-                                    break;
+                        switch (plant.anim.animId) {
+                        case 0:
+                            if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
+                                plant.attack = false;
+                                for (auto& zombie : zombiesOnScene) {
+                                    if (plant.anim.row == zombie.anim.row
+                                        && zombie.anim.sprite.getPosition().x <= 1300) {
+                                        plant.attack = true;
+                                        break;
+                                    }
                                 }
                             }
+                            break;
                         }
 
                         if (plant.attack) {
-                            sprite.setTexture(peashooterShootSprites);
-                            sprite.setTextureRect(peashooterShootFrames[frame].frameRect);
+                            sprite.setTexture(*getPlantAttackTextureById(plant.anim.animId));
+                            sprite.setTextureRect(getPlantAttackFrameById(plant.anim.animId)->find(frame)->second.frameRect);
                         }
                         else {
-                            sprite.setTexture(peashooterIdleSprites);
-                            sprite.setTextureRect(peashooterIdleFrames[frame].frameRect);
+                            sprite.setTexture(*getPlantIdleTextureById(plant.anim.animId));
+                            sprite.setTextureRect(getPlantIdleFrameById(plant.anim.animId)->find(frame)->second.frameRect);
                         }
 
                         sf::FloatRect bounds = sprite.getGlobalBounds();
@@ -465,30 +464,43 @@ void asyncPvzSceneUpdate() {
                         }
                     }
                 }
-                projectilesOnScene.erase(std::remove_if(projectilesOnScene.begin(), projectilesOnScene.end(),
-                    [&](const projectileState& projectile) {
-                        const_cast<sf::Sprite&>(projectile.sprite).move(10.0f, 0.0f);
+                auto it = projectilesOnScene.begin();
+                while (it != projectilesOnScene.end()) {
+                    it->sprite.move(10.0f, 0.0f);
 
-                        for (auto it = zombiesOnScene.begin(); it != zombiesOnScene.end(); ++it) {
-                            sf::FloatRect projectileBounds = projectile.sprite.getGlobalBounds();
-                            sf::FloatRect zombieBounds = it->anim.sprite.getGlobalBounds();
+                    bool shouldEraseProjectile = false;
+
+                    if (it->sprite.getPosition().x > 1500) shouldEraseProjectile = true;
+
+                    if (!shouldEraseProjectile) {
+                        for (auto zombieIt = zombiesOnScene.begin(); zombieIt != zombiesOnScene.end(); ++zombieIt) {
+                            sf::FloatRect projectileBounds = it->sprite.getGlobalBounds();
+                            sf::FloatRect zombieBounds = zombieIt->anim.sprite.getGlobalBounds();
 
                             bool isTouching = projectileBounds.left < zombieBounds.left + zombieBounds.width &&
                                 projectileBounds.left + projectileBounds.width > zombieBounds.left;
 
-                            if (isTouching && projectile.row == it->anim.row) {
-                                if (damageZombie(projectile, *it)) {
-                                    zombiesOnScene.erase(it);
+                            if (isTouching && it->row == zombieIt->anim.row) {
+                                if (damageZombie(*it, *zombieIt)) {
+                                    zombiesOnScene.erase(zombieIt);
                                 }
                                 else {
-                                    it->damagedCd = 10;
+                                    zombieIt->damagedCd = 10;
                                 }
-                                createProjectileVanishAnim(projectile);
-                                return true;
+                                createProjectileVanishAnim(*it);
+                                shouldEraseProjectile = true;
+                                break;
                             }
                         }
-                        return false;
-                    }), projectilesOnScene.end());
+                    }
+
+                    if (shouldEraseProjectile) {
+                        it = projectilesOnScene.erase(it);
+                    }
+                    else {
+                        ++it;
+                    }
+                }
                 break;
             }
 

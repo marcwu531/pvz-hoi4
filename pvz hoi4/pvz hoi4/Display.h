@@ -32,7 +32,6 @@ extern sf::Texture pvzStartText_plant;
 extern sf::RectangleShape overlayShade;
 extern sf::Texture peashooterIdleSprites;
 extern sf::Texture peashooterShootSprites;
-extern sf::Sprite peashooterIdle;
 extern std::map<int, SpriteFrame> peashooterIdleFrames;
 extern std::map<int, SpriteFrame> peashooterShootFrames;
 extern sf::Sprite hoverPlant;
@@ -54,6 +53,9 @@ extern sf::Texture peaSplatsSprites;
 extern sf::Sprite zombieEat;
 extern std::map<int, SpriteFrame> zombieEatFrames;
 extern sf::Texture zombieEatSprites;
+extern sf::Texture sunflowerIdleSprites;
+extern sf::Sprite sunflowerIdle;
+extern std::map<int, SpriteFrame> sunflowerIdleFrames;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image image, const sf::IntRect cropArea);
