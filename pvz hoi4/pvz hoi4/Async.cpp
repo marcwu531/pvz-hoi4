@@ -257,6 +257,8 @@ void asyncPvzSceneUpdate() {
                             for (size_t j = 0; j < static_cast<size_t>(maxPlantAmount); ++j) {
                                 if (i == j) continue;
                                 if (seedPacketState[j][0] == 2) {
+                                    if (seedPackets.find(seedPacketIdToString(j))->second.getPosition().x <
+                                        seedPackets.find(seedPacketIdToString(i))->second.getPosition().x) continue;
                                     seedPacketState[j][0] = 4;
                                     seedPacketState[j][2] = seedPackets.find(seedPacketIdToString(j))->second.getPosition().x
                                         - seedPackets.find(seedPacketIdToString(i))->second.getSize().x; //-570.0f

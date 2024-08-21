@@ -31,9 +31,19 @@
 #include "Scene1.h"
 #include "Audio.h"
 #include "Json.h"
+#include "General.h"
+
+#ifdef RUN_DEBUG
+void AttachConsole() {
+    AllocConsole();
+    FILE* consoleOutput;
+    freopen_s(&consoleOutput, "CONOUT$", "w", stdout);
+}
+#endif
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) { //int main() {   
     #ifdef RUN_DEBUG
+    AttachConsole();
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     #endif
 
@@ -127,7 +137,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                     }*/
 
                     if (scene == 1 && pvzScene == 3 && !pvzPacketOnSelected && e.key.code >= 27 && e.key.code <= 26 + maxPlantAmount) 
-                        selectSeedPacket(e.key.code - 27);
+                        selectSeedPacket(seedPacketsSelectedOrder[e.key.code - 27]);
 
                     if (e.key.code != sf::Keyboard::Escape) break;
                     [[fallthrough]];
@@ -226,9 +236,24 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
                         if (seedPackets.find(seedPacketIdToString(i))->second.getGlobalBounds().contains(mousePos)) {
                             switch ((int)seedPacketState[i][0]) {
                             case 0: //select place
+                                seedPacketsSelectedOrder[ 
+                                    (seedPacketsSelectedOrder.empty()) ? 0 : seedPacketsSelectedOrder.size()] = i;
+                                //stdcoutMap(&seedPacketsSelectedOrder);
+
                                 seedPacketState[i][0] = 1;
                                 break;
                             case 2: //selected
+                            {
+                                auto it = std::find_if(seedPacketsSelectedOrder.begin(), seedPacketsSelectedOrder.end(),
+                                    [i](const std::pair<int, int>& pair) {
+                                        return pair.second == i;
+                                    });
+                                if (it != seedPacketsSelectedOrder.end()) {
+                                    it->second = -1;
+                                    mapShift(seedPacketsSelectedOrder);
+                                }
+                                //stdcoutMap(&seedPacketsSelectedOrder);
+                            }
                                 seedPacketState[i][0] = 3;
                                 [[fallthrough]];
                             default:
@@ -396,10 +421,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     changeScene(-1);
 
     #ifdef RUN_DEBUG
+    FreeConsole();
     _CrtDumpMemoryLeaks();
     #endif
 
     return 0;
 }
 
-//Version 1.0.31.a
+//Version 1.0.32

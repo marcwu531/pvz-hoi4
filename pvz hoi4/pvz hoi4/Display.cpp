@@ -26,8 +26,6 @@
 #include "Audio.h"
 #include "Json.h"
 
-//#define CENSORED
-
 sf::Font defaultFont;
 sf::Texture flag_texture;
 sf::RectangleShape flag_rect;
@@ -142,9 +140,11 @@ std::map<std::string, sf::Image> flagImages = {
     {"Taiwan", loadImageFromResource(nullHInstance, 102)}
 };
 
+//#define CENSORED
+
 #ifdef CENSORED
 std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
-        {"background", {
+    {"background", {
         {"bg1", loadImageFromResource(nullHInstance, 133)}
     }},
     {"seed_selector", {
@@ -161,13 +161,14 @@ std::map<std::string, std::map<std::string, sf::Image>> pvzImages = {
         {"sunflower", loadImageFromResource(nullHInstance, 133)}
     }},
     {"animations", {
-        {"peashooterIdle", loadImageFromResource(nullHInstance, 133)},
         {"peashooterShoot", loadImageFromResource(nullHInstance, 133)},
         {"zombieIdle", loadImageFromResource(nullHInstance, 133)},
         {"zombieIdle1", loadImageFromResource(nullHInstance, 133)},
         {"zombieWalk", loadImageFromResource(nullHInstance, 133)},
         {"peaSplats", loadImageFromResource(nullHInstance, 133)},
-        {"zombieEat", loadImageFromResource(nullHInstance, 133)}
+        {"zombieEat", loadImageFromResource(nullHInstance, 133)},
+        {"peashooterIdle", loadImageFromResource(nullHInstance, 133)},
+        {"sunflowerIdle", loadImageFromResource(nullHInstance, 133)}
     }},
     {"projectiles", {
         {"pea", loadImageFromResource(nullHInstance, 133)}

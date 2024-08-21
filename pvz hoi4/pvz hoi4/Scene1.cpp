@@ -456,3 +456,5 @@ bool damagePlant(plantState& plant) {
     plant.hp -= 36;
     return (plant.hp <= 0);
 }
+
+std::map<int, int> seedPacketsSelectedOrder;

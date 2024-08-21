@@ -80,3 +80,10 @@ bool isKonamiCodeEntered(const std::queue<sf::Keyboard::Key>& inputs) {
     }
     return true;
 }
+
+void stdcoutMap(std::map<int, int>* map) {
+    for (const auto& pair : *map) {
+        std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+    }
+    std::cout << std::endl;
+}
