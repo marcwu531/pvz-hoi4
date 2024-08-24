@@ -1,57 +1,39 @@
-#include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
-#include <iostream>
-#include <vector>
-#include <array>
-#include <map>
-#include <thread>
-#include <atomic>
-#include <chrono>
-#include <string>
+#include <unordered_map>
 #include <windows.h>
-#include <fstream>
-#include <stdexcept>
-#include <queue>
-#include <shellapi.h>
-#include <memory>
-#include <nlohmann/json.hpp>
 
-#include "Window.h"
-#include "Colour.h"
-#include "Resource.h"
-#include "State.h"
-#include "Display.h"
-#include "Async.h"
-#include "Scene1.h"
 #include "Audio.h"
-#include "Json.h"
 
-std::unique_ptr<sf::Music> loadMusicFromResource(HINSTANCE hInstance, int resourceId) {
-    HRSRC resource = FindResource(hInstance, MAKEINTRESOURCE(resourceId), RT_RCDATA);
-    if (!resource) {
-        throw std::runtime_error("Failed to find resource");
-    }
+static sf::Music* loadMusicFromResource(HINSTANCE hInstance, int resourceId, size_t& resourceSize) {
+	auto music = new sf::Music();
 
-    HGLOBAL resourceData = LoadResource(hInstance, resource);
-    if (!resourceData) {
-        throw std::runtime_error("Failed to load resource");
-    }
+	if (HRSRC resource = FindResource(hInstance, MAKEINTRESOURCE(resourceId), RT_RCDATA))
+		if (HGLOBAL resourceData = LoadResource(hInstance, resource))
+			if (resourceSize = SizeofResource(hInstance, resource))
+				if (const void* data = LockResource(resourceData)) {
+					if (!music->openFromMemory(data, resourceSize)) {
+						delete music;
+						return nullptr;
+					}
+				}
 
-    DWORD resourceSize = SizeofResource(hInstance, resource);
-    const void* data = LockResource(resourceData);
-
-    auto music = std::make_unique<sf::Music>();
-    if (!music->openFromMemory(data, resourceSize)) {
-        throw std::runtime_error("Failed to load music from memory");
-    }
-    return music;
+	return music;
 }
 
-std::map<std::string, std::map<std::string, std::unique_ptr<sf::Music>>> audios;
+std::unordered_map<std::string, std::unordered_map<std::string, sf::Music*>> audios;
 
 void initializeAudios(HINSTANCE hInstance) {
-    audios["lawnbgm"]["6"] = loadMusicFromResource(nullHInstance, 112);
-    audios["lawnbgm"]["1"] = loadMusicFromResource(nullHInstance, 113);
-    audios["sounds"]["readysetplant"] = loadMusicFromResource(nullHInstance, 114);
-    audios["soundtrack"]["battleofwuhan"] = loadMusicFromResource(nullHInstance, 115);
+	size_t resourceSize;
+
+	auto loadAndStoreMusic = [&](const std::string& category, const std::string& name, int resourceId) {
+		auto music = loadMusicFromResource(hInstance, resourceId, resourceSize);
+		if (music) {
+			audios[category][name] = std::move(music);
+		}
+		};
+
+	loadAndStoreMusic("lawnbgm", "6", 112);
+	loadAndStoreMusic("lawnbgm", "1", 113);
+	loadAndStoreMusic("sounds", "readysetplant", 114);
+	loadAndStoreMusic("soundtrack", "battleofwuhan", 115);
 }

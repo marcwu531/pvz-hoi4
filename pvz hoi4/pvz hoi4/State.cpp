@@ -1,30 +1,6 @@
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
-#include <iostream>
-#include <vector>
-#include <array>
-#include <map>
-#include <thread>
-#include <atomic>
-#include <chrono>
-#include <string>
-#include <windows.h>
-#include <fstream>
-#include <stdexcept>
-#include <queue>
-#include <shellapi.h>
-#include <memory>
 #include <nlohmann/json.hpp>
 
-#include "Window.h"
-#include "Colour.h"
-#include "Resource.h"
 #include "State.h"
-#include "Display.h"
-#include "Async.h"
-#include "Scene1.h"
-#include "Audio.h"
-#include "Json.h"
 
 #include "State.hpp"
 
@@ -41,48 +17,48 @@
         {"RGBA", []() { return State::region::state::RGBA(); }} \
     }}
 
-std::map<std::string, std::map<std::string, std::function<int()>>> state_int = {
-    DEFINE_STATE_INT(Taiwan, Taipei),
-    DEFINE_STATE_INT(Taiwan, NewTaipei),
-    DEFINE_STATE_INT(Taiwan, Taoyuan),
-    DEFINE_STATE_INT(Taiwan, Taichung),
-    DEFINE_STATE_INT(Taiwan, Tainan),
-    DEFINE_STATE_INT(Taiwan, Kaohsiung),
-    DEFINE_STATE_INT(Taiwan, Keelung),
-    DEFINE_STATE_INT(Taiwan, Hsinchu_City),
-    DEFINE_STATE_INT(Taiwan, Hsinchu_County),
-    DEFINE_STATE_INT(Taiwan, Miaoli),
-    DEFINE_STATE_INT(Taiwan, Changhua),
-    DEFINE_STATE_INT(Taiwan, Nantou),
-    DEFINE_STATE_INT(Taiwan, Yunlin),
-    DEFINE_STATE_INT(Taiwan, Chiayi_City),
-    DEFINE_STATE_INT(Taiwan, Chiayi_County),
-    DEFINE_STATE_INT(Taiwan, Pingtung),
-    DEFINE_STATE_INT(Taiwan, Yilan),
-    DEFINE_STATE_INT(Taiwan, Hualien),
-    DEFINE_STATE_INT(Taiwan, Taitung)
+std::unordered_map<std::string, std::unordered_map<std::string, std::function<int()>>> state_int = {
+	DEFINE_STATE_INT(Taiwan, Taipei),
+	DEFINE_STATE_INT(Taiwan, NewTaipei),
+	DEFINE_STATE_INT(Taiwan, Taoyuan),
+	DEFINE_STATE_INT(Taiwan, Taichung),
+	DEFINE_STATE_INT(Taiwan, Tainan),
+	DEFINE_STATE_INT(Taiwan, Kaohsiung),
+	DEFINE_STATE_INT(Taiwan, Keelung),
+	DEFINE_STATE_INT(Taiwan, Hsinchu_City),
+	DEFINE_STATE_INT(Taiwan, Hsinchu_County),
+	DEFINE_STATE_INT(Taiwan, Miaoli),
+	DEFINE_STATE_INT(Taiwan, Changhua),
+	DEFINE_STATE_INT(Taiwan, Nantou),
+	DEFINE_STATE_INT(Taiwan, Yunlin),
+	DEFINE_STATE_INT(Taiwan, Chiayi_City),
+	DEFINE_STATE_INT(Taiwan, Chiayi_County),
+	DEFINE_STATE_INT(Taiwan, Pingtung),
+	DEFINE_STATE_INT(Taiwan, Yilan),
+	DEFINE_STATE_INT(Taiwan, Hualien),
+	DEFINE_STATE_INT(Taiwan, Taitung)
 };
 
-std::map<std::string, std::map<std::string, std::function<std::string()>>> state_rgba = {
-    DEFINE_STATE_RGBA(Taiwan, Taipei),
-    DEFINE_STATE_RGBA(Taiwan, NewTaipei),
-    DEFINE_STATE_RGBA(Taiwan, Taoyuan),
-    DEFINE_STATE_RGBA(Taiwan, Taichung),
-    DEFINE_STATE_RGBA(Taiwan, Tainan),
-    DEFINE_STATE_RGBA(Taiwan, Kaohsiung),
-    DEFINE_STATE_RGBA(Taiwan, Keelung),
-    DEFINE_STATE_RGBA(Taiwan, Hsinchu_City),
-    DEFINE_STATE_RGBA(Taiwan, Hsinchu_County),
-    DEFINE_STATE_RGBA(Taiwan, Miaoli),
-    DEFINE_STATE_RGBA(Taiwan, Changhua),
-    DEFINE_STATE_RGBA(Taiwan, Nantou),
-    DEFINE_STATE_RGBA(Taiwan, Yunlin),
-    DEFINE_STATE_RGBA(Taiwan, Chiayi_City),
-    DEFINE_STATE_RGBA(Taiwan, Chiayi_County),
-    DEFINE_STATE_RGBA(Taiwan, Pingtung),
-    DEFINE_STATE_RGBA(Taiwan, Yilan),
-    DEFINE_STATE_RGBA(Taiwan, Hualien),
-    DEFINE_STATE_RGBA(Taiwan, Taitung)
+std::unordered_map<std::string, std::unordered_map<std::string, std::function<std::string()>>> state_rgba = {
+	DEFINE_STATE_RGBA(Taiwan, Taipei),
+	DEFINE_STATE_RGBA(Taiwan, NewTaipei),
+	DEFINE_STATE_RGBA(Taiwan, Taoyuan),
+	DEFINE_STATE_RGBA(Taiwan, Taichung),
+	DEFINE_STATE_RGBA(Taiwan, Tainan),
+	DEFINE_STATE_RGBA(Taiwan, Kaohsiung),
+	DEFINE_STATE_RGBA(Taiwan, Keelung),
+	DEFINE_STATE_RGBA(Taiwan, Hsinchu_City),
+	DEFINE_STATE_RGBA(Taiwan, Hsinchu_County),
+	DEFINE_STATE_RGBA(Taiwan, Miaoli),
+	DEFINE_STATE_RGBA(Taiwan, Changhua),
+	DEFINE_STATE_RGBA(Taiwan, Nantou),
+	DEFINE_STATE_RGBA(Taiwan, Yunlin),
+	DEFINE_STATE_RGBA(Taiwan, Chiayi_City),
+	DEFINE_STATE_RGBA(Taiwan, Chiayi_County),
+	DEFINE_STATE_RGBA(Taiwan, Pingtung),
+	DEFINE_STATE_RGBA(Taiwan, Yilan),
+	DEFINE_STATE_RGBA(Taiwan, Hualien),
+	DEFINE_STATE_RGBA(Taiwan, Taitung)
 };
 
 #undef DEFINE_STATE_INT
@@ -91,11 +67,11 @@ std::map<std::string, std::map<std::string, std::function<std::string()>>> state
 std::string clicking_state;
 std::string flag;
 
-std::map<std::string, std::vector<std::string>> Regions = {
-    {"Taiwan", {
-        "Taipei", "NewTaipei", "Taoyuan", "Taichung", "Tainan", "Kaohsiung",
-        "Keelung", "Hsinchu_City", "Hsinchu_County", "Miaoli", "Changhua",
-        "Nantou", "Yunlin", "Chiayi_City", "Chiayi_County", "Pingtung",
-        "Yilan", "Hualien", "Taitung"
-    }}
+std::unordered_map<std::string, std::vector<std::string>> Regions = {
+	{"Taiwan", {
+		"Taipei", "NewTaipei", "Taoyuan", "Taichung", "Tainan", "Kaohsiung",
+		"Keelung", "Hsinchu_City", "Hsinchu_County", "Miaoli", "Changhua",
+		"Nantou", "Yunlin", "Chiayi_City", "Chiayi_County", "Pingtung",
+		"Yilan", "Hualien", "Taitung"
+	}}
 };

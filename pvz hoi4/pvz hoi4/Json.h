@@ -2,6 +2,6 @@
 #define JSON_H
 
 nlohmann::json loadJson(const std::string& filePath);
-std::map<int, SpriteFrame> parseSpriteSheetData(const nlohmann::json& json);
+std::unordered_map<int, SpriteFrame> parseSpriteSheetData(const nlohmann::json& json);
 nlohmann::json loadJsonFromResource(int resourceId);
 #endif

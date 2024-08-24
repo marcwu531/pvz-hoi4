@@ -1,89 +1,72 @@
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
 #include <iostream>
-#include <vector>
-#include <array>
-#include <map>
-#include <thread>
-#include <atomic>
-#include <chrono>
-#include <string>
-#include <windows.h>
-#include <fstream>
-#include <stdexcept>
-#include <queue>
-#include <shellapi.h>
-#include <memory>
 #include <nlohmann/json.hpp>
+#include <queue>
+#include <SFML/Graphics.hpp>
 
-#include "Window.h"
 #include "Colour.h"
-#include "Resource.h"
 #include "State.h"
-#include "Display.h"
-#include "Async.h"
-#include "Scene1.h"
-#include "Audio.h"
-#include "Json.h"
+#include "Window.h"
 
-void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View view) {
-    //std::cout << zoom << std::endl;
-    const sf::Vector2f beforeCoord{ window.mapPixelToCoords(pixel) };
-    //sf::View view = window.getView();
-    view.zoom(zoom);
-    window.setView(view);
-    const sf::Vector2f afterCoord{ window.mapPixelToCoords(pixel) };
-    const sf::Vector2f offsetCoords{ beforeCoord - afterCoord };
-    view.move(offsetCoords);
-    window.setView(view);
+void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View& view) {
+	//std::cout << zoom << std::endl;
+	const sf::Vector2f beforeCoord{ window.mapPixelToCoords(pixel) };
+	//sf::View view = window.getView();
+	view.zoom(zoom);
+	window.setView(view);
+	const sf::Vector2f afterCoord{ window.mapPixelToCoords(pixel) };
+	const sf::Vector2f offsetCoords{ beforeCoord - afterCoord };
+	view.move(offsetCoords);
+	window.setView(view);
 }
 
-std::array<std::string, 2> clickingState(sf::Image image, float mouseInMapPosX, float mouseInMapPosY) {
-    int x = static_cast<int>(mouseInMapPosX);
-    int y = static_cast<int>(mouseInMapPosY);
+std::array<std::string, 2> clickingState(sf::Image& image, float mouseInMapPosX, float mouseInMapPosY) {
+	int x = static_cast<int>(mouseInMapPosX), y = static_cast<int>(mouseInMapPosY);
 
-    for (const auto& region : Regions) {
-        for (const std::string& state : region.second) {
-            if (state_rgba.find(state) != state_rgba.end() && state_int.find(state) != state_int.end()) {
-                if (getRGBA(image, x, y) == state_rgba[state]["RGBA"]()) {
-                    if (x >= state_int[state]["sx"]() && x <= state_int[state]["lx"]()
-                        && y >= state_int[state]["sy"]() && y <= state_int[state]["ly"]()) {
-                        return { region.first, state };
-                    }
-                }
-            }
-        }
-    }
+	auto rgba = getRGBA(image, x, y);
+	for (const auto& region : Regions) {
+		for (const std::string& state : region.second) {
+			auto state_rgba_iter = state_rgba.find(state);
+			auto state_int_iter = state_int.find(state);
+			if (state_rgba_iter != state_rgba.end() && state_int_iter != state_int.end()) {
+				if (rgba == state_rgba_iter->second.at("RGBA")()) {
+					if (x >= state_int_iter->second.at("sx")() && x <= state_int_iter->second.at("lx")()
+						&& y >= state_int_iter->second.at("sy")() && y <= state_int_iter->second.at("ly")()) {
+						return { region.first, state };
+					}
+				}
+			}
+		}
+	}
 
-    return { "", "" };
+	return { "", "" };
 }
 
 const std::vector<sf::Keyboard::Key> konamiCode = {
-    sf::Keyboard::Up, sf::Keyboard::Up,
-    sf::Keyboard::Down, sf::Keyboard::Down,
-    sf::Keyboard::Left, sf::Keyboard::Right,
-    sf::Keyboard::Left, sf::Keyboard::Right,
-    sf::Keyboard::B, sf::Keyboard::A
+	sf::Keyboard::Up, sf::Keyboard::Up,
+	sf::Keyboard::Down, sf::Keyboard::Down,
+	sf::Keyboard::Left, sf::Keyboard::Right,
+	sf::Keyboard::Left, sf::Keyboard::Right,
+	sf::Keyboard::B, sf::Keyboard::A
 };
 
 bool isKonamiCodeEntered(const std::queue<sf::Keyboard::Key>& inputs) {
-    if (inputs.size() != konamiCode.size()) {
-        return false;
-    }
+	if (inputs.size() != konamiCode.size()) {
+		return false;
+	}
 
-    std::queue<sf::Keyboard::Key> tempQueue = inputs;
-    for (auto key : konamiCode) {
-        if (tempQueue.front() != key) {
-            return false;
-        }
-        tempQueue.pop();
-    }
-    return true;
+	std::queue<sf::Keyboard::Key> tempQueue = inputs;
+	for (const auto& key : konamiCode) {
+		if (tempQueue.front() != key) {
+			return false;
+		}
+		tempQueue.pop();
+	}
+	return true;
 }
 
-void stdcoutMap(std::map<int, int>* map) {
-    for (const auto& pair : *map) {
-        std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
-    }
-    std::cout << std::endl;
+void stdcoutMap(std::unordered_map<int, int>* map) {
+	for (const auto& pair : *map) {
+		std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+	}
+	std::cout << std::endl;
 }
