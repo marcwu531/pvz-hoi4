@@ -195,6 +195,8 @@ int getPlantMaxFrameById(int id) {
 
 float scene1ZoomSize = 1.7f;
 void initializeScene1() {
+    initPlantsStatus();
+
     texture_background.loadFromImage(getPvzImage("background", "bg1"));
     float bgCamSizeY = view_background.getSize().y;
     background.setSize(sf::Vector2f(1400.0f / 600.0f * bgCamSizeY, bgCamSizeY)); //1920.0f, 1046.0f -> bg png size 1400 x 600
@@ -458,3 +460,22 @@ bool damagePlant(plantState& plant) {
 }
 
 std::map<int, int> seedPacketsSelectedOrder;
+std::map<int, int> plantsLevel;
+
+void initPlantsStatus() {
+    for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+        plantsLevel[i] = 0;
+    }
+
+    plantsLevel[0] = 1;
+}
+
+int getOwnedPlantsAmount() {
+    int ret = 0;
+
+    for (auto& plants : plantsLevel) {
+        if (plants.second > 0) ++ret;
+    }
+
+    return ret;
+}

@@ -65,4 +65,6 @@ int getPlantMaxFrameById(int id);
 sf::Texture* getPlantAttackTextureById(int id);
 std::map<int, SpriteFrame>* getPlantAttackFrameById(int id);
 extern std::map<int, int> seedPacketsSelectedOrder;
+extern std::map<int, int> plantsLevel;
+int getOwnedPlantsAmount();
 #endif
