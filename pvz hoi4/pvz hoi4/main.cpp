@@ -91,7 +91,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	initializeScene1();
 
-	audios["soundtrack"]["battleofwuhan"]->setVolume(25);
+	//audios["soundtrack"]["battleofwuhan"]->setVolume(25); //RUN_NDEBUG
 
 	sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
 	//window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
@@ -125,12 +125,28 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	//changeScene(1); //DEBUG
 
-	/*sf::Shader brightness_shader;
+	sf::Shader brightness_shader;
 	std::vector<char> brightness_shader_data = loadResourceData(nullHInstance, 129);
+	if (brightness_shader_data.empty()) {
+		std::cout << "Shader data is empty" << std::endl;
+		return -1;
+	}
 	std::string brightness_shader_str(brightness_shader_data.begin(), brightness_shader_data.end());
-	brightness_shader.loadFromMemory(brightness_shader_str, sf::Shader::Fragment);
-	brightness_shader.setUniform("texture", sf::Shader::CurrentTexture);
-	brightness_shader.setUniform("brightness", 1.75f);*/
+	if (!brightness_shader.loadFromMemory(brightness_shader_str, sf::Shader::Fragment)) {
+		std::cout << "Failed to load brightness shader from memory" << std::endl;
+		return -1;
+	}
+	else {
+		std::cout << "Brightness shader loaded successfully" << std::endl;
+	}
+	if (brightness_shader.isAvailable()) {
+		brightness_shader.setUniform("texture", sf::Shader::CurrentTexture);
+		brightness_shader.setUniform("brightness", 1.75f);
+		std::cout << "Shader uniforms set successfully" << std::endl;
+	}
+	else {
+		std::cout << "Shader is not available" << std::endl;
+	}
 
 	while (window.isOpen())
 	{
@@ -397,11 +413,29 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			window.draw(background);
 
 			if (!zombiesOnScene.empty()) {
-				std::sort(zombiesOnScene.begin(), zombiesOnScene.end(), [](const auto& a, const auto& b) {
+				std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
+
+				for (auto& zombie : zombiesOnScene) {
+					if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row) < tempZombies.size())
+						tempZombies[zombie.anim.row].push_back(zombie);
+				}
+
+				zombiesOnScene.clear();
+				for (auto& tmpZ : tempZombies) {
+					zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
+				}
+
+				/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
+					[](const zombieState& a, const zombieState& b) {
 					return a.anim.row < b.anim.row;
-					});
+				});*/
 
 				for (const auto& zombie : zombiesOnScene) {
+					if (zombie.anim.sprite.getTexture() == nullptr) {
+						std::cout << "Sprite texture is invalid!" << std::endl;
+						continue; // Skip drawing this sprite
+					}
+
 					if (zombie.damagedCd > 0) {
 						window.draw(zombie.anim.sprite/*, &brightness_shader*/);
 					}
@@ -498,4 +532,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.34
+//Version 1.0.35

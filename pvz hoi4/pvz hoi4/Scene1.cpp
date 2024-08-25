@@ -1,3 +1,4 @@
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <SFML/Graphics.hpp>
 #include <thread>
@@ -349,6 +350,12 @@ void createZombie(sf::Vector2f pos, int style) {
 	int row = style == 1 ? getRowByY(pos.y) : 0;
 
 	newZombie = getZombieSpriteById(animId);
+
+	if (newZombie.getTexture() == nullptr) {
+		std::cout << "Failed to create sprite for animId: " << animId << std::endl;
+		return;
+	}
+
 	newZombie.setPosition(pos);
 	zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200, 0,
 		sf::Vector2f(-0.5f - (rand() % 26) / 100.0f, 0.0f), nullptr });

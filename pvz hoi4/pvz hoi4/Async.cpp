@@ -1,6 +1,7 @@
 #include <array>
 #include <chrono>
 #include <functional>
+#include <iostream>
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <thread>
@@ -441,6 +442,12 @@ void asyncPvzSceneUpdate() {
 					if (!shouldEraseProjectile) {
 						auto zIt = zombiesOnScene.begin();
 						while (zIt != zombiesOnScene.end()) {
+							if (!zIt->anim.sprite.getTexture()) {
+								std::cout << "Invalid zombie sprite texture detected!" << std::endl;
+								++zIt;
+								continue;
+							}
+
 							sf::FloatRect projectileBounds = it->sprite.getGlobalBounds();
 							sf::FloatRect zombieBounds = zIt->anim.sprite.getGlobalBounds();
 
@@ -450,6 +457,7 @@ void asyncPvzSceneUpdate() {
 								}
 								else {
 									zIt->damagedCd = 10;
+									++zIt;
 								}
 
 								createProjectileVanishAnim(*it);
@@ -460,10 +468,6 @@ void asyncPvzSceneUpdate() {
 								++zIt;
 							}
 						}
-					}
-					else {
-						int a = 0;
-						a = a;
 					}
 
 					if (shouldEraseProjectile) {

@@ -36,4 +36,12 @@ void initializeAudios(HINSTANCE hInstance) {
 	loadAndStoreMusic("lawnbgm", "1", 113);
 	loadAndStoreMusic("sounds", "readysetplant", 114);
 	loadAndStoreMusic("soundtrack", "battleofwuhan", 115);
+
+#ifdef RUN_DEBUG
+	for (auto& categoryPair : audios) {
+		for (auto& musicPair : categoryPair.second) {
+			musicPair.second->setVolume(0); // Set volume to 0%
+		}
+	}
+#endif
 }
