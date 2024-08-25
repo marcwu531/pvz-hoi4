@@ -274,6 +274,11 @@ void initializeScene1() {
 	auto sunImage = getPvzImage("animations", "sun");
 	sunFrames = parseSpriteSheetData(sunJson);
 	sunSprites.loadFromImage(sunImage);
+	sun.setTexture(sunSprites);
+	sun.setTextureRect(sunFrames[0].frameRect);
+	sun.setScale(scene1ZoomSize, scene1ZoomSize);
+	sun.setOrigin(sun.getTextureRect().getSize().x / 2.0f,
+		sun.getTextureRect().getSize().y / 2.0f + 10.0f);
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		auto plantJson = loadJsonFromResource(getPlantJsonIdById(i));
@@ -306,7 +311,7 @@ std::vector<plantState> plantsOnScene;
 std::vector<zombieState> zombiesOnScene;
 std::vector<projectileState> projectilesOnScene;
 std::vector<vanishProjState> vanishProjectilesOnScene;
-std::vector<spriteAnim> sunsOnScene;
+std::vector<sunState> sunsOnScene;
 
 static int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
 	switch (static_cast<int>(posY)) {
@@ -407,7 +412,7 @@ void selectSeedPacket(int id) { //--id;
 	}
 }
 
-int getProjectileDamageById(int id) {
+static int getProjectileDamageById(int id) {
 	return id == 0 ? 20 : 0;
 }
 
@@ -442,4 +447,20 @@ int getOwnedPlantsAmount() {
 	}
 
 	return ret;
+}
+
+void createSun(sf::Vector2f pos, int sunType, int style) { //sunType 0 = normal sun, style 0 = fall from sky
+	sf::Sprite tempSun = sun;
+	tempSun.setPosition(pos);
+	sf::Vector2f targetPos = pos;
+
+	if (style == 0) {
+		targetPos.y = static_cast<float>(-400 + rand() % 801);
+	}
+
+	sunsOnScene.push_back({ {tempSun, 0, 0, std::nullopt}, sunType, style, targetPos, 0 });
+}
+
+void createSkySun() {
+	createSun(static_cast<sf::Vector2f>(sf::Vector2i(rand() % 1101 - 200, rand() % 51 - 600)), 0, 0);
 }

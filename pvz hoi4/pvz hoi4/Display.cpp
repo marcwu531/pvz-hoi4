@@ -70,6 +70,7 @@ sf::Sprite sunflowerIdle;
 std::unordered_map<int, SpriteFrame> sunflowerIdleFrames;
 std::unordered_map<int, SpriteFrame> sunFrames;
 sf::Texture sunSprites;
+sf::Sprite sun;
 
 sf::Texture texture_blink;
 

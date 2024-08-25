@@ -1,9 +1,4 @@
-﻿  Async.cpp
-  Audio.cpp
-  Display.cpp
-  Json.cpp
-  Scene1.cpp
-  main.cpp
+﻿  Scene1.cpp
   Generating code
   Finished generating code
   pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Release\pvz hoi4.exe

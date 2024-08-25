@@ -58,6 +58,7 @@ extern sf::Sprite sunflowerIdle;
 extern std::unordered_map<int, SpriteFrame> sunflowerIdleFrames;
 extern std::unordered_map<int, SpriteFrame> sunFrames;
 extern sf::Texture sunSprites;
+extern sf::Sprite sun;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea);

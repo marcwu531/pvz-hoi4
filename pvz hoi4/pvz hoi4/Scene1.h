@@ -41,11 +41,18 @@ struct vanishProjState {
     projectileState proj;
     int frame;
 };
+struct sunState {
+    spriteAnim anim;
+    int type;
+    int style;
+    sf::Vector2f targetPos;
+    int existTime;
+};
 extern std::vector<plantState> plantsOnScene;
 extern std::vector<zombieState> zombiesOnScene;
 extern std::vector<projectileState> projectilesOnScene;
 extern std::vector<vanishProjState> vanishProjectilesOnScene;
-extern std::vector<spriteAnim> sunsOnScene;
+extern std::vector<sunState> sunsOnScene;
 void createPlant(std::optional<sf::Vector2f> pos, int id);
 void createZombie(sf::Vector2f pos);
 extern bool canPlant(sf::Vector2f pos);
@@ -71,4 +78,6 @@ bool plantExist(int id);
 int getOwnedPlantsAmount();
 extern int maxPlantSelectAmount;
 extern bool selectingSeedPacket;
+void createSun(sf::Vector2f pos, int sunType, int style);
+void createSkySun();
 #endif

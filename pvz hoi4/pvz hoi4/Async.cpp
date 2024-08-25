@@ -182,6 +182,7 @@ void asyncPvzSceneUpdate() {
 	}
 
 	int zombieSpawnTimer = 0;
+	int sunSpawnTimer = 0;
 
 	const auto frameTime = std::chrono::milliseconds(1000 / fps);
 	auto nextTime = std::chrono::high_resolution_clock::now() + frameTime;
@@ -314,6 +315,13 @@ void asyncPvzSceneUpdate() {
 					}
 				}
 
+				if (--sunSpawnTimer <= 0) {
+					sunSpawnTimer = 2000 + rand() % 300;
+
+					std::lock_guard<std::mutex> lock(sunsMutex);
+					createSkySun();
+				}
+
 				if (pvzPacketOnSelected) { //getPlantSpriteById(seedPacketSelectedId)
 					sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 					idlePlants[idlePlantToString[seedPacketSelectedId]].setPosition(mousePos + sf::Vector2f(0.0f, 36.0f));
@@ -439,51 +447,63 @@ void asyncPvzSceneUpdate() {
 					}
 				}
 
-				std::lock_guard<std::mutex> lock(projsMutex);
-				auto it = projectilesOnScene.begin();
-				while (it != projectilesOnScene.end()) {
-					it->sprite.move(15.0f, 0.0f);
+				{
+					std::lock_guard<std::mutex> lock(projsMutex);
+					auto it = projectilesOnScene.begin();
+					while (it != projectilesOnScene.end()) {
+						it->sprite.move(15.0f, 0.0f);
 
-					bool shouldEraseProjectile = it->sprite.getPosition().x > 1500;
+						bool shouldEraseProjectile = it->sprite.getPosition().x > 1500;
 
-					if (!shouldEraseProjectile) {
-						std::lock_guard<std::mutex> lock(zombiesMutex);
-						auto zIt = zombiesOnScene.begin();
-						while (zIt != zombiesOnScene.end()) {
-							if (!zIt->anim.sprite.getTexture()) {
-								std::cout << "Invalid zombie sprite texture detected!" << std::endl;
-								++zIt;
-								continue;
-							}
+						if (!shouldEraseProjectile) {
+							std::lock_guard<std::mutex> lock(zombiesMutex);
+							auto zIt = zombiesOnScene.begin();
+							while (zIt != zombiesOnScene.end()) {
+								if (!zIt->anim.sprite.getTexture()) {
+									std::cout << "Invalid zombie sprite texture detected!" << std::endl;
+									++zIt;
+									continue;
+								}
 
-							sf::FloatRect projectileBounds = it->sprite.getGlobalBounds();
-							sf::FloatRect zombieBounds = zIt->anim.sprite.getGlobalBounds();
+								sf::FloatRect projectileBounds = it->sprite.getGlobalBounds();
+								sf::FloatRect zombieBounds = zIt->anim.sprite.getGlobalBounds();
 
-							if (projectileBounds.intersects(zombieBounds) && it->row == zIt->anim.row) {
-								if (damageZombie(*it, *zIt)) {
-									zIt = zombiesOnScene.erase(zIt);
+								if (projectileBounds.intersects(zombieBounds) && it->row == zIt->anim.row) {
+									if (damageZombie(*it, *zIt)) {
+										zIt = zombiesOnScene.erase(zIt);
+									}
+									else {
+										zIt->damagedCd = 10;
+										++zIt;
+									}
+
+									std::lock_guard<std::mutex> lock(vanishProjsMutex);
+									createProjectileVanishAnim(*it);
+									shouldEraseProjectile = true;
+									break;
 								}
 								else {
-									zIt->damagedCd = 10;
 									++zIt;
 								}
-
-								std::lock_guard<std::mutex> lock(vanishProjsMutex);
-								createProjectileVanishAnim(*it);
-								shouldEraseProjectile = true;
-								break;
-							}
-							else {
-								++zIt;
 							}
 						}
-					}
 
-					if (shouldEraseProjectile) {
-						it = projectilesOnScene.erase(it);
+						if (shouldEraseProjectile) {
+							it = projectilesOnScene.erase(it);
+						}
+						else {
+							++it;
+						}
 					}
-					else {
-						++it;
+				}
+
+				std::lock_guard<std::mutex> lock(sunsMutex);
+				for (auto& sun : sunsOnScene) {
+					if (sun.style == 0 && sun.anim.sprite.getPosition() != sun.targetPos) {
+						sun.anim.sprite.move(0.0f, 1.0f);
+
+						if (sun.anim.sprite.getPosition().y > sun.targetPos.y)
+							sun.anim.sprite.setPosition(sun.targetPos);
 					}
 				}
 				break;

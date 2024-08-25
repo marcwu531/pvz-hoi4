@@ -267,8 +267,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 				//std::cout << "Mouse position (pixels): (" << pixelPos.x << ", " << pixelPos.y << ")" 
 					//<< std::endl;
-				//std::cout << "Mouse position (coords): (" << mousePos.x << ", " << mousePos.y << ")" 
-					//<< std::endl;
+				std::cout << "Mouse position (coords): (" << mousePos.x << ", " << mousePos.y << ")" 
+					<< std::endl;
 
 				if (pvzScene == 0 && !selectingSeedPacket) {
 					for (int i = 0; i < maxPlantAmount; ++i) {
@@ -489,16 +489,23 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 			}
 
-			std::lock_guard<std::mutex> lock(vanishProjsMutex);
-			for (auto it = vanishProjectilesOnScene.begin(); it != vanishProjectilesOnScene.end();) {
-				if (++it->frame >= 13) {
-					it = vanishProjectilesOnScene.erase(it);
+			{
+				std::lock_guard<std::mutex> lock(vanishProjsMutex);
+				for (auto it = vanishProjectilesOnScene.begin(); it != vanishProjectilesOnScene.end();) {
+					if (++it->frame >= 13) {
+						it = vanishProjectilesOnScene.erase(it);
+					}
+					else {
+						it->proj.sprite.setTextureRect(peaSplatsFrames[std::min(it->frame, 3)].frameRect);
+						window.draw(it->proj.sprite);
+						++it;
+					}
 				}
-				else {
-					it->proj.sprite.setTextureRect(peaSplatsFrames[std::min(it->frame, 3)].frameRect);
-					window.draw(it->proj.sprite);
-					++it;
-				}
+			}
+
+			std::lock_guard<std::mutex> lock(sunsMutex);
+			for (auto& sun : sunsOnScene) {
+				window.draw(sun.anim.sprite);
 			}
 			break;
 		}
@@ -516,4 +523,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.36
+//Version 1.0.37
