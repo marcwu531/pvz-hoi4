@@ -17,7 +17,8 @@ void asyncPvzSceneUpdate();
 extern std::thread thread_asyncBlinkMap;
 extern std::thread thread_asyncLoadFlag;
 extern std::thread thread_asyncLoadLevelStart;
-extern std::thread thread_asyncPacketMove;
+extern std::thread thread_asyncPvzSceneUpdate;
 void stopAllThreads();
 extern bool pvzPacketOnSelected;
+extern std::mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex;
 #endif

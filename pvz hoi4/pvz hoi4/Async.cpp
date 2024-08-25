@@ -2,11 +2,13 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <mutex>
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <thread>
 #include <windows.h>
 
+#include "Async.h"
 #include "Audio.h"
 #include "Colour.h"
 #include "Display.h"
@@ -25,7 +27,9 @@ int fps = 60, scene = 0;
 
 sf::Vector2i blinkCoords(0, 0);
 
-inline void updateImage(sf::Image& image, const sf::IntRect& cropArea, sf::Texture& texture) {
+std::mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex;
+
+inline static void updateImage(sf::Image& image, const sf::IntRect& cropArea, sf::Texture& texture) {
 	if (texture.getSize().x != static_cast<unsigned int>(cropArea.width) ||
 		texture.getSize().y != static_cast<unsigned int>(cropArea.height)) {
 		texture.create(cropArea.width, cropArea.height);
@@ -115,39 +119,28 @@ void asyncLoadLevelStart() {
 bool pvzPacketOnSelected = false;
 float animSpeed = 3.5f;
 
-inline const std::unordered_map<int, SpriteFrame> getZombieAnimFrameFromId(int id) {
-	switch (id) {
-	default:
-	case 0: return zombieIdleFrames;
-	case 1: return zombieIdle1Frames;
-	case 2: return zombieWalkFrames;
-	case 3: return zombieEatFrames;
-	}
+inline static const std::unordered_map<int, SpriteFrame> getZombieAnimFrameFromId(int id) {
+	static std::unordered_map<int, SpriteFrame> frames[] = 
+	{ zombieIdleFrames, zombieIdle1Frames, zombieWalkFrames, zombieEatFrames };
+	return frames[id];
 }
 
-inline int getZombieMaxAnimFramesById(int id) {
-	switch (id) {
-	case 1: return 13;
-	case 2: return 45;
-	case 3: return 38;
-	default: return 27;
-	}
+inline static int getZombieMaxAnimFramesById(int id) {
+	static int maxF[] = { 27, 13, 45, 38 };
+	return maxF[id];
 }
 
-inline sf::Texture& getZombieTextureById(int id) {
-	switch (id) {
-	case 1: return zombieIdle1Sprites;
-	case 2: return zombieWalkSprites;
-	case 3: return zombieEatSprites;
-	default: return zombieIdleSprites;
-	}
+inline static sf::Texture& getZombieTextureById(int id) {
+	static sf::Texture texture[] = 
+	{ zombieIdleSprites, zombieIdle1Sprites, zombieWalkSprites, zombieEatSprites };
+	return texture[id];
 }
 
-inline float getAnimRatioById(int id) {
+inline static float getAnimRatioById(int id) {
 	return id == 3 ? 1.0f : 1.125f;
 }
 
-void updateZombieAnim() {
+static void updateZombieAnim() {
 	for (auto& zombie : zombiesOnScene) {
 		auto& sprite = zombie.anim.sprite;
 		++zombie.anim.frameId;
@@ -180,9 +173,12 @@ void asyncPvzSceneUpdate() {
 
 	std::sort(yCoords.begin(), yCoords.end());
 
-	for (const auto& y : yCoords) {
-		float x = static_cast<float>(775 + (30 + rand() % 11) * (rand() % 11));
-		createZombie(sf::Vector2f(x, y));
+	{
+		std::lock_guard<std::mutex> lock(zombiesMutex);
+		for (const auto& y : yCoords) {
+			float x = static_cast<float>(775 + (30 + rand() % 11) * (rand() % 11));
+			createZombie(sf::Vector2f(x, y));
+		}
 	}
 
 	int zombieSpawnTimer = 0;
@@ -241,6 +237,7 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (!zombiesOnScene.empty()) {
+					std::lock_guard<std::mutex> lock(zombiesMutex);
 					updateZombieAnim();
 				}
 				break;
@@ -261,7 +258,7 @@ void asyncPvzSceneUpdate() {
 				}
 
 				elapsedTimeTotal += frameTime.count();
-				float t = elapsedTimeTotal / duration;
+				float t = elapsedTimeTotal / duration; //1500ms
 				//if (t > 2.0f) t = 2.0f;
 
 				float easedT = easeInOutQuad(t) * static_cast<float>(frameTime.count());
@@ -271,6 +268,7 @@ void asyncPvzSceneUpdate() {
 				background.move(0.9f * easedT, 0.0f);
 
 				if (!zombiesOnScene.empty()) {
+					std::lock_guard<std::mutex> lock(zombiesMutex);
 					updateZombieAnim();
 					for (auto& zombie : zombiesOnScene) {
 						zombie.anim.sprite.move(0.9f * easedT, 0.0f);
@@ -309,6 +307,8 @@ void asyncPvzSceneUpdate() {
 
 				if (--zombieSpawnTimer <= 0) {
 					zombieSpawnTimer = 1000 + rand() % 500;
+
+					std::lock_guard<std::mutex> lock(zombiesMutex);
 					for (int i = 0; i < 3 + rand() % 5; i++) {
 						createRandomZombie();
 					}
@@ -321,6 +321,7 @@ void asyncPvzSceneUpdate() {
 					hoverShade.setPosition(hoverPlant.getPosition());
 				}
 				if (!zombiesOnScene.empty()) {
+					std::lock_guard<std::mutex> lock(zombiesMutex);
 					updateZombieAnim();
 
 					std::vector<std::size_t> tempRemoveZombies;
@@ -385,6 +386,8 @@ void asyncPvzSceneUpdate() {
 					}
 				}
 				if (!plantsOnScene.empty()) {
+					std::lock_guard<std::mutex> lock(plantsMutex);
+
 					for (auto& plant : plantsOnScene) {
 						if (plant.damagedCd > 0) {
 							--plant.damagedCd;
@@ -400,6 +403,8 @@ void asyncPvzSceneUpdate() {
 						case 0:
 							if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
 								plant.attack = false;
+
+								std::lock_guard<std::mutex> lock(zombiesMutex);
 								for (auto& zombie : zombiesOnScene) {
 									sf::FloatRect zb = zombie.anim.sprite.getGlobalBounds();
 									sf::FloatRect pb = plant.anim.sprite.getGlobalBounds();
@@ -433,13 +438,16 @@ void asyncPvzSceneUpdate() {
 							sprite.getTextureRect().getSize().y - 36.0f); //fix for 2nd plant
 					}
 				}
+
+				std::lock_guard<std::mutex> lock(projsMutex);
 				auto it = projectilesOnScene.begin();
 				while (it != projectilesOnScene.end()) {
-					it->sprite.move(10.0f, 0.0f);
+					it->sprite.move(15.0f, 0.0f);
 
 					bool shouldEraseProjectile = it->sprite.getPosition().x > 1500;
 
 					if (!shouldEraseProjectile) {
+						std::lock_guard<std::mutex> lock(zombiesMutex);
 						auto zIt = zombiesOnScene.begin();
 						while (zIt != zombiesOnScene.end()) {
 							if (!zIt->anim.sprite.getTexture()) {
@@ -460,6 +468,7 @@ void asyncPvzSceneUpdate() {
 									++zIt;
 								}
 
+								std::lock_guard<std::mutex> lock(vanishProjsMutex);
 								createProjectileVanishAnim(*it);
 								shouldEraseProjectile = true;
 								break;
@@ -480,21 +489,22 @@ void asyncPvzSceneUpdate() {
 				break;
 			}
 		}
-		const auto frameTime = std::chrono::milliseconds(1000 / fps);
-		auto nextTime = std::chrono::high_resolution_clock::now() + frameTime;
+
+		std::this_thread::sleep_until(nextTime);
+		nextTime = std::chrono::high_resolution_clock::now() + frameTime;
 	}
 }
 
 std::thread thread_asyncBlinkMap;
 std::thread thread_asyncLoadFlag;
 std::thread thread_asyncLoadLevelStart;
-std::thread thread_asyncPacketMove;
+std::thread thread_asyncPvzSceneUpdate;
 
 void stopAllThreads() {
 	running.store(false);
 	if (thread_asyncBlinkMap.joinable()) thread_asyncBlinkMap.join();
 	if (thread_asyncLoadFlag.joinable()) thread_asyncLoadFlag.join();
 	if (thread_asyncLoadLevelStart.joinable()) thread_asyncLoadLevelStart.join();
-	if (thread_asyncPacketMove.joinable()) thread_asyncPacketMove.join();
+	if (thread_asyncPvzSceneUpdate.joinable()) thread_asyncPvzSceneUpdate.join();
 	running.store(true);
 }

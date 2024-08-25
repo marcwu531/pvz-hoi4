@@ -1,9 +1,9 @@
 #include <iostream>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <queue>
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
-
 #include <thread>
 #include <windows.h>
 
@@ -30,7 +30,7 @@ static void AttachConsole() {
 	freopen_s(&consoleOutput, "CONOUT$", "w", stdout);
 }
 
-std::string WideStringToString(const std::wstring& wideStr) {
+static std::string WideStringToString(const std::wstring& wideStr) {
 	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), (int)wideStr.length(),
 		NULL, 0, NULL, NULL);
 	std::string narrowStr(size_needed, 0);
@@ -39,7 +39,7 @@ std::string WideStringToString(const std::wstring& wideStr) {
 	return narrowStr;
 }
 
-void DisplayLastError() {
+static void DisplayLastError() {
 	DWORD error = GetLastError();
 	if (error != 0) {
 		LPWSTR msgBuffer = nullptr;
@@ -66,7 +66,7 @@ void DisplayLastError() {
 	}
 }
 
-extern "C" void handle_aborts(int signal_number) {
+extern "C" static void handle_aborts(int signal_number) {
 	std::cout << "Caught signal " << signal_number << " (SIGABRT)." << std::endl;
 	DisplayLastError();
 	std::abort();
@@ -74,7 +74,7 @@ extern "C" void handle_aborts(int signal_number) {
 #endif
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine,
-	_In_ int nCmdShow) { //int main() {   
+	_In_ int nCmdShow) { //int main() {
 #ifdef RUN_DEBUG
 	AttachConsole();
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -127,26 +127,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	sf::Shader brightness_shader;
 	std::vector<char> brightness_shader_data = loadResourceData(nullHInstance, 129);
-	if (brightness_shader_data.empty()) {
-		std::cout << "Shader data is empty" << std::endl;
-		return -1;
-	}
 	std::string brightness_shader_str(brightness_shader_data.begin(), brightness_shader_data.end());
-	if (!brightness_shader.loadFromMemory(brightness_shader_str, sf::Shader::Fragment)) {
-		std::cout << "Failed to load brightness shader from memory" << std::endl;
-		return -1;
-	}
-	else {
-		std::cout << "Brightness shader loaded successfully" << std::endl;
-	}
-	if (brightness_shader.isAvailable()) {
-		brightness_shader.setUniform("texture", sf::Shader::CurrentTexture);
-		brightness_shader.setUniform("brightness", 1.75f);
-		std::cout << "Shader uniforms set successfully" << std::endl;
-	}
-	else {
-		std::cout << "Shader is not available" << std::endl;
-	}
+	brightness_shader.loadFromMemory(brightness_shader_str, sf::Shader::Fragment);
+	brightness_shader.setUniform("texture", sf::Shader::CurrentTexture);
+	brightness_shader.setUniform("brightness", 1.75f);
 
 	while (window.isOpen())
 	{
@@ -214,7 +198,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		}
 
 		switch (scene) {
-		default:
 		case 0: {
 			if (audios["soundtrack"]["battleofwuhan"]->getStatus() != sf::Music::Playing)
 				audios["soundtrack"]["battleofwuhan"]->play();
@@ -287,9 +270,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				//std::cout << "Mouse position (coords): (" << mousePos.x << ", " << mousePos.y << ")" 
 					//<< std::endl;
 
-				if (pvzScene == 0) {
+				if (pvzScene == 0 && !selectingSeedPacket) {
 					for (int i = 0; i < maxPlantAmount; ++i) {
 						if (seedPackets[seedPacketIdToString(i)].getGlobalBounds().contains(mousePos)) {
+							selectingSeedPacket = true;
 							switch (static_cast<int>(seedPacketState[i][0])) {
 							case 0: //select place
 								if (seedPacketSelected < std::min(maxPlantSelectAmount,
@@ -314,8 +298,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								seedPacketState[i][0] = 3;
 								break;
 							}
-							default:
-								break;
+							//default:
+								//break;
 								//case 1: //moving
 									//seedPacketState[i][1]++; //put in async loop thread
 							}
@@ -412,39 +396,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			window.setView(view_background);
 			window.draw(background);
 
-			if (!zombiesOnScene.empty()) {
-				std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
-
-				for (auto& zombie : zombiesOnScene) {
-					if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row) < tempZombies.size())
-						tempZombies[zombie.anim.row].push_back(zombie);
-				}
-
-				zombiesOnScene.clear();
-				for (auto& tmpZ : tempZombies) {
-					zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
-				}
-
-				/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
-					[](const zombieState& a, const zombieState& b) {
-					return a.anim.row < b.anim.row;
-				});*/
-
-				for (const auto& zombie : zombiesOnScene) {
-					if (zombie.anim.sprite.getTexture() == nullptr) {
-						std::cout << "Sprite texture is invalid!" << std::endl;
-						continue; // Skip drawing this sprite
-					}
-
-					if (zombie.damagedCd > 0) {
-						window.draw(zombie.anim.sprite/*, &brightness_shader*/);
-					}
-					else {
-						window.draw(zombie.anim.sprite);
-					}
-				}
-			}
-
 			if (pvzScene == 0 || pvzScene == 1) {
 				window.draw(seedChooser_background);
 				window.draw(seedChooserButton);
@@ -487,9 +438,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 
 				if (!plantsOnScene.empty()) {
+					std::lock_guard<std::mutex> lock(plantsMutex);
+
 					for (const auto& plant : plantsOnScene) {
 						if (plant.damagedCd > 0) {
-							window.draw(plant.anim.sprite/*, &brightness_shader*/);
+							window.draw(plant.anim.sprite, &brightness_shader);
 						}
 						else {
 							window.draw(plant.anim.sprite);
@@ -497,23 +450,54 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
+				std::lock_guard<std::mutex> lock(projsMutex);
 				if (!projectilesOnScene.empty()) {
 					for (const auto& projectile : projectilesOnScene) {
-						if (projectile.sprite.getTexture() != nullptr) {
-							window.draw(projectile.sprite);
-						}
+						window.draw(projectile.sprite);
 					}
 				}
+			}
 
-				for (auto it = vanishProjectilesOnScene.begin(); it != vanishProjectilesOnScene.end();) {
-					if (++it->frame >= 13) {
-						it = vanishProjectilesOnScene.erase(it);
+			if (!zombiesOnScene.empty()) {
+				std::lock_guard<std::mutex> lock(zombiesMutex);
+
+				std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
+
+				for (auto& zombie : zombiesOnScene) {
+					if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row.value()) 
+						< tempZombies.size())
+						tempZombies[zombie.anim.row.value()].push_back(zombie);
+				}
+
+				zombiesOnScene.clear();
+				for (auto& tmpZ : tempZombies) {
+					zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
+				}
+
+				/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
+					[](const zombieState& a, const zombieState& b) {
+					return a.anim.row < b.anim.row;
+				});*/
+
+				for (const auto& zombie : zombiesOnScene) {
+					if (zombie.damagedCd > 0) {
+						window.draw(zombie.anim.sprite, &brightness_shader);
 					}
 					else {
-						it->proj.sprite.setTextureRect(peaSplatsFrames[std::min(it->frame, 3)].frameRect);
-						window.draw(it->proj.sprite);
-						++it;
+						window.draw(zombie.anim.sprite);
 					}
+				}
+			}
+
+			std::lock_guard<std::mutex> lock(vanishProjsMutex);
+			for (auto it = vanishProjectilesOnScene.begin(); it != vanishProjectilesOnScene.end();) {
+				if (++it->frame >= 13) {
+					it = vanishProjectilesOnScene.erase(it);
+				}
+				else {
+					it->proj.sprite.setTextureRect(peaSplatsFrames[std::min(it->frame, 3)].frameRect);
+					window.draw(it->proj.sprite);
+					++it;
 				}
 			}
 			break;
@@ -532,4 +516,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.35
+//Version 1.0.36

@@ -3,4 +3,5 @@
 
 extern std::unordered_map<std::string, std::unordered_map<std::string, sf::Music*>> audios;
 void initializeAudios(HINSTANCE hInstance);
+void cleanupAudios();
 #endif

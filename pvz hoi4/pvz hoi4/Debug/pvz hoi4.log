@@ -1,5 +1,12 @@
-﻿  Display.cpp
+﻿  Async.cpp
+  Audio.cpp
+  Colour.cpp
+  Display.cpp
+  General.cpp
+  Json.cpp
   main.cpp
-D:\c++\pvz hoi4\pvz hoi4\main.cpp(419,50): warning C4018: '<': signed/unsigned mismatch
+  Scene1.cpp
+  State.cpp
+  Window.cpp
   Generating Code...
   pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Debug\pvz hoi4.exe

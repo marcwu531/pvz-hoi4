@@ -1,12 +1,8 @@
 ﻿  Async.cpp
   Audio.cpp
-  Colour.cpp
   Display.cpp
-  General.cpp
   Json.cpp
   Scene1.cpp
-  State.cpp
-  Window.cpp
   main.cpp
   Generating code
   Finished generating code

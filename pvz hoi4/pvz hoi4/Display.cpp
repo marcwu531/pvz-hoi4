@@ -3,6 +3,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <queue>
 #include <SFML/Audio.hpp>
@@ -67,6 +68,8 @@ sf::Texture zombieEatSprites;
 sf::Texture sunflowerIdleSprites;
 sf::Sprite sunflowerIdle;
 std::unordered_map<int, SpriteFrame> sunflowerIdleFrames;
+std::unordered_map<int, SpriteFrame> sunFrames;
+sf::Texture sunSprites;
 
 sf::Texture texture_blink;
 
@@ -154,7 +157,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"peaSplats", loadImageFromResource(nullHInstance, 133)},
 		{"zombieEat", loadImageFromResource(nullHInstance, 133)},
 		{"peashooterIdle", loadImageFromResource(nullHInstance, 133)},
-		{"sunflowerIdle", loadImageFromResource(nullHInstance, 133)}
+		{"sunflowerIdle", loadImageFromResource(nullHInstance, 133)},
+		{"sun", loadImageFromResource(nullHInstance, 133)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 133)}
@@ -186,7 +190,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"peaSplats", loadImageFromResource(nullHInstance, 128)},
 		{"zombieEat", loadImageFromResource(nullHInstance, 131)},
 		{"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
-		{"sunflowerIdle", loadImageFromResource(nullHInstance, 135)}
+		{"sunflowerIdle", loadImageFromResource(nullHInstance, 135)},
+		{"sun", loadImageFromResource(nullHInstance, 137)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 122)}
@@ -249,8 +254,10 @@ void changeScene(int targetScene) {
 	if (scene == 0) {
 		if (audios["soundtrack"]["battleofwuhan"]->getStatus() == sf::Music::Playing)
 			audios["soundtrack"]["battleofwuhan"]->stop();
-		thread_asyncPacketMove = std::thread(asyncPvzSceneUpdate);
+		thread_asyncPvzSceneUpdate = std::thread(asyncPvzSceneUpdate);
 	}
 
 	scene = targetScene;
+
+	if (targetScene == -1) cleanupAudios();
 }

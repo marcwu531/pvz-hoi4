@@ -17,7 +17,7 @@ struct spriteAnim {
     sf::Sprite sprite;
     int animId;
     int frameId;
-    int row;
+    std::optional<int> row;
 };
 struct plantState {
     spriteAnim anim;
@@ -45,6 +45,7 @@ extern std::vector<plantState> plantsOnScene;
 extern std::vector<zombieState> zombiesOnScene;
 extern std::vector<projectileState> projectilesOnScene;
 extern std::vector<vanishProjState> vanishProjectilesOnScene;
+extern std::vector<spriteAnim> sunsOnScene;
 void createPlant(std::optional<sf::Vector2f> pos, int id);
 void createZombie(sf::Vector2f pos);
 extern bool canPlant(sf::Vector2f pos);
@@ -69,4 +70,5 @@ extern std::unordered_map<int, int> plantsLevel;
 bool plantExist(int id);
 int getOwnedPlantsAmount();
 extern int maxPlantSelectAmount;
+extern bool selectingSeedPacket;
 #endif

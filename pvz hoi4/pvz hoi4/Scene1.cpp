@@ -1,4 +1,5 @@
 #include <iostream>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <SFML/Graphics.hpp>
 #include <thread>
@@ -13,6 +14,7 @@ int pvzScene = 0;
 int pvzSun = 150;
 int seedPacketSelected = 0;
 int maxPlantSelectAmount = 2;
+bool selectingSeedPacket = false;
 
 std::array<std::string, maxPlantAmount> idlePlantToString = { "peashooter", "sunflower" };
 std::string seedPacketIdToString(int id) {
@@ -32,14 +34,14 @@ std::vector<std::unordered_map<int, float>> seedPacketState(maxPlantAmount); //s
 int seedPacketSelectedId;
 
 void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elapsedTime) {
-	if (elapsedTime <= 0) return;
+	//if (elapsedTime <= 0) return; //100ms to run and finish
 
 	auto& state = seedPacketState[i];
 	if (state[1] == 0 && state[0] != 4) {
 		seedPacketSelected += 2 - static_cast<int>(state[0]);
 	}
 
-	state[1] += elapsedTime;
+	state[1] += elapsedTime * 2;
 
 	float distanceMoved = state[1] / 5.0f;
 	auto packetIterator = seedPackets.find(seedPacketIdToString(i));
@@ -62,6 +64,7 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
 			newPosition = targetPosition;
 			state[0] = (state[0] == 1.0f || state[0] == 4.0f) ? 2.0f : 0.0f;
 			state[1] = 0.0f;
+			selectingSeedPacket = false;
 		}
 
 		packetIterator->second.setPosition(newPosition);
@@ -98,7 +101,7 @@ float easeInOutQuad(float t, float easeRatio, float easeAccMax) {
 	return std::min(1.5f, t * 2.0f * easeRatio);
 }
 
-void hideTempPlants() {
+static void hideTempPlants() {
 	const sf::Vector2f offscreenPosition(10000.f, 10000.f);
 
 	hoverPlant.setPosition(offscreenPosition);
@@ -267,6 +270,11 @@ void initializeScene1() {
 	peashooterShootFrames = parseSpriteSheetData(peashooterShootJson);
 	peashooterShootSprites.loadFromImage(peashooterShootImage);
 
+	auto sunJson = loadJsonFromResource(136);
+	auto sunImage = getPvzImage("animations", "sun");
+	sunFrames = parseSpriteSheetData(sunJson);
+	sunSprites.loadFromImage(sunImage);
+
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		auto plantJson = loadJsonFromResource(getPlantJsonIdById(i));
 		auto plantIdleImage = getPvzImage("animations", idlePlantToString[i] + "Idle");
@@ -298,8 +306,9 @@ std::vector<plantState> plantsOnScene;
 std::vector<zombieState> zombiesOnScene;
 std::vector<projectileState> projectilesOnScene;
 std::vector<vanishProjState> vanishProjectilesOnScene;
+std::vector<spriteAnim> sunsOnScene;
 
-int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
+static int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
 	switch (static_cast<int>(posY)) {
 	case -310:
 	default:

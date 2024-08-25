@@ -1,6 +1,8 @@
 #include <array>
 #include <SFML/Graphics.hpp>
 
+#include "Colour.h"
+
 //int alpha = 254;
 //int ra = 1;
 
