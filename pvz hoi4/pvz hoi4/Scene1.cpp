@@ -7,13 +7,14 @@
 
 #include "Async.h"
 #include "Display.h"
+#include "General.h"
 #include "Json.h"
 #include "Scene1.h"
 
 int pvzScene = 0;
 int pvzSun = 150;
 int seedPacketSelected = 0;
-int maxPlantSelectAmount = 2;
+int maxPlantSelectAmount = 1;
 bool selectingSeedPacket = false;
 
 std::array<std::string, maxPlantAmount> idlePlantToString = { "peashooter", "sunflower" };
@@ -144,13 +145,20 @@ int getPlantMaxFrameById(int id) {
 	return maxFrames;
 }
 
-void initPlantsStatus() {
+void unlockPlant(int id) {
+	if (account.plantsLevel[id] == 0) {
+		account.plantsLevel[id] = 1;
+		++maxPlantSelectAmount;
+	}
+}
+
+static void initPlantsStatus() {
 	for (int i = 0; i < maxPlantAmount; ++i) {
-		plantsLevel[i] = 0;
+		account.plantsLevel[i] = 0;
 	}
 
-	plantsLevel[0] = 1;
-	plantsLevel[1] = 1; //RUN_DEBUG
+	unlockPlant(0);
+	unlockPlant(1); //RUN_DEBUG
 }
 
 float scene1ZoomSize = 1.7f;
@@ -278,7 +286,7 @@ void initializeScene1() {
 	sun.setTextureRect(sunFrames[0].frameRect);
 	sun.setScale(scene1ZoomSize, scene1ZoomSize);
 	sun.setOrigin(sun.getTextureRect().getSize().x / 2.0f,
-		sun.getTextureRect().getSize().y / 2.0f + 10.0f);
+		sun.getTextureRect().getSize().y / 2.0f);
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		auto plantJson = loadJsonFromResource(getPlantJsonIdById(i));
@@ -329,15 +337,29 @@ static int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
 	}
 }
 
-void getSunByTypeAndId(int type, int id) { //type 0: plant
+static int getSunByTypeAndId(int type, int id) { //type 0: plant
+	static int cost[] = { 100, 50 };
+	static int* costT[] = { cost };
 
+	return costT[type][id];
 }
+
+int blinkSunText = -1;
 
 void createPlant(std::optional<sf::Vector2f> pos, int id) {
 	if (canPlant(hoverPlant.getPosition())) {
 		if (id != -1 && pos.has_value()) {
-			plantsOnScene.push_back({ {hoverPlant, id, 0, getRowByY(pos.value().y)}, false, 300, 0 });
-			pvzSun -= 100;
+			if (pvzSun >= getSunByTypeAndId(0, id)) {
+				int cd = 0;
+				if (id == 1) cd = 12500 + (std::rand() % 1001);
+
+				plantsOnScene.push_back({ {hoverPlant, id, 0, getRowByY(pos.value().y)}, false, 300, 0, cd });
+				addSun(-getSunByTypeAndId(0, id));
+			}
+			else {
+				blinkSunText = 0;
+				return;
+			}
 		}
 		hideTempPlants();
 		pvzPacketOnSelected = false;
@@ -393,22 +415,48 @@ void selectSeedPacket(sf::Vector2f mousePos) {
 	}
 }
 
+static void selectSun(sunState& sun) {
+	if (sun.style != 1) {
+		sun.existTime = -1;
+		sun.style = 1;
+		sun.targetPos = sf::Vector2f(-630.0f, -455.0f);
+	}
+}
+
+bool selectSun(sf::Vector2f mousePos) {
+	std::lock_guard<std::mutex> lock(sunsMutex);
+	bool collected = false;
+
+	for (auto& sun : sunsOnScene) {
+		if (sun.anim.sprite.getGlobalBounds().contains(mousePos)) {
+			selectSun(sun);
+			collected = true;
+		}
+	}
+	return collected;
+}
+
 void selectSeedPacket(int id) { //--id;
-	auto it = seedPackets.find(seedPacketIdToString(id));
-	if (it != seedPackets.end()) {
-		//if (seedPacketState[i][0] == 2) {
-		pvzPacketOnSelected = true;
-		seedPacketSelectedId = id;
+	if (pvzSun >= getSunByTypeAndId(0, id)) {
+		auto it = seedPackets.find(seedPacketIdToString(id));
+		if (it != seedPackets.end()) {
+			//if (seedPacketState[i][0] == 2) {
+			pvzPacketOnSelected = true;
+			seedPacketSelectedId = id;
 
-		auto& plant = idlePlants[idlePlantToString[id]];
-		hoverPlant.setTexture(*plant.getTexture());
-		hoverPlant.setTextureRect(plant.getTextureRect());
-		hoverPlant.setScale(scene1ZoomSize, scene1ZoomSize);
-		hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
-			hoverPlant.getTextureRect().getSize().y / 2.0f);
+			auto& plant = idlePlants[idlePlantToString[id]];
+			hoverPlant.setTexture(*plant.getTexture());
+			hoverPlant.setTextureRect(plant.getTextureRect());
+			hoverPlant.setScale(scene1ZoomSize, scene1ZoomSize);
+			hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
+				hoverPlant.getTextureRect().getSize().y / 2.0f);
 
-		//seedPacketState[i][0] = 1;
-		overlayShade.setPosition(seedPackets.find(seedPacketIdToString(id))->second.getPosition());
+			//seedPacketState[i][0] = 1;
+			overlayShade.setPosition(seedPackets.find(seedPacketIdToString(id))->second.getPosition());
+		}
+	}
+	else {
+		blinkSunText = 0;
 	}
 }
 
@@ -433,10 +481,9 @@ bool damagePlant(plantState& plant) {
 }
 
 std::unordered_map<int, int> seedPacketsSelectedOrder;
-std::unordered_map<int, int> plantsLevel;
 
 bool plantExist(int id) {
-	return plantsLevel[id] > 0;
+	return account.plantsLevel[id] > 0;
 }
 
 int getOwnedPlantsAmount() {
@@ -449,13 +496,19 @@ int getOwnedPlantsAmount() {
 	return ret;
 }
 
-void createSun(sf::Vector2f pos, int sunType, int style) { //sunType 0 = normal sun, style 0 = fall from sky
+void createSun(sf::Vector2f pos, int sunType, int style) {
+	//sunType 0 = normal sun, style 0 = fall from sky, 1 = collecting
 	sf::Sprite tempSun = sun;
 	tempSun.setPosition(pos);
 	sf::Vector2f targetPos = pos;
 
 	if (style == 0) {
 		targetPos.y = static_cast<float>(-400 + rand() % 801);
+	}
+	else if (style == 2) {
+		targetPos.x += static_cast<float>((std::rand() % 6 + 10) * (1 - 2 * (std::rand() % 2)));
+		targetPos.y += 80.0f;
+		tempSun.setScale(0.25f, 0.25f);
 	}
 
 	sunsOnScene.push_back({ {tempSun, 0, 0, std::nullopt}, sunType, style, targetPos, 0 });
@@ -464,3 +517,25 @@ void createSun(sf::Vector2f pos, int sunType, int style) { //sunType 0 = normal 
 void createSkySun() {
 	createSun(static_cast<sf::Vector2f>(sf::Vector2i(rand() % 1101 - 200, rand() % 51 - 600)), 0, 0);
 }
+
+int getSunAmountByType(int id) {
+	static int amount[] = { 25 };
+	return amount[id];
+}
+
+int maxSun = 9900;
+void addSun(int amount) {
+	if (maxSun != -1) {
+		if (pvzSun + amount < maxSun) {
+			pvzSun += amount;
+		}
+		else {
+			pvzSun = maxSun;
+		}
+	}
+	else {
+		pvzSun += amount;
+	}
+}
+
+bool loggingIn = false;

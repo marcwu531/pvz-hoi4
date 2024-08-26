@@ -67,7 +67,7 @@ inline std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
 			 static_cast<int>(std::round(b * 255.0f)) };
 }
 
-inline void updatePixelColor(sf::Color& color, int blinkSpeed, int& lRatio, int lRatioF) {
+inline static void updatePixelColor(sf::Color& color, int blinkSpeed, int& lRatio, int lRatioF) {
 	std::array<int, 3> hsl = RGBtoHSL({ color.r, color.g, color.b });
 	hsl[2] -= blinkSpeed * lRatio;
 
@@ -124,6 +124,8 @@ std::string getRGBA(const sf::Image& texture, int imageX, int imageY) {
 		getPixelColour(texture, imageX, imageY, 'g'),
 		getPixelColour(texture, imageX, imageY, 'b') }));
 	std::cout << ArrayFloat[0] << ", " << ArrayFloat[1] << ", " << ArrayFloat[2] << std::endl;*/
+	if (imageX < 0 || static_cast<unsigned int>(imageX) >= texture.getSize().x || 
+		imageY < 0 || static_cast<unsigned int>(imageY) >= texture.getSize().y) return "-1 -1 -1 -1";
 
 	sf::Color color = texture.getPixel(imageX, imageY);
 	return std::to_string(color.r) + ' ' +

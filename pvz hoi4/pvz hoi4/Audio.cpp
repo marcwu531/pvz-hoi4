@@ -11,14 +11,12 @@ static sf::Music* loadMusicFromResource(HINSTANCE hInstance, int resourceId, siz
 	if (HRSRC resource = FindResource(hInstance, MAKEINTRESOURCE(resourceId), RT_RCDATA))
 		if (HGLOBAL resourceData = LoadResource(hInstance, resource))
 			if (resourceSize = SizeofResource(hInstance, resource))
-				if (const void* data = LockResource(resourceData)) {
-					if (!music->openFromMemory(data, resourceSize)) {
-						delete music;
-						return nullptr;
-					}
-				}
+				if (const void* data = LockResource(resourceData))
+					if (music->openFromMemory(data, resourceSize))
+						return music;
 
-	return music;
+	delete music;
+	return nullptr;
 }
 
 std::unordered_map<std::string, std::unordered_map<std::string, sf::Music*>> audios;
@@ -28,9 +26,7 @@ void initializeAudios(HINSTANCE hInstance) {
 
 	auto loadAndStoreMusic = [&](const std::string& category, const std::string& name, int resourceId) {
 		auto music = loadMusicFromResource(hInstance, resourceId, resourceSize);
-		if (music) {
-			audios[category][name] = std::move(music);
-		}
+		if (music) audios[category][name] = std::move(music);
 	};
 
 	loadAndStoreMusic("lawnbgm", "6", 112);

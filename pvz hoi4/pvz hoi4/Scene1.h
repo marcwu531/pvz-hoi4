@@ -24,6 +24,7 @@ struct plantState {
     bool attack;
     int hp;
     int damagedCd;
+    int cd;
 };
 struct projectileState {
     sf::Sprite sprite;
@@ -73,11 +74,16 @@ int getPlantMaxFrameById(int id);
 sf::Texture* getPlantAttackTextureById(int id);
 std::unordered_map<int, SpriteFrame>* getPlantAttackFrameById(int id);
 extern std::unordered_map<int, int> seedPacketsSelectedOrder;
-extern std::unordered_map<int, int> plantsLevel;
 bool plantExist(int id);
 int getOwnedPlantsAmount();
 extern int maxPlantSelectAmount;
 extern bool selectingSeedPacket;
 void createSun(sf::Vector2f pos, int sunType, int style);
 void createSkySun();
+bool selectSun(sf::Vector2f mousePos);
+int getSunAmountByType(int id);
+extern int blinkSunText;
+void addSun(int amount);
+extern int maxSun;
+extern bool loggingIn;
 #endif

@@ -23,7 +23,7 @@ std::atomic<bool> blinkMap_readyToDraw(false);
 std::atomic<bool> loadFlag_readyToDraw(false);
 std::atomic<bool> loadLevelStart_readyToDraw(false);
 
-int fps = 60, scene = 0;
+int maxSpeed = 1, fps = 60 * maxSpeed, scene = 0;
 
 sf::Vector2i blinkCoords(0, 0);
 
@@ -153,7 +153,7 @@ static void updateZombieAnim() {
 		}
 
 		sprite.setTextureRect(getZombieAnimFrameFromId(zombie.anim.animId).find(
-			static_cast<int>(std::floor(zombie.anim.frameId / animSpeed
+			static_cast<int>(std::trunc(zombie.anim.frameId / animSpeed
 				/ getAnimRatioById(zombie.anim.animId))))->second.frameRect);
 	}
 }
@@ -183,6 +183,7 @@ void asyncPvzSceneUpdate() {
 
 	int zombieSpawnTimer = 0;
 	int sunSpawnTimer = 0;
+	float sunAnimSpeed = 0.75f;
 
 	const auto frameTime = std::chrono::milliseconds(1000 / fps);
 	auto nextTime = std::chrono::high_resolution_clock::now() + frameTime;
@@ -316,11 +317,13 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (--sunSpawnTimer <= 0) {
-					sunSpawnTimer = 2000 + rand() % 300;
+					sunSpawnTimer = 100;//2000 + rand() % 300;
 
 					std::lock_guard<std::mutex> lock(sunsMutex);
 					createSkySun();
 				}
+
+				//if (pvzSun > 9900) pvzSun = 9900;
 
 				if (pvzPacketOnSelected) { //getPlantSpriteById(seedPacketSelectedId)
 					sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
@@ -403,9 +406,10 @@ void asyncPvzSceneUpdate() {
 
 						auto& sprite = plant.anim.sprite;
 						++plant.anim.frameId;
-						if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId) * animSpeed) plant.anim.frameId = 0;
+						if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId) * animSpeed) 
+							plant.anim.frameId = 0;
 
-						int frame = static_cast<int>(std::floor(plant.anim.frameId / animSpeed));
+						int frame = static_cast<int>(std::trunc(plant.anim.frameId / animSpeed));
 
 						switch (plant.anim.animId) {
 						case 0:
@@ -422,6 +426,16 @@ void asyncPvzSceneUpdate() {
 										plant.attack = true;
 										break;
 									}
+								}
+							}
+							break;
+						case 1:
+							plant.cd -= static_cast<int>(frameTime.count());
+							if (plant.cd <= 0) {
+								if (std::fabs(plant.anim.frameId - 17.0f * animSpeed) < 1.0f) {
+									plant.cd = 24000 + (std::rand() % 1001);
+									std::lock_guard<std::mutex> lock(sunsMutex);
+									createSun(plant.anim.sprite.getPosition() - sf::Vector2f(0.0f, 50.0f), 0, 2);
 								}
 							}
 							break;
@@ -497,14 +511,77 @@ void asyncPvzSceneUpdate() {
 					}
 				}
 
-				std::lock_guard<std::mutex> lock(sunsMutex);
-				for (auto& sun : sunsOnScene) {
-					if (sun.style == 0 && sun.anim.sprite.getPosition() != sun.targetPos) {
-						sun.anim.sprite.move(0.0f, 1.0f);
-
-						if (sun.anim.sprite.getPosition().y > sun.targetPos.y)
-							sun.anim.sprite.setPosition(sun.targetPos);
+				if (blinkSunText != -1) {
+					if (++blinkSunText < 5 || (blinkSunText > 10 && blinkSunText < 15)) {
+						pvzSunText.setFillColor(sf::Color(255, 0, 0));
 					}
+					else {
+						pvzSunText.setFillColor(sf::Color(0, 0, 0));
+						if (blinkSunText > 20) blinkSunText = -1;
+					}
+				}
+
+				std::lock_guard<std::mutex> lock(sunsMutex);
+				for (auto it = sunsOnScene.begin(); it != sunsOnScene.end(); ) {
+					if (++it->anim.frameId / animSpeed * sunAnimSpeed > 12)
+						it->anim.frameId = 0;
+
+					it->anim.sprite.setTextureRect(sunFrames.find(static_cast<int>(
+						std::trunc(it->anim.frameId / animSpeed * sunAnimSpeed)))->second.frameRect);
+
+					if (it->anim.sprite.getPosition() != it->targetPos) {
+						if (it->style == 0) {
+							it->anim.sprite.move(0.0f, 1.0f);
+
+							if (it->anim.sprite.getPosition().y > it->targetPos.y)
+								it->anim.sprite.setPosition(it->targetPos);
+						}
+						else if (it->style == 1 || it->style == 2) {
+							float maxSpeed = it->style == 1 ? 50.0f : 5.0f;
+
+							sf::Vector2f currentPos = it->anim.sprite.getPosition();
+							sf::Vector2f direction = it->targetPos - currentPos;
+							float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+
+							if (length != 0.0f) {
+								direction.x /= length;
+								direction.y /= length;
+							}
+
+							float speed = maxSpeed * (length / 500.0f);
+							if (speed < 2.5f) speed = 2.5f;
+
+							if (it->style == 2 && it->anim.sprite.getScale() != 
+								sf::Vector2f(scene1ZoomSize, scene1ZoomSize)) {
+								it->anim.sprite.setScale(it->anim.sprite.getScale()
+									+ sf::Vector2f(0.1f, 0.1f));
+
+								if (it->anim.sprite.getScale().x > scene1ZoomSize ||
+									it->anim.sprite.getScale().y > scene1ZoomSize) {
+									it->anim.sprite.setScale(scene1ZoomSize, scene1ZoomSize);
+								}
+							} else if (it->anim.sprite.getScale() !=
+								sf::Vector2f(scene1ZoomSize, scene1ZoomSize)) {
+								it->anim.sprite.setScale(scene1ZoomSize, scene1ZoomSize);
+							}
+
+							if (it->style == 1 || (it->anim.sprite.getScale().x > 0.75f))
+								it->anim.sprite.move(direction.x * speed, direction.y * speed);
+
+							if (std::abs(currentPos.x - it->targetPos.x) < speed &&
+								std::abs(currentPos.y - it->targetPos.y) < speed) {
+								if (it->style == 1) {
+									addSun(getSunAmountByType(it->type));
+									it = sunsOnScene.erase(it);
+									continue;
+								}
+								else {
+									it->anim.sprite.setPosition(it->targetPos);
+								}
+							}
+						}
+					}
+					++it;
 				}
 				break;
 			}
