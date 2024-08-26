@@ -144,13 +144,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	sf::Text usernameText;
 	usernameText.setFont(defaultFont);
-	usernameText.setFillColor(sf::Color::Black);
-	usernameText.setString("test");
+	usernameText.setFillColor(sf::Color(0, 0, 0, 64));
+	usernameText.setString("username");
 	//passwordText.setString(std::string(password.length(), '*'));
 
-	float pi = std::atan(1.0f) * 4.0f;
+	/*float pi = std::atan(1.0f) * 4.0f;
 	float e = std::exp(1.0f);
-	float phi = (1.0f + std::sqrt(5.0f)) / 2.0f;
+	float phi = (1.0f + std::sqrt(5.0f)) / 2.0f;*/
 
 	while (window.isOpen())
 	{
@@ -592,4 +592,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.38
+//Version 1.0.38.a
