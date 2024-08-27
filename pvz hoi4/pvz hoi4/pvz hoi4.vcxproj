@@ -172,6 +172,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Account.cpp" />
     <ClCompile Include="Async.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="Colour.cpp" />
@@ -184,6 +185,7 @@
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Account.h" />
     <ClInclude Include="Async.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="Colour.h" />

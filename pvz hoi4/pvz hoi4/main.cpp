@@ -22,6 +22,7 @@
 #include "Audio.h"
 #include "Json.h"
 #include "General.h"
+#include "Account.h"
 
 #ifdef RUN_DEBUG
 static void AttachConsole() {
@@ -148,6 +149,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	usernameText.setString("username");
 	//passwordText.setString(std::string(password.length(), '*'));
 
+	bool enteringUsername = false;
+	std::string username;
+
+	sf::RectangleShape saveUsernameButton;
+	saveUsernameButton.setFillColor(sf::Color::Green);
+
+	sf::Text saveUsernameText;
+	saveUsernameText.setFont(defaultFont);
+	saveUsernameText.setString("SAVE");
+	saveUsernameText.setFillColor(sf::Color::Black);
+
 	/*float pi = std::atan(1.0f) * 4.0f;
 	float e = std::exp(1.0f);
 	float phi = (1.0f + std::sqrt(5.0f)) / 2.0f;*/
@@ -169,6 +181,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							std::pow(1.1f, -evt.mouseWheelScroll.delta), view_world);
 						view_world = window.getView();
 						//std::cout << view.getCenter().x << " " << view.getCenter().y << std::endl;
+					}
+				}
+				else if (evt.type == sf::Event::TextEntered && enteringUsername) {
+					if (evt.text.unicode == '\b') {
+						if (usernameText.getFillColor() != sf::Color(0, 0, 0, 64)) username.pop_back();
+					}
+					else if (evt.text.unicode > 31 && evt.text.unicode < 127 &&
+						evt.text.unicode != 36 && evt.text.unicode != 94 && //$^|\ 
+						evt.text.unicode != 124 && evt.text.unicode != 92) { //127: delete
+						username += static_cast<char>(evt.text.unicode);
+					}
+
+					if (username.empty()) {
+						usernameText.setFillColor(sf::Color(0, 0, 0, 64));
+						usernameText.setString("username");
+					}
+					else {
+						usernameText.setFillColor(sf::Color(0, 0, 0, 255));
+						usernameText.setString(username);
 					}
 				}
 				[[fallthrough]];
@@ -260,6 +291,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 				if (accountButton.getGlobalBounds().contains(mousePos)) {
 					loggingIn = !loggingIn;
+
+					if (loggingIn && !account.username.empty()) {
+						username = account.username;
+						usernameText.setString(username);
+					}
 				}
 				else if (loggingIn && !loginMenu.getGlobalBounds().contains(mousePos)) {
 					loggingIn = false;
@@ -289,6 +325,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 						else if (levelStartButton.getGlobalBounds().contains(mousePos)) {
 							changeScene(1);
+						}
+					}
+					else {
+						enteringUsername = false;
+
+						if (saveUsernameButton.getGlobalBounds().contains(mousePos)) {
+							if (!username.empty()) account.username = username;
+							std::cout << encryptAccount(account, 531) << std::endl;
+						}
+						else if (usernameBox.getGlobalBounds().contains(mousePos)) {
+							enteringUsername = true;
 						}
 					}
 				}
@@ -454,9 +501,19 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				usernameText.setOrigin(usernameText.getGlobalBounds().width / 2.0f, 0.0f);
 				usernameText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 4.0f);
 
+				saveUsernameButton.setSize(sf::Vector2f(viewWorldSizeX / 8.0f, 2.0f * viewWorldSizeY / 30.0f));
+				saveUsernameButton.setPosition(viewWorldCenterX - saveUsernameButton.getSize().x / 2.0f,
+					viewWorldCenterY - viewWorldSizeY / 32.0f);
+
+				saveUsernameText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 30.0f));
+				saveUsernameText.setOrigin(saveUsernameText.getGlobalBounds().width / 2.0f, 0.0f);
+				saveUsernameText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 32.0f);
+
 				window.draw(loginMenu);
 				window.draw(usernameBox);
 				window.draw(usernameText);
+				window.draw(saveUsernameButton);
+				window.draw(saveUsernameText);
 			}
 			break;
 		}
@@ -595,4 +652,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.39
+//Version 1.0.40

@@ -174,7 +174,7 @@ void asyncPvzSceneUpdate() {
 	std::sort(yCoords.begin(), yCoords.end());
 
 	{
-		std::unique_lock<std::shared_mutex> writeLock(zombiesMutex);
+		std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
 		for (const auto& y : yCoords) {
 			float x = static_cast<float>(775 + (30 + rand() % 11) * (rand() % 11));
 			createZombie(sf::Vector2f(x, y));
@@ -239,7 +239,7 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (!zombiesOnScene.empty()) {
-					std::lock_guard<std::mutex> lock(zombiesMutex);
+					std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
 					updateZombieAnim();
 				}
 				break;
@@ -270,7 +270,7 @@ void asyncPvzSceneUpdate() {
 				background.move(0.9f * easedT, 0.0f);
 
 				if (!zombiesOnScene.empty()) {
-					std::shared_lock<std::shared_mutex> readLock(zombiesMutex);
+					std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
 					updateZombieAnim();
 					for (auto& zombie : zombiesOnScene) {
 						zombie.anim.sprite.move(0.9f * easedT, 0.0f);
@@ -296,7 +296,8 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (pvzStartScene < 2) {
-					pvzStartText.scale(1.0f + frameTime.count() / 1350.0f, 1.0f + frameTime.count() / 1350.0f);
+					pvzStartText.scale(1.0f + frameTime.count() / 1350.0f, 
+						1.0f + frameTime.count() / 1350.0f);
 				}
 				else {
 					pvzStartText.setScale(1.5f, 1.5f);
@@ -305,12 +306,13 @@ void asyncPvzSceneUpdate() {
 				break;
 			}
 			case 3:
-				if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing) audios["lawnbgm"]["1"]->play();
+				if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing) 
+					audios["lawnbgm"]["1"]->play();
 
 				if (--zombieSpawnTimer <= 0) {
 					zombieSpawnTimer = 1000 + rand() % 500;
 
-					std::unique_lock<std::shared_mutex> writeLock(zombiesMutex);
+					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
 					for (int i = 0; i < 3 + rand() % 5; i++) {
 						createRandomZombie();
 					}
@@ -319,7 +321,7 @@ void asyncPvzSceneUpdate() {
 				if (--sunSpawnTimer <= 0) {
 					sunSpawnTimer = 100;//2000 + rand() % 300;
 
-					std::unique_lock<std::shared_mutex> writeLock(sunsMutex);
+					std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
 					createSkySun();
 				}
 
@@ -327,12 +329,14 @@ void asyncPvzSceneUpdate() {
 
 				if (pvzPacketOnSelected) { //getPlantSpriteById(seedPacketSelectedId)
 					sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-					idlePlants[idlePlantToString[seedPacketSelectedId]].setPosition(mousePos + sf::Vector2f(0.0f, 36.0f));
-					hoverPlant.setPosition(roundf((mousePos.x + 70.0f) / 140.0f) * 140.0f - 70.0f, roundf((mousePos.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
+					idlePlants[idlePlantToString[seedPacketSelectedId]]
+						.setPosition(mousePos + sf::Vector2f(0.0f, 36.0f));
+					hoverPlant.setPosition(roundf((mousePos.x + 70.0f) / 140.0f) * 140.0f - 70.0f, 
+						roundf((mousePos.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
 					hoverShade.setPosition(hoverPlant.getPosition());
 				}
 				if (!zombiesOnScene.empty()) {
-					std::shared_lock<std::shared_mutex> readLock(zombiesMutex);
+					std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
 					updateZombieAnim();
 
 					std::vector<std::size_t> tempRemoveZombies;
@@ -368,6 +372,7 @@ void asyncPvzSceneUpdate() {
 										zombie.anim.frameId == std::trunc(33 * animSpeed
 											* getAnimRatioById(zombie.anim.animId)))) {
 									if (damagePlant(*zombie.targetPlant)) {
+										std::unique_lock<std::shared_mutex> plantWriteLock(plantsMutex);
 										plantsOnScene.erase(std::remove_if(plantsOnScene.begin(),
 											plantsOnScene.end(),
 											[&](const plantState& plant) {
@@ -392,15 +397,15 @@ void asyncPvzSceneUpdate() {
 						}
 					}
 
-					readLock.unlock();
-					std::unique_lock<std::shared_mutex> writeLock(zombiesMutex);
+					zombieReadLock.unlock();
+					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
 
 					for (auto it = tempRemoveZombies.rbegin(); it != tempRemoveZombies.rend(); ++it) {
 						zombiesOnScene.erase(zombiesOnScene.begin() + *it);
 					}
 				}
 				if (!plantsOnScene.empty()) {
-					std::shared_lock<std::shared_mutex> readLock(plantsMutex);
+					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
 
 					for (auto& plant : plantsOnScene) {
 						if (plant.damagedCd > 0) {
@@ -419,7 +424,7 @@ void asyncPvzSceneUpdate() {
 							if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
 								plant.attack = false;
 
-								std::shared_lock<std::shared_mutex> readLock(zombiesMutex);
+								std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
 								for (auto& zombie : zombiesOnScene) {
 									sf::FloatRect zb = zombie.anim.sprite.getGlobalBounds();
 									sf::FloatRect pb = plant.anim.sprite.getGlobalBounds();
@@ -437,8 +442,9 @@ void asyncPvzSceneUpdate() {
 							if (plant.cd <= 0) {
 								if (std::fabs(plant.anim.frameId - 17.0f * animSpeed) < 1.0f) {
 									plant.cd = 24000 + (std::rand() % 1001);
-									std::lock_guard<std::mutex> lock(sunsMutex);
-									createSun(plant.anim.sprite.getPosition() - sf::Vector2f(0.0f, 50.0f), 0, 2);
+									std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
+									createSun(plant.anim.sprite.getPosition() 
+										- sf::Vector2f(0.0f, 50.0f), 0, 2);
 								}
 							}
 							break;
@@ -465,7 +471,7 @@ void asyncPvzSceneUpdate() {
 				}
 
 				{
-					std::lock_guard<std::mutex> lock(projsMutex);
+					std::shared_lock<std::shared_mutex> projReadLock(projsMutex);
 					auto it = projectilesOnScene.begin();
 					while (it != projectilesOnScene.end()) {
 						it->sprite.move(15.0f, 0.0f);
@@ -473,29 +479,31 @@ void asyncPvzSceneUpdate() {
 						bool shouldEraseProjectile = it->sprite.getPosition().x > 1500;
 
 						if (!shouldEraseProjectile) {
-							std::lock_guard<std::mutex> lock(zombiesMutex);
+							std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
 							auto zIt = zombiesOnScene.begin();
 							while (zIt != zombiesOnScene.end()) {
-								if (!zIt->anim.sprite.getTexture()) {
-									std::cout << "Invalid zombie sprite texture detected!" << std::endl;
-									++zIt;
-									continue;
-								}
-
 								sf::FloatRect projectileBounds = it->sprite.getGlobalBounds();
 								sf::FloatRect zombieBounds = zIt->anim.sprite.getGlobalBounds();
 
 								if (projectileBounds.intersects(zombieBounds) && it->row == zIt->anim.row) {
 									if (damageZombie(*it, *zIt)) {
-										zIt = zombiesOnScene.erase(zIt);
+										zombieReadLock.unlock();
+										{
+											std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+											zIt = zombiesOnScene.erase(zIt);
+										}
+										zombieReadLock.lock();
 									}
 									else {
 										zIt->damagedCd = 10;
 										++zIt;
 									}
 
-									std::lock_guard<std::mutex> lock(vanishProjsMutex);
-									createProjectileVanishAnim(*it);
+									{
+										std::unique_lock<std::shared_mutex> vanishProjWriteLock(vanishProjsMutex);
+										createProjectileVanishAnim(*it);
+									}
+
 									shouldEraseProjectile = true;
 									break;
 								}
@@ -524,7 +532,7 @@ void asyncPvzSceneUpdate() {
 					}
 				}
 
-				std::lock_guard<std::mutex> lock(sunsMutex);
+				std::shared_lock<std::shared_mutex> sunReadLock(sunsMutex);
 				for (auto it = sunsOnScene.begin(); it != sunsOnScene.end(); ) {
 					if (++it->anim.frameId / animSpeed * sunAnimSpeed > 12)
 						it->anim.frameId = 0;
@@ -575,7 +583,12 @@ void asyncPvzSceneUpdate() {
 								std::abs(currentPos.y - it->targetPos.y) < speed) {
 								if (it->style == 1) {
 									addSun(getSunAmountByType(it->type));
-									it = sunsOnScene.erase(it);
+									sunReadLock.unlock();
+									{
+										std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
+										it = sunsOnScene.erase(it);
+									}
+									sunReadLock.lock();
 									continue;
 								}
 								else {

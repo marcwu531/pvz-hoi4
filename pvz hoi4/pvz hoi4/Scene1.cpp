@@ -424,7 +424,7 @@ static void selectSun(sunState& sun) {
 }
 
 bool selectSun(sf::Vector2f mousePos) {
-	std::lock_guard<std::mutex> lock(sunsMutex);
+	std::shared_lock<std::shared_mutex> sunReadLock(sunsMutex);
 	bool collected = false;
 
 	for (auto& sun : sunsOnScene) {
