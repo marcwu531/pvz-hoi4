@@ -1,9 +1,9 @@
 #include <iostream>
-#include <mutex>
 #include <nlohmann/json.hpp>
 #include <queue>
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
+#include <shared_mutex>
 #include <thread>
 #include <windows.h>
 
@@ -429,13 +429,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					10 * mapRatio * viewWorldSizeY / window.getSize().y)); // 3:2
 				flag_rect.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
 					viewWorldCenterY - viewWorldSizeY / 2.0f);
-				window.draw(flag_rect);
+				//window.draw(flag_rect);
 			}
 
-			accountButton.setSize(sf::Vector2f(viewWorldSizeX / 15.0f, 
+			accountButton.setSize(sf::Vector2f(viewWorldSizeX / 15.0f,
 				viewWorldSizeX / 15.0f / (1.0f + std::sqrt(5.0f)) * 2.0f));
 			accountButton.setOrigin(accountButton.getSize());
-			accountButton.setPosition(viewWorldCenterX + viewWorldSizeX / 2.0f, 
+			accountButton.setPosition(viewWorldCenterX + viewWorldSizeX / 2.0f,
 				viewWorldCenterY + viewWorldSizeY * 0.46f);
 			//(e * (pi * pi - 1.0f)) / (10.0f * pi * phi)
 			window.draw(accountButton);
@@ -507,7 +507,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 
 				if (!plantsOnScene.empty()) {
-					std::lock_guard<std::mutex> lock(plantsMutex);
+					std::shared_lock<std::shared_mutex> readLock(plantsMutex);
 
 					for (const auto& plant : plantsOnScene) {
 						if (plant.damagedCd > 0) {
@@ -519,7 +519,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
-				std::lock_guard<std::mutex> lock(projsMutex);
+				std::shared_lock<std::shared_mutex> readLock(projsMutex);
 				if (!projectilesOnScene.empty()) {
 					for (const auto& projectile : projectilesOnScene) {
 						window.draw(projectile.sprite);
@@ -528,12 +528,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 
 			if (!zombiesOnScene.empty()) {
-				std::lock_guard<std::mutex> lock(zombiesMutex);
+				std::unique_lock<std::shared_mutex> writeLock(zombiesMutex);
 
 				std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
 
 				for (auto& zombie : zombiesOnScene) {
-					if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row.value()) 
+					if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row.value())
 						< tempZombies.size())
 						tempZombies[zombie.anim.row.value()].push_back(zombie);
 				}
@@ -542,6 +542,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				for (auto& tmpZ : tempZombies) {
 					zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
 				}
+
+				writeLock.unlock();
+				std::shared_lock<std::shared_mutex> readLock(zombiesMutex);
 
 				/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
 					[](const zombieState& a, const zombieState& b) {
@@ -559,7 +562,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 
 			{
-				std::lock_guard<std::mutex> lock(vanishProjsMutex);
+				std::unique_lock<std::shared_mutex> writeLock(vanishProjsMutex);
 				for (auto it = vanishProjectilesOnScene.begin(); it != vanishProjectilesOnScene.end();) {
 					if (++it->frame >= 13) {
 						it = vanishProjectilesOnScene.erase(it);
@@ -572,7 +575,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 			}
 
-			std::lock_guard<std::mutex> lock(sunsMutex);
+			std::shared_lock<std::shared_mutex> readLock(sunsMutex);
 			for (auto& sun : sunsOnScene) {
 				window.draw(sun.anim.sprite);
 			}
@@ -592,4 +595,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.38.a
+//Version 1.0.39
