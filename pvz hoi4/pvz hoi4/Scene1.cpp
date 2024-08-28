@@ -181,7 +181,8 @@ void initializeScene1() {
 
 	auto seedChooserBgImage = getPvzImage("seed_selector", "seedChooser_background");
 	texture_seedChooser_background.loadFromImage(seedChooserBgImage);
-	seedChooser_background.setSize(sf::Vector2f(seedBank.getSize().x, 513.0f / 465.0f * seedBank.getSize().x)); //465 x 513
+	seedChooser_background.setSize(sf::Vector2f(seedBank.getSize().x, 
+		513.0f / 465.0f * seedBank.getSize().x)); //465 x 513
 	seedChooser_background.setTexture(&texture_seedChooser_background);
 	seedChooser_background.setPosition(view_background.getCenter().x - view_background.getSize().x / 2.0f,
 		view_background.getCenter().y - view_background.getSize().y / 2.0f + seedBank.getSize().y);
@@ -192,8 +193,10 @@ void initializeScene1() {
 	texture_seedChooser.loadFromImage(seedChooserButtonImage);
 	seedChooserButton.setSize(sf::Vector2f(278.0f, 72.0f));
 	seedChooserButton.setTexture(&texture_seedChooserDisabled);
-	seedChooserButton.setPosition(seedChooser_background.getPosition().x + (seedChooser_background.getSize().x - seedChooserButton.getSize().x) / 2.0f,
-		seedChooser_background.getPosition().y + seedChooser_background.getSize().y - seedChooserButton.getSize().y - 15.0f);
+	seedChooserButton.setPosition(seedChooser_background.getPosition().x + 
+		(seedChooser_background.getSize().x - seedChooserButton.getSize().x) / 2.0f,
+		seedChooser_background.getPosition().y + seedChooser_background.getSize().y - 
+		seedChooserButton.getSize().y - 15.0f);
 
 	pvzStartText.setPosition(view_background.getCenter());
 	auto startReadyImage = getPvzImage("seed_selector", "startReady");
@@ -296,14 +299,17 @@ void initializeScene1() {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
 		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
 		idlePlants[idlePlantToString[i]].setScale(scene1ZoomSize, scene1ZoomSize);
-		idlePlants[idlePlantToString[i]].setOrigin(idlePlants[idlePlantToString[i]].getTextureRect().getSize().x / 2.0f,
+		idlePlants[idlePlantToString[i]].setOrigin(idlePlants[idlePlantToString[i]]
+			.getTextureRect().getSize().x / 2.0f,
 			(float)idlePlants[idlePlantToString[i]].getTextureRect().getSize().y);
 
 		auto seedPacketImage = getPvzImage("seed_packet", idlePlantToString[i]);
 		seedPacketsTexture[i].loadFromImage(seedPacketImage);
-		seedPackets[seedPacketIdToString(i)].setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
+		seedPackets[seedPacketIdToString(i)].setSize(sf::Vector2f(50.0f * scene1ZoomSize,
+			70.0f * scene1ZoomSize));
 		seedPackets[seedPacketIdToString(i)].setTexture(&seedPacketsTexture[i]);
-		seedPackets[seedPacketIdToString(i)].setPosition(seedChooser_background.getPosition() + sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
+		seedPackets[seedPacketIdToString(i)].setPosition(seedChooser_background.getPosition() +
+			sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
 	}
 
 	background.setOrigin(background.getSize() / 2.0f);

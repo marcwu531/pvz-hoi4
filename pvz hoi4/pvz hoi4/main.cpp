@@ -160,6 +160,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	saveUsernameText.setString("SAVE");
 	saveUsernameText.setFillColor(sf::Color::Black);
 
+	sf::Text exportAccountText;
+	exportAccountText.setFont(defaultFont);
+	exportAccountText.setFillColor(sf::Color::Black);
+
 	/*float pi = std::atan(1.0f) * 4.0f;
 	float e = std::exp(1.0f);
 	float phi = (1.0f + std::sqrt(5.0f)) / 2.0f;*/
@@ -332,7 +336,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 						if (saveUsernameButton.getGlobalBounds().contains(mousePos)) {
 							if (!username.empty()) account.username = username;
-							std::cout << encryptAccount(account, 531) << std::endl;
+							exportAccountText.setString(encryptAccount(account));
+							//std::cout << encryptAccount(account, 531) << std::endl;
+							account = decryptAccount(exportAccountText.getString());
+							account = account;
 						}
 						else if (usernameBox.getGlobalBounds().contains(mousePos)) {
 							enteringUsername = true;
@@ -508,12 +515,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				saveUsernameText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 30.0f));
 				saveUsernameText.setOrigin(saveUsernameText.getGlobalBounds().width / 2.0f, 0.0f);
 				saveUsernameText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 32.0f);
+		
+				exportAccountText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 50.0f));
+				exportAccountText.setOrigin(exportAccountText.getGlobalBounds().width / 2.0f, 0.0f);
+				exportAccountText.setPosition(viewWorldCenterX, viewWorldCenterY + viewWorldSizeY / 16.0f);
 
 				window.draw(loginMenu);
 				window.draw(usernameBox);
 				window.draw(usernameText);
 				window.draw(saveUsernameButton);
 				window.draw(saveUsernameText);
+				window.draw(exportAccountText);
 			}
 			break;
 		}
@@ -652,4 +664,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.40
+//Version 1.0.41

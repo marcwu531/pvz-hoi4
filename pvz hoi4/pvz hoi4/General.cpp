@@ -17,9 +17,3 @@ void mapShift(std::unordered_map<int, int>& targetMap) {
 
 	targetMap = std::move(tempMap);
 }
-
-/*
-std::shared_lock<std::shared_mutex> readLock(mapMutex);
-readLock.unlock();
-std::unique_lock<std::shared_mutex> writeLock(mapMutex);
-*/

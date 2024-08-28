@@ -3,6 +3,6 @@
 
 #include "General.h"
 
-std::string encryptAccount(const playerAccount& account, int shift);
-playerAccount decryptAccount(const std::string& encryptedAccount, int shift);
+std::string encryptAccount(const playerAccount& account);
+playerAccount decryptAccount(const std::string& encryptedAccount);
 #endif
