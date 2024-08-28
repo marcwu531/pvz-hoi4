@@ -224,7 +224,7 @@ std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId) {
 		static_cast<char*>(pResourceData) + resourceSize);
 }
 
-void checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
+std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 	std::array<std::string, 2> target = clickingState(world_image, mouseInMapPosX, mouseInMapPosY);
 	std::string targetState = target[1];
 
@@ -247,7 +247,11 @@ void checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 
 		flag = target[0];
 		blinkMap_loadingCoords.store(false);
+
+		return std::to_string(countryId[target[0]]) + "-" + std::to_string(state_int[clicking_state]["id"]());
 	}
+
+	return "";
 }
 
 void changeScene(int targetScene) {

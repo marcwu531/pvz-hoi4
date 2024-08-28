@@ -67,26 +67,24 @@ inline std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
 			 static_cast<int>(std::round(b * 255.0f)) };
 }
 
-inline static void updatePixelColor(sf::Color& color, int blinkSpeed, int& lRatio, int lRatioF) {
+int blinkSpeed = 2;
+int lRatio = 0;
+int lRatioF = -1;
+
+inline static void updatePixelColor(sf::Color& color, int blinkSpeed, int& lRatio, int& lRatioF) {
 	std::array<int, 3> hsl = RGBtoHSL({ color.r, color.g, color.b });
 	hsl[2] -= blinkSpeed * lRatio;
-
-	bool flipColour = (hsl[2] < 30 && lRatioF > 0) || (hsl[2] > 70 && lRatioF < 0);
 
 	hsl[2] = clamp(hsl[2], 0, 100);
 	std::array<int, 3> rgb = HSLtoRGB(hsl);
 
 	color = sf::Color(rgb[0], rgb[1], rgb[2]);
 
-	if (flipColour) {
+	if ((hsl[2] < 30 && lRatioF > 0) || (hsl[2] > 70 && lRatioF < 0)) {
 		lRatioF = -lRatioF;
 		lRatio += 2 * lRatioF;
 	}
 }
-
-int blinkSpeed = 2;
-int lRatio = 0;
-int lRatioF = -1;
 
 sf::Image pixelsToBlink(const std::vector<sf::Vector2i>& coords, sf::Image image) {
 	lRatio += lRatioF;

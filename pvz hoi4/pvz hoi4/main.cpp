@@ -164,6 +164,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	exportAccountText.setFont(defaultFont);
 	exportAccountText.setFillColor(sf::Color::Black);
 
+	sf::Text levelId;
+	levelId.setFont(defaultFont);
+	levelId.setFillColor(sf::Color::Black);
+
 	/*float pi = std::atan(1.0f) * 4.0f;
 	float e = std::exp(1.0f);
 	float phi = (1.0f + std::sqrt(5.0f)) / 2.0f;*/
@@ -325,7 +329,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							//std::cout << mouseInMapPosX << std::endl;
 							//std::cout << mouseInMapPosY << std::endl;
 
-							checkClickingState(mouseInMapPosX, mouseInMapPosY);
+							std::string levelIdStr = checkClickingState(mouseInMapPosX, mouseInMapPosY);
+							if (!levelIdStr.empty()) levelId.setString(levelIdStr);
 						}
 						else if (levelStartButton.getGlobalBounds().contains(mousePos)) {
 							changeScene(1);
@@ -336,10 +341,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 						if (saveUsernameButton.getGlobalBounds().contains(mousePos)) {
 							if (!username.empty()) account.username = username;
+							std::shared_lock<std::shared_mutex> accountReadLock(accountMutex);
 							exportAccountText.setString(encryptAccount(account));
-							//std::cout << encryptAccount(account, 531) << std::endl;
-							account = decryptAccount(exportAccountText.getString());
-							account = account;
 						}
 						else if (usernameBox.getGlobalBounds().contains(mousePos)) {
 							enteringUsername = true;
@@ -452,15 +455,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				levelStart.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
 					viewWorldCenterY - viewWorldSizeY / 2.0f);
 
-				int size = static_cast<unsigned int>(viewWorldSizeX / 38.4f);
-				levelStartText.setCharacterSize(size);
+				levelStartText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 38.4f));
 
 				const sf::FloatRect rectBounds = levelStart.getGlobalBounds();
 				const sf::FloatRect textBounds = levelStartText.getLocalBounds();
-				const float textOriginX = textBounds.left + textBounds.width / 2.0f;
-				const float textOriginY = textBounds.top + textBounds.height / 2.0f;
 
-				levelStartText.setOrigin(textOriginX, textOriginY);
+				levelStartText.setOrigin(textBounds.left + textBounds.width / 2.0f, 
+					textBounds.top + textBounds.height / 2.0f);
 				levelStartText.setPosition(rectBounds.left + rectBounds.width / 2.0f,
 					rectBounds.top + rectBounds.height / 2.0f);
 
@@ -468,9 +469,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				levelStartButton.setPosition(levelStartText.getPosition().x - textBounds.width / 2.0f,
 					levelStartText.getPosition().y - textBounds.height / 2.0f);
 
+				const sf::FloatRect levelIdTextBounds = levelId.getLocalBounds();
+
+				levelId.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 20.0f));
+				levelId.setOrigin(levelIdTextBounds.left + levelIdTextBounds.width / 2.0f, 
+					levelIdTextBounds.top + levelIdTextBounds.height / 2.0f);
+				levelId.setPosition(rectBounds.left + rectBounds.width / 2.0f,
+					rectBounds.top + rectBounds.height / 3.0f);
+
 				window.draw(levelStart);
 				window.draw(levelStartButton);
 				window.draw(levelStartText);
+				window.draw(levelId);
 			}
 
 			if (loadFlag_readyToDraw.load()) {
@@ -576,7 +586,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 
 				if (!plantsOnScene.empty()) {
-					std::shared_lock<std::shared_mutex> readLock(plantsMutex);
+					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
 
 					for (const auto& plant : plantsOnScene) {
 						if (plant.damagedCd > 0) {
@@ -588,7 +598,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
-				std::shared_lock<std::shared_mutex> readLock(projsMutex);
+				std::shared_lock<std::shared_mutex> projReadLock(projsMutex);
 				if (!projectilesOnScene.empty()) {
 					for (const auto& projectile : projectilesOnScene) {
 						window.draw(projectile.sprite);
@@ -597,7 +607,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 
 			if (!zombiesOnScene.empty()) {
-				std::unique_lock<std::shared_mutex> writeLock(zombiesMutex);
+				std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
 
 				std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
 
@@ -612,8 +622,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
 				}
 
-				writeLock.unlock();
-				std::shared_lock<std::shared_mutex> readLock(zombiesMutex);
+				zombieWriteLock.unlock();
+				std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
 
 				/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
 					[](const zombieState& a, const zombieState& b) {
@@ -631,7 +641,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 
 			{
-				std::unique_lock<std::shared_mutex> writeLock(vanishProjsMutex);
+				std::unique_lock<std::shared_mutex> vanishProjWriteLock(vanishProjsMutex);
 				for (auto it = vanishProjectilesOnScene.begin(); it != vanishProjectilesOnScene.end();) {
 					if (++it->frame >= 13) {
 						it = vanishProjectilesOnScene.erase(it);
@@ -644,7 +654,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 			}
 
-			std::shared_lock<std::shared_mutex> readLock(sunsMutex);
+			std::shared_lock<std::shared_mutex> sunReadLock(sunsMutex);
 			for (auto& sun : sunsOnScene) {
 				window.draw(sun.anim.sprite);
 			}
@@ -664,4 +674,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.41
+//Version 1.0.42

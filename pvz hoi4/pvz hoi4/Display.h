@@ -76,6 +76,6 @@ extern sf::View view_background;
 sf::Image getFlagImage(const std::string& country);
 sf::Image getPvzImage(const std::string& type, std::string target);
 std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId);
-void checkClickingState(float mouseInMapPosX, float mouseInMapPosY);
+std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY);
 void changeScene(int targetScene);
 #endif

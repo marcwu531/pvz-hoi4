@@ -4,17 +4,18 @@
 
 #include "State.hpp"
 
-#define DEFINE_STATE_INT(region, state) \
+#define DEFINE_STATE_INT(country, state) \
     {#state, { \
-        {"sx", []() { return State::region::state::sx; }}, \
-        {"lx", []() { return State::region::state::lx; }}, \
-        {"sy", []() { return State::region::state::sy; }}, \
-        {"ly", []() { return State::region::state::ly; }} \
+        {"sx", []() { return State::country::state::sx; }}, \
+        {"lx", []() { return State::country::state::lx; }}, \
+        {"sy", []() { return State::country::state::sy; }}, \
+		{"ly", []() { return State::country::state::ly; }}, \
+        {"id", []() { return State::country::state::id; }} \
     }}
 
-#define DEFINE_STATE_RGBA(region, state) \
+#define DEFINE_STATE_RGBA(country, state) \
     {#state, { \
-        {"RGBA", []() { return State::region::state::RGBA(); }} \
+        {"RGBA", []() { return State::country::state::RGBA(); }} \
     }}
 
 std::unordered_map<std::string, std::unordered_map<std::string, std::function<int()>>> state_int = {
@@ -74,4 +75,8 @@ std::unordered_map<std::string, std::vector<std::string>> Regions = {
 		"Nantou", "Yunlin", "Chiayi_City", "Chiayi_County", "Pingtung",
 		"Yilan", "Hualien", "Taitung"
 	}}
+};
+
+std::unordered_map<std::string, int> countryId = {
+	{"Taiwan", State::Taiwan::id }
 };

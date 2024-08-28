@@ -6,5 +6,6 @@ extern std::unordered_map<std::string, std::unordered_map<std::string, std::func
 extern std::string clicking_state;
 extern std::string flag;
 extern std::unordered_map<std::string, std::vector<std::string>> Regions;
+extern std::unordered_map<std::string, int> countryId;
 
 #endif
