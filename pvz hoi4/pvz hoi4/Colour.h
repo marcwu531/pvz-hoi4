@@ -3,7 +3,7 @@
 
 template <typename T>
 constexpr T clamp(T value, T low, T high);
-sf::Image pixelsToBlink(const std::vector<sf::Vector2i>& coords, sf::Image image);
+sf::Image pixelsToBlink(const std::vector<sf::Vector2i>& coords, sf::Image& image, const sf::IntRect& cropArea);
 std::string getRGBA(const sf::Image& texture, int imageX, int imageY);
 std::array<int, 3> RGBtoHSL(std::array<int, 3> rgb);
 std::array<int, 3> HSLtoRGB(std::array<int, 3> hsl);

@@ -1,14 +1,14 @@
 #include <array>
 #include <chrono>
-#include <cstring>
 #include <functional>
 #include <map>
-#include <shared_mutex>
 #include <nlohmann/json.hpp>
 #include <queue>
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
+#include <shared_mutex>
 #include <stdexcept>
+#include <string>
 #include <string>
 #include <thread>
 #include <vector>
@@ -19,6 +19,7 @@
 #include "Colour.h"
 #include "Display.h"
 #include "Json.h"
+#include "Scene1.h"
 #include "State.h"
 #include "Window.h"
 
@@ -87,18 +88,7 @@ sf::RectangleShape world_blink;
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea) {
 	sf::Image cropped_image;
 	cropped_image.create(cropArea.width, cropArea.height);
-
-	const sf::Uint8* srcPixels = image.getPixelsPtr();
-	sf::Uint8* destPixels = (sf::Uint8*)cropped_image.getPixelsPtr();
-
-	unsigned int imageWidth = image.getSize().x;
-
-	for (int y = 0; y < cropArea.height; ++y) {
-		const sf::Uint8* srcRow = srcPixels + ((cropArea.top + y) * imageWidth + cropArea.left) * 4;
-		sf::Uint8* destRow = destPixels + y * cropArea.width * 4;
-		memcpy(destRow, srcRow, cropArea.width * 4);
-	}
-
+	cropped_image.copy(image, 0, 0, cropArea);
 	return cropped_image;
 }
 
@@ -248,7 +238,10 @@ std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 		flag = target[0];
 		blinkMap_loadingCoords.store(false);
 
-		return std::to_string(countryId[target[0]]) + "-" + std::to_string(state_int[clicking_state]["id"]());
+		world = countryId[target[0]];
+		level = state_int[clicking_state]["id"]();
+
+		return std::to_string(world) + "-" + std::to_string(level);
 	}
 
 	return "";

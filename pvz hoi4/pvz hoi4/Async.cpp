@@ -2,9 +2,10 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
-#include <shared_mutex>
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
+#include <shared_mutex>
+#include <string>
 #include <thread>
 #include <windows.h>
 
@@ -27,7 +28,7 @@ int maxSpeed = 1, fps = 60 * maxSpeed, scene = 0;
 
 sf::Vector2i blinkCoords(0, 0);
 
-std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, accountMutex;
+std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, accountMutex, mapMutex;
 
 inline static void updateImage(sf::Image& image, const sf::IntRect& cropArea, sf::Texture& texture) {
 	if (texture.getSize().x != static_cast<unsigned int>(cropArea.width) ||
@@ -37,47 +38,41 @@ inline static void updateImage(sf::Image& image, const sf::IntRect& cropArea, sf
 	texture.update(image);
 }
 
+sf::Vector2f worldPos;
+int mapSx, mapSy;
+
 void asyncBlinkMap() {
-	auto nextTime = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(1000 / fps);
+	auto nextTime = std::chrono::high_resolution_clock::now() +
+		std::chrono::milliseconds(1000 / fps);
 
 	while (running.load()) {
-		if (scene == 0) { //(int)(1000.0f/60.0f)
+		if (scene == 0) {
 			if (!targetCoords.empty() && !blinkMap_readyToDraw.load() &&
 				!clicking_state.empty() && !blinkMap_loadingCoords.load()) {
-				/*int currentBlinkCd = blinkCd.load();
-				//if (currentBlinkCd < 5) {
-					//blinkCd.store(currentBlinkCd + 1);
-				//}
-				//else {
-					//blinkCd.store(0);*/
-
-				sf::Image world_image_blink = pixelsToBlink(targetCoords, world_image);
 
 				int sx = state_int[clicking_state]["sx"](), sy = state_int[clicking_state]["sy"](),
 					lx = state_int[clicking_state]["lx"](), ly = state_int[clicking_state]["ly"]();
 
-				//std::cout << "sx: " << sx << ", sy: " << sy << ", lx: " << lx << ", ly: " << ly << std::endl;
-
 				sf::IntRect cropArea(sx, sy, lx - sx + 1, ly - sy + 1);
-				world_image_blink = cropImage(world_image_blink, cropArea);
 
-				if (texture_blink.getSize().x != static_cast<unsigned int>(cropArea.width) ||
-					texture_blink.getSize().y != static_cast<unsigned int>(cropArea.height)) {
-					texture_blink.create(cropArea.width, cropArea.height);
-				}
+				sf::Image world_image_blink = cropImage(world_image, cropArea);
+
+				world_image_blink = pixelsToBlink(targetCoords, world_image_blink, cropArea);
+
+				std::unique_lock<std::shared_mutex> mapWriteLock(mapMutex);
+				mapSx = sx;
+				mapSy = sy;
 
 				updateImage(world_image_blink, cropArea, texture_blink);
 				world_blink.setTextureRect(sf::IntRect(0, 0, cropArea.width, cropArea.height));
 				world_blink.setSize(sf::Vector2f(mapRatio * cropArea.width, mapRatio * cropArea.height));
-				blinkCoords = sf::Vector2i(sx, sy);
-				//world_blink.setPosition(sf::Vector2f(sx * mapRatio, sy * mapRatio)); //view.getCenter().x, view.getCenter().y
+				//world_blink.setPosition(sf::Vector2f(sx * mapRatio, sy * mapRatio) + worldPos);
 
 				blinkMap_readyToDraw.store(true);
 			}
 		}
 		std::this_thread::sleep_until(nextTime);
 		nextTime += std::chrono::milliseconds(1000 / fps);
-		//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 
@@ -120,7 +115,7 @@ bool pvzPacketOnSelected = false;
 float animSpeed = 3.5f;
 
 inline static const std::unordered_map<int, SpriteFrame> getZombieAnimFrameFromId(int id) {
-	static std::unordered_map<int, SpriteFrame> frames[] = 
+	static std::unordered_map<int, SpriteFrame> frames[] =
 	{ zombieIdleFrames, zombieIdle1Frames, zombieWalkFrames, zombieEatFrames };
 	return frames[id];
 }
@@ -131,7 +126,7 @@ inline static int getZombieMaxAnimFramesById(int id) {
 }
 
 inline static sf::Texture& getZombieTextureById(int id) {
-	static sf::Texture texture[] = 
+	static sf::Texture texture[] =
 	{ zombieIdleSprites, zombieIdle1Sprites, zombieWalkSprites, zombieEatSprites };
 	return texture[id];
 }
@@ -187,6 +182,8 @@ void asyncPvzSceneUpdate() {
 
 	const auto frameTime = std::chrono::milliseconds(1000 / fps);
 	auto nextTime = std::chrono::high_resolution_clock::now() + frameTime;
+
+	initSeedPacketPos();
 
 	while (running.load()) {
 		if (scene == 1) {
@@ -296,7 +293,7 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (pvzStartScene < 2) {
-					pvzStartText.scale(1.0f + frameTime.count() / 1350.0f, 
+					pvzStartText.scale(1.0f + frameTime.count() / 1350.0f,
 						1.0f + frameTime.count() / 1350.0f);
 				}
 				else {
@@ -306,7 +303,7 @@ void asyncPvzSceneUpdate() {
 				break;
 			}
 			case 3:
-				if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing) 
+				if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing)
 					audios["lawnbgm"]["1"]->play();
 
 				if (--zombieSpawnTimer <= 0) {
@@ -331,7 +328,7 @@ void asyncPvzSceneUpdate() {
 					sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 					idlePlants[idlePlantToString[seedPacketSelectedId]]
 						.setPosition(mousePos + sf::Vector2f(0.0f, 36.0f));
-					hoverPlant.setPosition(roundf((mousePos.x + 70.0f) / 140.0f) * 140.0f - 70.0f, 
+					hoverPlant.setPosition(roundf((mousePos.x + 70.0f) / 140.0f) * 140.0f - 70.0f,
 						roundf((mousePos.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
 					hoverShade.setPosition(hoverPlant.getPosition());
 				}
@@ -414,7 +411,7 @@ void asyncPvzSceneUpdate() {
 
 						auto& sprite = plant.anim.sprite;
 						++plant.anim.frameId;
-						if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId) * animSpeed) 
+						if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId) * animSpeed)
 							plant.anim.frameId = 0;
 
 						int frame = static_cast<int>(std::trunc(plant.anim.frameId / animSpeed));
@@ -443,7 +440,7 @@ void asyncPvzSceneUpdate() {
 								if (std::fabs(plant.anim.frameId - 17.0f * animSpeed) < 1.0f) {
 									plant.cd = 24000 + (std::rand() % 1001);
 									std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
-									createSun(plant.anim.sprite.getPosition() 
+									createSun(plant.anim.sprite.getPosition()
 										- sf::Vector2f(0.0f, 50.0f), 0, 2);
 								}
 							}
@@ -562,7 +559,7 @@ void asyncPvzSceneUpdate() {
 							float speed = maxSpeed * (length / 500.0f);
 							if (speed < 2.5f) speed = 2.5f;
 
-							if (it->style == 2 && it->anim.sprite.getScale() != 
+							if (it->style == 2 && it->anim.sprite.getScale() !=
 								sf::Vector2f(scene1ZoomSize, scene1ZoomSize)) {
 								it->anim.sprite.setScale(it->anim.sprite.getScale()
 									+ sf::Vector2f(0.1f, 0.1f));
@@ -571,7 +568,8 @@ void asyncPvzSceneUpdate() {
 									it->anim.sprite.getScale().y > scene1ZoomSize) {
 									it->anim.sprite.setScale(scene1ZoomSize, scene1ZoomSize);
 								}
-							} else if (it->anim.sprite.getScale() !=
+							}
+							else if (it->anim.sprite.getScale() !=
 								sf::Vector2f(scene1ZoomSize, scene1ZoomSize)) {
 								it->anim.sprite.setScale(scene1ZoomSize, scene1ZoomSize);
 							}

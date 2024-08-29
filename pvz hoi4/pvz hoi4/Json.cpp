@@ -1,6 +1,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <SFML/Graphics.hpp>
+#include <string>
 #include <windows.h>
 
 #include "Display.h"

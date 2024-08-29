@@ -7,16 +7,76 @@
 #include "State.h"
 #include "Window.h"
 
+#ifdef RUN_DEBUG
+#include <windows.h>
+#include <signal.h>
+
+void AttachConsole() {
+	AllocConsole();
+	FILE* consoleOutput;
+	freopen_s(&consoleOutput, "CONOUT$", "w", stdout);
+}
+
+static std::string WideStringToString(const std::wstring& wideStr) {
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), (int)wideStr.length(),
+		NULL, 0, NULL, NULL);
+	std::string narrowStr(size_needed, 0);
+	WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), (int)wideStr.length(), &narrowStr[0],
+		size_needed, NULL, NULL);
+	return narrowStr;
+}
+
+static void DisplayLastError() {
+	DWORD error = GetLastError();
+	if (error != 0) {
+		LPWSTR msgBuffer = nullptr;
+		DWORD formatResult = FormatMessage(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			error,
+			0,
+			(LPWSTR)&msgBuffer,
+			0,
+			NULL
+		);
+		if (formatResult > 0 && msgBuffer) {
+			std::string errorMessage = WideStringToString(msgBuffer);
+			std::cout << "Error: " << errorMessage << std::endl;
+			LocalFree(msgBuffer);
+		}
+		else {
+			std::cout << "Failed to format error message. Error code: " << error << std::endl;
+		}
+	}
+	else {
+		std::cout << "No error information available. Error code: " << error << std::endl;
+	}
+}
+
+void handle_aborts(int signal_number) {
+	std::cout << "Caught signal " << signal_number << " (SIGABRT)." << std::endl;
+	DisplayLastError();
+	std::abort();
+}
+#endif
+
+float currentZoom = 1.0f;
+
 void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View& view) {
 	//std::cout << zoom << std::endl;
-	const sf::Vector2f beforeCoord{ window.mapPixelToCoords(pixel) };
 	//sf::View view = window.getView();
-	view.zoom(zoom);
-	window.setView(view);
-	const sf::Vector2f afterCoord{ window.mapPixelToCoords(pixel) };
-	const sf::Vector2f offsetCoords{ beforeCoord - afterCoord };
-	view.move(offsetCoords);
-	window.setView(view);
+	if (currentZoom * zoom <= 7.06f && currentZoom * zoom >= 0.531f) {
+		const sf::Vector2f beforeCoord{ window.mapPixelToCoords(pixel) };
+
+		view.zoom(zoom);
+		currentZoom *= zoom;
+
+		window.setView(view);
+		const sf::Vector2f afterCoord{ window.mapPixelToCoords(pixel) };
+		const sf::Vector2f offsetCoords{ beforeCoord - afterCoord };
+		view.move(offsetCoords);
+		window.setView(view);
+	}
 }
 
 std::array<std::string, 2> clickingState(sf::Image& image, float mouseInMapPosX, float mouseInMapPosY) {

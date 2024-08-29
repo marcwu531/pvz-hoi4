@@ -86,4 +86,9 @@ extern int blinkSunText;
 void addSun(int amount);
 extern int maxSun;
 extern bool loggingIn;
+extern int world;
+extern int level;
+void unlockPlant(int id);
+void unlockPlant(int world, int level);
+void initSeedPacketPos();
 #endif

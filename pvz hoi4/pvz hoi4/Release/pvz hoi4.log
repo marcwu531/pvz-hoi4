@@ -1,14 +1,7 @@
-﻿  Account.cpp
-  Async.cpp
-  Colour.cpp
+﻿  Async.cpp
   Display.cpp
-  General.cpp
-  Json.cpp
-  main.cpp
   Scene1.cpp
-  State.cpp
-  Window.cpp
+  main.cpp
   Generating code
-D:\c++\pvz hoi4\pvz hoi4\Audio.cpp(17): warning C4715: 'loadMusicFromResource': not all control paths return a value
   Finished generating code
   pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Release\pvz hoi4.exe

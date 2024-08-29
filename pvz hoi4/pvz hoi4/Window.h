@@ -6,4 +6,9 @@ std::array<std::string, 2> clickingState(sf::Image& image, float mouseInMapPosX,
 extern const std::vector<sf::Keyboard::Key> konamiCode;
 bool isKonamiCodeEntered(const std::queue<sf::Keyboard::Key>& inputs);
 void stdcoutMap(std::unordered_map<int, int>* map);
+
+#ifdef RUN_DEBUG
+extern void AttachConsole();
+extern void handle_aborts(int signal_number);
+#endif
 #endif

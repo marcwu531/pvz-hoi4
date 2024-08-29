@@ -67,7 +67,7 @@ inline std::array<int, 3> HSLtoRGB(const std::array<int, 3> hsl) {
 			 static_cast<int>(std::round(b * 255.0f)) };
 }
 
-int blinkSpeed = 2;
+int blinkSpeed = 1;
 int lRatio = 0;
 int lRatioF = -1;
 
@@ -86,25 +86,20 @@ inline static void updatePixelColor(sf::Color& color, int blinkSpeed, int& lRati
 	}
 }
 
-sf::Image pixelsToBlink(const std::vector<sf::Vector2i>& coords, sf::Image image) {
+sf::Image pixelsToBlink(const std::vector<sf::Vector2i>& coords, sf::Image& image, const sf::IntRect& cropArea) {
 	lRatio += lRatioF;
 
 	for (const auto& coord : coords) {
-		//int alpha = getPixelColour(image, coord[0], coord[1], 'a');
-		//std::cout << alpha << std::endl;
-		sf::Color color = image.getPixel(coord.x, coord.y);
-		updatePixelColor(color, blinkSpeed, lRatio, lRatioF);
-		image.setPixel(coord.x, coord.y, color);
+		int relX = coord.x - cropArea.left;
+		int relY = coord.y - cropArea.top;
+
+		if (relX >= 0 && relX < cropArea.width && relY >= 0 && relY < cropArea.height) {
+			sf::Color color = image.getPixel(relX, relY);
+			updatePixelColor(color, blinkSpeed, lRatio, lRatioF);
+			image.setPixel(relX, relY, color);
+		}
 	}
 	return image;
-	/*if (ra > 0 && alpha <= 100) {
-	ra = -1;
-}
-else if (ra < 0 && alpha >= 255) {
-	ra = 1;
-}
-alpha -= blinkSpeed * ra;
-alpha = std::max(std::min(alpha, 254), 100);*/
 }
 
 inline int getPixelColorComponent(const sf::Color& color, char component) {

@@ -1,7 +1,8 @@
 #include <iostream>
-#include <shared_mutex>
 #include <nlohmann/json.hpp>
 #include <SFML/Graphics.hpp>
+#include <shared_mutex>
+#include <string>
 #include <thread>
 #include <windows.h>
 
@@ -14,8 +15,10 @@
 int pvzScene = 0;
 int pvzSun = 150;
 int seedPacketSelected = 0;
-int maxPlantSelectAmount = 1;
+int maxPlantSelectAmount = 0;
 bool selectingSeedPacket = false;
+
+int world, level;
 
 std::array<std::string, maxPlantAmount> idlePlantToString = { "peashooter", "sunflower" };
 std::string seedPacketIdToString(int id) {
@@ -152,13 +155,16 @@ void unlockPlant(int id) {
 	}
 }
 
+void unlockPlant(int world, int level) {
+	unlockPlant(--world * 10 + level);
+}
+
 static void initPlantsStatus() {
 	for (int i = 0; i < maxPlantAmount; ++i) {
 		account.plantsLevel[i] = 0;
 	}
-
-	unlockPlant(0);
-	unlockPlant(1); //RUN_DEBUG
+	/*unlockPlant(0);
+	unlockPlant(1); //RUN_DEBUG*/
 }
 
 float scene1ZoomSize = 1.7f;
@@ -181,7 +187,7 @@ void initializeScene1() {
 
 	auto seedChooserBgImage = getPvzImage("seed_selector", "seedChooser_background");
 	texture_seedChooser_background.loadFromImage(seedChooserBgImage);
-	seedChooser_background.setSize(sf::Vector2f(seedBank.getSize().x, 
+	seedChooser_background.setSize(sf::Vector2f(seedBank.getSize().x,
 		513.0f / 465.0f * seedBank.getSize().x)); //465 x 513
 	seedChooser_background.setTexture(&texture_seedChooser_background);
 	seedChooser_background.setPosition(view_background.getCenter().x - view_background.getSize().x / 2.0f,
@@ -193,9 +199,9 @@ void initializeScene1() {
 	texture_seedChooser.loadFromImage(seedChooserButtonImage);
 	seedChooserButton.setSize(sf::Vector2f(278.0f, 72.0f));
 	seedChooserButton.setTexture(&texture_seedChooserDisabled);
-	seedChooserButton.setPosition(seedChooser_background.getPosition().x + 
+	seedChooserButton.setPosition(seedChooser_background.getPosition().x +
 		(seedChooser_background.getSize().x - seedChooserButton.getSize().x) / 2.0f,
-		seedChooser_background.getPosition().y + seedChooser_background.getSize().y - 
+		seedChooser_background.getPosition().y + seedChooser_background.getSize().y -
 		seedChooserButton.getSize().y - 15.0f);
 
 	pvzStartText.setPosition(view_background.getCenter());
@@ -305,16 +311,22 @@ void initializeScene1() {
 
 		auto seedPacketImage = getPvzImage("seed_packet", idlePlantToString[i]);
 		seedPacketsTexture[i].loadFromImage(seedPacketImage);
-		seedPackets[seedPacketIdToString(i)].setSize(sf::Vector2f(50.0f * scene1ZoomSize,
-			70.0f * scene1ZoomSize));
 		seedPackets[seedPacketIdToString(i)].setTexture(&seedPacketsTexture[i]);
-		seedPackets[seedPacketIdToString(i)].setPosition(seedChooser_background.getPosition() +
-			sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
 	}
 
 	background.setOrigin(background.getSize() / 2.0f);
 
 	hideTempPlants();
+}
+
+void initSeedPacketPos() {
+	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+		seedPackets[seedPacketIdToString(i)].setSize(sf::Vector2f(50.0f * scene1ZoomSize,
+			70.0f * scene1ZoomSize));
+		seedPackets[seedPacketIdToString(i)].setPosition(seedChooser_background.getPosition() +
+			sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
+		seedPackets[seedPacketIdToString(i)].setOrigin(0.0f, 0.0f);
+	}
 }
 
 bool canPlant(sf::Vector2f pos) {
@@ -387,6 +399,7 @@ void createRandomZombie() {
 }
 
 void createZombie(sf::Vector2f pos, int style) {
+	//type: world_level_zombies[world][level]
 	sf::Sprite newZombie;
 	int animId = style == 0 ? rand() % 2 : 2;
 	int row = style == 1 ? getRowByY(pos.y) : 0;
@@ -544,4 +557,4 @@ void addSun(int amount) {
 	}
 }
 
-bool loggingIn = false;
+bool loggingIn = true;

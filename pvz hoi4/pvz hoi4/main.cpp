@@ -4,6 +4,7 @@
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <shared_mutex>
+#include <string>
 #include <thread>
 #include <windows.h>
 
@@ -23,56 +24,7 @@
 #include "Json.h"
 #include "General.h"
 #include "Account.h"
-
-#ifdef RUN_DEBUG
-static void AttachConsole() {
-	AllocConsole();
-	FILE* consoleOutput;
-	freopen_s(&consoleOutput, "CONOUT$", "w", stdout);
-}
-
-static std::string WideStringToString(const std::wstring& wideStr) {
-	int size_needed = WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), (int)wideStr.length(),
-		NULL, 0, NULL, NULL);
-	std::string narrowStr(size_needed, 0);
-	WideCharToMultiByte(CP_UTF8, 0, wideStr.c_str(), (int)wideStr.length(), &narrowStr[0],
-		size_needed, NULL, NULL);
-	return narrowStr;
-}
-
-static void DisplayLastError() {
-	DWORD error = GetLastError();
-	if (error != 0) {
-		LPWSTR msgBuffer = nullptr;
-		DWORD formatResult = FormatMessage(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL,
-			error,
-			0,
-			(LPWSTR)&msgBuffer,
-			0,
-			NULL
-		);
-		if (formatResult > 0 && msgBuffer) {
-			std::string errorMessage = WideStringToString(msgBuffer);
-			std::cout << "Error: " << errorMessage << std::endl;
-			LocalFree(msgBuffer);
-		}
-		else {
-			std::cout << "Failed to format error message. Error code: " << error << std::endl;
-		}
-	}
-	else {
-		std::cout << "No error information available. Error code: " << error << std::endl;
-	}
-}
-
-extern "C" static void handle_aborts(int signal_number) {
-	std::cout << "Caught signal " << signal_number << " (SIGABRT)." << std::endl;
-	DisplayLastError();
-	std::abort();
-}
-#endif
+#include "Level.h"
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine,
 	_In_ int nCmdShow) { //int main() {
@@ -135,7 +87,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	sf::Texture accountButtonTexture;
 	sf::RectangleShape accountButton;
-	accountButtonTexture.loadFromFile("images/pvz/cloud.png");
+	auto seedChooserBgImage = loadImageFromResource(nullHInstance, 138);
+	accountButtonTexture.loadFromImage(seedChooserBgImage);
 	accountButton.setTexture(&accountButtonTexture);
 
 	sf::RectangleShape loginMenu;
@@ -168,6 +121,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	levelId.setFont(defaultFont);
 	levelId.setFillColor(sf::Color::Black);
 
+	sf::RectangleShape selectCountryScreen;
+
+	sf::Text selectCountryText;
+	selectCountryText.setFont(defaultFont);
+	selectCountryText.setString("Select Your Country");
+	selectCountryText.setFillColor(sf::Color::Black);
+
 	/*float pi = std::atan(1.0f) * 4.0f;
 	float e = std::exp(1.0f);
 	float phi = (1.0f + std::sqrt(5.0f)) / 2.0f;*/
@@ -184,7 +144,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			default:
 			case 0:
 				if (evt.type == sf::Event::MouseWheelScrolled) {
-					if (!loggingIn) {
+					if (!loggingIn && plantExist(0)) {
 						zoomViewAt({ evt.mouseWheelScroll.x, evt.mouseWheelScroll.y }, window,
 							std::pow(1.1f, -evt.mouseWheelScroll.delta), view_world);
 						view_world = window.getView();
@@ -265,7 +225,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			//view = window.getView();
 			int dtx = 0, dty = 0;
 
-			if (!loggingIn) {
+			if (!loggingIn && plantExist(0)) {
 				if (!(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) &&
 					sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))) {
 					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dtx = 1;
@@ -320,16 +280,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						auto random = getRGBA(world_image,
 							window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
 							window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio);*/
-					if (!loggingIn) {
+					if (!loggingIn && plantExist(0)) {
 						const sf::FloatRect rectBounds = levelStart.getGlobalBounds();
 
 						if (clicking_state.empty() || !rectBounds.contains(mousePos)) {
-							const float mouseInMapPosX = (mousePos.x - world.getPosition().x) / mapRatio;
-							const float mouseInMapPosY = (mousePos.y - world.getPosition().y) / mapRatio;
 							//std::cout << mouseInMapPosX << std::endl;
 							//std::cout << mouseInMapPosY << std::endl;
 
-							std::string levelIdStr = checkClickingState(mouseInMapPosX, mouseInMapPosY);
+							std::string levelIdStr =
+								checkClickingState((mousePos.x - world.getPosition().x) / mapRatio,
+									(mousePos.y - world.getPosition().y) / mapRatio);
 							if (!levelIdStr.empty()) levelId.setString(levelIdStr);
 						}
 						else if (levelStartButton.getGlobalBounds().contains(mousePos)) {
@@ -337,15 +297,22 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 					}
 					else {
-						enteringUsername = false;
+						if (loggingIn) {
+							enteringUsername = false;
 
-						if (saveUsernameButton.getGlobalBounds().contains(mousePos)) {
-							if (!username.empty()) account.username = username;
-							std::shared_lock<std::shared_mutex> accountReadLock(accountMutex);
-							exportAccountText.setString(encryptAccount(account));
+							if (saveUsernameButton.getGlobalBounds().contains(mousePos)) {
+								if (!username.empty()) account.username = username;
+								std::shared_lock<std::shared_mutex> accountReadLock(accountMutex);
+								exportAccountText.setString(encryptAccount(account));
+							}
+							else if (usernameBox.getGlobalBounds().contains(mousePos)) {
+								enteringUsername = true;
+							}
 						}
-						else if (usernameBox.getGlobalBounds().contains(mousePos)) {
-							enteringUsername = true;
+						else if (!plantExist(0)) {
+							if (seedPackets[seedPacketIdToString(0)].getGlobalBounds().contains(mousePos)) {
+								unlockPlant(0);
+							}
 						}
 					}
 				}
@@ -360,8 +327,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 					//std::cout << "Mouse position (pixels): (" << pixelPos.x << ", " << pixelPos.y << ")" 
 						//<< std::endl;
-					std::cout << "Mouse position (coords): (" << mousePos.x << ", " << mousePos.y << ")"
-						<< std::endl;
+					//std::cout << "Mouse position (coords): (" << mousePos.x << ", " << mousePos.y << ")"
+						//<< std::endl;
 
 					if (pvzScene == 0 && !selectingSeedPacket) {
 						for (int i = 0; i < maxPlantAmount; ++i) {
@@ -433,7 +400,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			window.setView(view_world);
 			window.draw(world); // render first: at bottom
 
-			const auto& worldPos = world.getPosition();
+			worldPos = world.getPosition();
 			const float viewWorldCenterX = view_world.getCenter().x;
 			const float viewWorldCenterY = view_world.getCenter().y;
 			const float viewWorldSizeX = view_world.getSize().x;
@@ -445,25 +412,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 
 			if (!clicking_state.empty()) {
-				world_blink.setPosition(
-					worldPos.x + blinkCoords.x * mapRatio,
-					worldPos.y + blinkCoords.y * mapRatio
-				);
-				window.draw(world_blink);
+				{
+					std::shared_lock<std::shared_mutex> mapReadLock(mapMutex);
+					world_blink.setPosition(sf::Vector2f(mapSx * mapRatio, mapSy * mapRatio) + worldPos);
+					window.draw(world_blink);
+				}
 
 				levelStart.setSize(sf::Vector2f(viewWorldSizeX / 2.0f, viewWorldSizeY));
 				levelStart.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
 					viewWorldCenterY - viewWorldSizeY / 2.0f);
 
-				levelStartText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 38.4f));
+				levelStartText.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 38.4f)));
 
 				const sf::FloatRect rectBounds = levelStart.getGlobalBounds();
 				const sf::FloatRect textBounds = levelStartText.getLocalBounds();
 
-				levelStartText.setOrigin(textBounds.left + textBounds.width / 2.0f, 
+				levelStartText.setOrigin(textBounds.left + textBounds.width / 2.0f,
 					textBounds.top + textBounds.height / 2.0f);
-				levelStartText.setPosition(rectBounds.left + rectBounds.width / 2.0f,
-					rectBounds.top + rectBounds.height / 2.0f);
+				levelStartText.setPosition(std::trunc(rectBounds.left + rectBounds.width / 2.0f),
+					std::trunc(rectBounds.top + rectBounds.height / 2.0f));
 
 				levelStartButton.setSize(sf::Vector2f(textBounds.width, textBounds.height));
 				levelStartButton.setPosition(levelStartText.getPosition().x - textBounds.width / 2.0f,
@@ -471,11 +438,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 				const sf::FloatRect levelIdTextBounds = levelId.getLocalBounds();
 
-				levelId.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 20.0f));
-				levelId.setOrigin(levelIdTextBounds.left + levelIdTextBounds.width / 2.0f, 
+				levelId.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 20.0f)));
+				levelId.setOrigin(levelIdTextBounds.left + levelIdTextBounds.width / 2.0f,
 					levelIdTextBounds.top + levelIdTextBounds.height / 2.0f);
-				levelId.setPosition(rectBounds.left + rectBounds.width / 2.0f,
-					rectBounds.top + rectBounds.height / 3.0f);
+				levelId.setPosition(std::trunc(rectBounds.left + rectBounds.width / 2.0f),
+					std::trunc(rectBounds.top + rectBounds.height / 3.0f));
 
 				window.draw(levelStart);
 				window.draw(levelStartButton);
@@ -525,7 +492,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				saveUsernameText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 30.0f));
 				saveUsernameText.setOrigin(saveUsernameText.getGlobalBounds().width / 2.0f, 0.0f);
 				saveUsernameText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 32.0f);
-		
+
 				exportAccountText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 50.0f));
 				exportAccountText.setOrigin(exportAccountText.getGlobalBounds().width / 2.0f, 0.0f);
 				exportAccountText.setPosition(viewWorldCenterX, viewWorldCenterY + viewWorldSizeY / 16.0f);
@@ -536,6 +503,27 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				window.draw(saveUsernameButton);
 				window.draw(saveUsernameText);
 				window.draw(exportAccountText);
+			}
+			else {
+				if (!plantExist(0)) {
+					selectCountryScreen.setSize(sf::Vector2f(viewWorldSizeX, 4.0f * viewWorldSizeY / 5.0f));
+					selectCountryScreen.setPosition(viewWorldCenterX - selectCountryScreen.getSize().x / 2.0f, 
+						viewWorldCenterY - selectCountryScreen.getSize().y / 2.0f);
+
+					sf::RectangleShape& ps = seedPackets[seedPacketIdToString(0)];
+					ps.setSize(sf::Vector2f(viewWorldSizeX / 10.0f, viewWorldSizeX / 10.0f * 7.0f / 5.0f));
+					ps.setOrigin(ps.getSize().x / 2.0f, ps.getSize().y);
+					ps.setPosition(viewWorldCenterX, 
+						selectCountryScreen.getPosition().y + selectCountryScreen.getSize().y);
+
+					selectCountryText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 20.0f));
+					selectCountryText.setOrigin(selectCountryText.getGlobalBounds().width / 2.0f, 0.0f);
+					selectCountryText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 2.5f);
+
+					window.draw(selectCountryScreen);
+					window.draw(seedPackets[seedPacketIdToString(0)]);
+					window.draw(selectCountryText);
+				}
 			}
 			break;
 		}
@@ -674,4 +662,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.42
+//Version 1.0.43

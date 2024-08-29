@@ -40,6 +40,7 @@ constexpr int SUNFLOWERIDLEJSON = 134;
 constexpr int SUNFLOWERIDLEPNG = 135;
 constexpr int SUNJSON = 136;
 constexpr int SUNPNG = 137;
+constexpr int CLOUDPNG = 138;
 
 // Next default values for new objects
 // 

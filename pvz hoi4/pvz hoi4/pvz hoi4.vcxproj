@@ -179,6 +179,7 @@
     <ClCompile Include="Display.cpp" />
     <ClCompile Include="General.cpp" />
     <ClCompile Include="Json.cpp" />
+    <ClCompile Include="Level.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Scene1.cpp" />
     <ClCompile Include="State.cpp" />
@@ -192,6 +193,8 @@
     <ClInclude Include="Display.h" />
     <ClInclude Include="General.h" />
     <ClInclude Include="Json.h" />
+    <ClInclude Include="Level.h" />
+    <ClInclude Include="Level.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Scene1.h" />
     <ClInclude Include="State.h" />
