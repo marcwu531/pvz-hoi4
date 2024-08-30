@@ -26,6 +26,8 @@
 #include "Account.h"
 #include "Level.h"
 
+//#define CENSORED
+
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine,
 	_In_ int nCmdShow) { //int main() {
 #ifdef RUN_DEBUG
@@ -35,7 +37,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	//std::abort(); //RUN_DEBUG
 #endif
 
-	srand(static_cast<unsigned>(time(0)));
+	srand(static_cast<unsigned int>(time(nullptr)));
 
 	initializeAudios(hInstance);
 
@@ -46,13 +48,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	//audios["soundtrack"]["battleofwuhan"]->setVolume(25); //RUN_NDEBUG
 
-	sf::RectangleShape world(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
+	sf::RectangleShape worldRect(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
 	//window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
 	//world.setOrigin(93000.0f, 19500.0f);
 	sf::Texture texture_world;
 	//world_image.loadFromFile("world_images/world.png");
 	texture_world.loadFromImage(world_image); //sf::IntRect(4555, 920, 200, 200)
-	world.setTexture(&texture_world);
+	worldRect.setTexture(&texture_world);
 	view_world.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
 	window.setFramerateLimit(fps);
 
@@ -87,7 +89,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	sf::Texture accountButtonTexture;
 	sf::RectangleShape accountButton;
+#ifdef CENSORED
+	auto seedChooserBgImage = loadImageFromResource(nullHInstance, 133);
+#else
 	auto seedChooserBgImage = loadImageFromResource(nullHInstance, 138);
+#endif
 	accountButtonTexture.loadFromImage(seedChooserBgImage);
 	accountButton.setTexture(&accountButtonTexture);
 
@@ -127,6 +133,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	selectCountryText.setFont(defaultFont);
 	selectCountryText.setString("Select Your Country");
 	selectCountryText.setFillColor(sf::Color::Black);
+
+	sf::RectangleShape winLevelScreen;
+	winLevelScreen.setFillColor(sf::Color(255, 255, 255, 0));
 
 	/*float pi = std::atan(1.0f) * 4.0f;
 	float e = std::exp(1.0f);
@@ -251,7 +260,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			std::cout << "dx: " << dx << ", dy: " << dy << std::endl;*/
 
 			//view.move(sf::Vector2f(dx, dy));
-			world.move(sf::Vector2f(dx, dy));
+			worldRect.move(sf::Vector2f(dx, dy));
 			//world_blink.move(sf::Vector2f(dx, dy));
 
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !leftClicking) {
@@ -288,8 +297,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							//std::cout << mouseInMapPosY << std::endl;
 
 							std::string levelIdStr =
-								checkClickingState((mousePos.x - world.getPosition().x) / mapRatio,
-									(mousePos.y - world.getPosition().y) / mapRatio);
+								checkClickingState((mousePos.x - worldRect.getPosition().x) / mapRatio,
+									(mousePos.y - worldRect.getPosition().y) / mapRatio);
 							if (!levelIdStr.empty()) levelId.setString(levelIdStr);
 						}
 						else if (levelStartButton.getGlobalBounds().contains(mousePos)) {
@@ -380,6 +389,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							}
 						}
 					}
+					else if (pvzScene == 4) {
+						if (seedPackets[seedPacketIdToString(getPlantIdByLevel())]
+							.getGlobalBounds().contains(mousePos)) {
+							pvzScene = 5;
+						}
+					}
 				}
 				if (pvzScene == 3) {
 					selectSun(mousePos);
@@ -398,9 +413,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		case 0:
 		{
 			window.setView(view_world);
-			window.draw(world); // render first: at bottom
+			window.draw(worldRect); // render first: at bottom
 
-			worldPos = world.getPosition();
+			worldPos = worldRect.getPosition();
 			const float viewWorldCenterX = view_world.getCenter().x;
 			const float viewWorldCenterY = view_world.getCenter().y;
 			const float viewWorldSizeX = view_world.getSize().x;
@@ -422,19 +437,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				levelStart.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
 					viewWorldCenterY - viewWorldSizeY / 2.0f);
 
-				levelStartText.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 38.4f)));
-
 				const sf::FloatRect rectBounds = levelStart.getGlobalBounds();
-				const sf::FloatRect textBounds = levelStartText.getLocalBounds();
-
-				levelStartText.setOrigin(textBounds.left + textBounds.width / 2.0f,
-					textBounds.top + textBounds.height / 2.0f);
-				levelStartText.setPosition(std::trunc(rectBounds.left + rectBounds.width / 2.0f),
-					std::trunc(rectBounds.top + rectBounds.height / 2.0f));
-
-				levelStartButton.setSize(sf::Vector2f(textBounds.width, textBounds.height));
-				levelStartButton.setPosition(levelStartText.getPosition().x - textBounds.width / 2.0f,
-					levelStartText.getPosition().y - textBounds.height / 2.0f);
 
 				const sf::FloatRect levelIdTextBounds = levelId.getLocalBounds();
 
@@ -445,8 +448,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					std::trunc(rectBounds.top + rectBounds.height / 3.0f));
 
 				window.draw(levelStart);
-				window.draw(levelStartButton);
-				window.draw(levelStartText);
+
+				if (world == 1 && level == 1) {
+					levelStartText.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 38.4f)));
+
+					const sf::FloatRect textBounds = levelStartText.getLocalBounds();
+
+					levelStartText.setOrigin(textBounds.left + textBounds.width / 2.0f,
+						textBounds.top + textBounds.height / 2.0f);
+					levelStartText.setPosition(std::trunc(rectBounds.left + rectBounds.width / 2.0f),
+						std::trunc(rectBounds.top + rectBounds.height / 2.0f));
+
+					levelStartButton.setSize(sf::Vector2f(textBounds.width, textBounds.height));
+					levelStartButton.setPosition(levelStartText.getPosition().x - textBounds.width / 2.0f,
+						levelStartText.getPosition().y - textBounds.height / 2.0f);
+
+					window.draw(levelStartButton);
+					window.draw(levelStartText);
+				}
+
 				window.draw(levelId);
 			}
 
@@ -507,13 +527,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			else {
 				if (!plantExist(0)) {
 					selectCountryScreen.setSize(sf::Vector2f(viewWorldSizeX, 4.0f * viewWorldSizeY / 5.0f));
-					selectCountryScreen.setPosition(viewWorldCenterX - selectCountryScreen.getSize().x / 2.0f, 
+					selectCountryScreen.setPosition(viewWorldCenterX - selectCountryScreen.getSize().x / 2.0f,
 						viewWorldCenterY - selectCountryScreen.getSize().y / 2.0f);
 
 					sf::RectangleShape& ps = seedPackets[seedPacketIdToString(0)];
 					ps.setSize(sf::Vector2f(viewWorldSizeX / 10.0f, viewWorldSizeX / 10.0f * 7.0f / 5.0f));
 					ps.setOrigin(ps.getSize().x / 2.0f, ps.getSize().y);
-					ps.setPosition(viewWorldCenterX, 
+					ps.setPosition(viewWorldCenterX,
 						selectCountryScreen.getPosition().y + selectCountryScreen.getSize().y);
 
 					selectCountryText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 20.0f));
@@ -531,6 +551,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		case 1:
 			window.setView(view_background);
 			window.draw(background);
+
+			/*const float viewWorldCenterX = view_background.getCenter().x;
+			const float viewWorldCenterY = view_background.getCenter().y;
+			const float viewWorldSizeX = view_background.getSize().x;
+			const float viewWorldSizeY = view_background.getSize().y;*/
 
 			if (pvzScene == 0 || pvzScene == 1) {
 				window.draw(seedChooser_background);
@@ -646,6 +671,20 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			for (auto& sun : sunsOnScene) {
 				window.draw(sun.anim.sprite);
 			}
+
+			if (pvzScene == 4 || pvzScene == 5) {
+				if (pvzScene == 5) {
+					winLevelScreen.setSize(view_background.getSize());
+					winLevelScreen.setOrigin(winLevelScreen.getSize().x / 2.0f,
+						winLevelScreen.getSize().y / 2.0f);
+					winLevelScreen.setPosition(view_background.getCenter());
+					winLevelScreen.setFillColor(sf::Color(255, 255, 255, 
+						std::min(winLevelScreen.getFillColor().a + 1, 255)));
+					window.draw(winLevelScreen);
+				}
+
+				window.draw(seedPackets[seedPacketIdToString(getPlantIdByLevel())]);
+			}
 			break;
 		}
 
@@ -662,4 +701,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.43
+//Version 1.0.44

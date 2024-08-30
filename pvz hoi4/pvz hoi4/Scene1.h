@@ -89,6 +89,8 @@ extern bool loggingIn;
 extern int world;
 extern int level;
 void unlockPlant(int id);
-void unlockPlant(int world, int level);
+void unlockPlantByLevel(int vWorld = world, int vLevel = level);
 void initSeedPacketPos();
+void winLevel();
+int getPlantIdByLevel(int vWorld = world, int vLevel = level);
 #endif

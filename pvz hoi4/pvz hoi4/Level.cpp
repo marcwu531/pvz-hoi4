@@ -19,3 +19,13 @@ std::unordered_map<int, std::unordered_map<int, std::vector<int>>> world_level_z
         }
     }
 };
+
+std::unordered_map<int, std::unordered_map<int, int>> world_level_waves = {
+    {
+        1, {
+            {1, Level::World_1::Level_1::waves},
+
+            {2, Level::World_1::Level_2::waves}
+        }
+    }
+};

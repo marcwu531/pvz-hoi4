@@ -148,6 +148,10 @@ int getPlantMaxFrameById(int id) {
 	return maxFrames;
 }
 
+bool plantExist(int id) {
+	return account.plantsLevel[id] > 0;
+}
+
 void unlockPlant(int id) {
 	if (account.plantsLevel[id] == 0) {
 		account.plantsLevel[id] = 1;
@@ -155,8 +159,12 @@ void unlockPlant(int id) {
 	}
 }
 
-void unlockPlant(int world, int level) {
-	unlockPlant(--world * 10 + level);
+int getPlantIdByLevel(int vWorld, int vLevel) {
+	return --vWorld * 10 + vLevel;
+}
+
+void unlockPlantByLevel(int vWorld, int vLevel) {
+	unlockPlant(getPlantIdByLevel(vWorld, vLevel));
 }
 
 static void initPlantsStatus() {
@@ -323,9 +331,15 @@ void initSeedPacketPos() {
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		seedPackets[seedPacketIdToString(i)].setSize(sf::Vector2f(50.0f * scene1ZoomSize,
 			70.0f * scene1ZoomSize));
-		seedPackets[seedPacketIdToString(i)].setPosition(seedChooser_background.getPosition() +
-			sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
 		seedPackets[seedPacketIdToString(i)].setOrigin(0.0f, 0.0f);
+
+		if (plantExist(i)) {
+			seedPackets[seedPacketIdToString(i)].setPosition(seedChooser_background.getPosition() +
+				sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
+		}
+		else {
+			seedPackets[seedPacketIdToString(i)].setPosition(10000.f, 10000.f);
+		}
 	}
 }
 
@@ -365,7 +379,7 @@ static int getSunByTypeAndId(int type, int id) { //type 0: plant
 int blinkSunText = -1;
 
 void createPlant(std::optional<sf::Vector2f> pos, int id) {
-	if (canPlant(hoverPlant.getPosition())) {
+	if (canPlant(hoverPlant.getPosition()) || id == -1) {
 		if (id != -1 && pos.has_value()) {
 			if (pvzSun >= getSunByTypeAndId(0, id)) {
 				int cd = 0;
@@ -427,9 +441,11 @@ void createProjectile(int type, sf::Vector2f pos) {
 void selectSeedPacket(sf::Vector2f mousePos) {
 	auto end = seedPackets.end();
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
-		auto it = seedPackets.find(seedPacketIdToString(i));
-		if (it != end && it->second.getGlobalBounds().contains(mousePos)) {
-			selectSeedPacket(i);
+		if (plantExist(i)) {
+			auto it = seedPackets.find(seedPacketIdToString(i));
+			if (it != end && it->second.getGlobalBounds().contains(mousePos)) {
+				selectSeedPacket(i);
+			}
 		}
 	}
 }
@@ -501,10 +517,6 @@ bool damagePlant(plantState& plant) {
 
 std::unordered_map<int, int> seedPacketsSelectedOrder;
 
-bool plantExist(int id) {
-	return account.plantsLevel[id] > 0;
-}
-
 int getOwnedPlantsAmount() {
 	int ret = 0;
 
@@ -558,3 +570,17 @@ void addSun(int amount) {
 }
 
 bool loggingIn = true;
+
+void winLevel() {
+	pvzScene = 4;
+	
+	for (auto& sun : sunsOnScene) {
+		selectSun(sun);
+	}
+
+	sf::RectangleShape& unlockSP = seedPackets[seedPacketIdToString(getPlantIdByLevel())];
+	unlockSP.setOrigin(unlockSP.getSize().x / 2.0f, unlockSP.getSize().y / 2.0f);
+	unlockSP.setPosition(view_background.getCenter());
+
+	unlockPlantByLevel();
+}

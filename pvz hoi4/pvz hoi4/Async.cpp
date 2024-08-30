@@ -13,6 +13,7 @@
 #include "Audio.h"
 #include "Colour.h"
 #include "Display.h"
+#include "Level.h"
 #include "Scene1.h"
 #include "State.h"
 
@@ -176,9 +177,10 @@ void asyncPvzSceneUpdate() {
 		}
 	}
 
-	int zombieSpawnTimer = 0;
+	int zombieSpawnTimer = 1; // 1500 + rand() % 500;
 	int sunSpawnTimer = 0;
 	float sunAnimSpeed = 0.75f;
+	int currentWave = 0;
 
 	const auto frameTime = std::chrono::milliseconds(1000 / fps);
 	auto nextTime = std::chrono::high_resolution_clock::now() + frameTime;
@@ -303,16 +305,27 @@ void asyncPvzSceneUpdate() {
 				break;
 			}
 			case 3:
+			{
 				if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing)
 					audios["lawnbgm"]["1"]->play();
 
-				if (--zombieSpawnTimer <= 0) {
-					zombieSpawnTimer = 1000 + rand() % 500;
+				std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
+				bool noZombie = zombiesOnScene.empty();
+				zombieReadLock.unlock();
 
-					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
-					for (int i = 0; i < 3 + rand() % 5; i++) {
-						createRandomZombie();
+				if (currentWave < world_level_waves[world][level]) {
+					if (--zombieSpawnTimer <= 0 || noZombie) {
+						++currentWave;
+						zombieSpawnTimer = 1; // 2000 + rand() % 500;
+
+						std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+						for (int i = 0; i < 3 + rand() % 5; i++) {
+							createRandomZombie();
+						}
 					}
+				}
+				else if (noZombie) {
+					winLevel();
 				}
 
 				if (--sunSpawnTimer <= 0) {
@@ -384,7 +397,7 @@ void asyncPvzSceneUpdate() {
 							}
 							else {
 								zombie.anim.animId = 2;
-								zombie.anim.sprite.move(zombie.movementSpeed);
+								zombie.anim.sprite.move(-50.0f, 0.0f);//zombie.movementSpeed);
 								zombie.targetPlant = nullptr;
 							}
 
@@ -401,6 +414,21 @@ void asyncPvzSceneUpdate() {
 						zombiesOnScene.erase(zombiesOnScene.begin() + *it);
 					}
 				}
+				
+
+				if (blinkSunText != -1) {
+					if (++blinkSunText < 5 || (blinkSunText > 10 && blinkSunText < 15)) {
+						pvzSunText.setFillColor(sf::Color(255, 0, 0));
+					}
+					else {
+						pvzSunText.setFillColor(sf::Color(0, 0, 0));
+						if (blinkSunText > 20) blinkSunText = -1;
+					}
+				}
+			}
+			[[fallthrough]];
+			case 4:
+			case 5:
 				if (!plantsOnScene.empty()) {
 					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
 
@@ -416,38 +444,40 @@ void asyncPvzSceneUpdate() {
 
 						int frame = static_cast<int>(std::trunc(plant.anim.frameId / animSpeed));
 
-						switch (plant.anim.animId) {
-						case 0:
-							if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
-								plant.attack = false;
+						if (pvzScene == 3) {
+							switch (plant.anim.animId) {
+							case 0:
+								if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
+									plant.attack = false;
 
-								std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
-								for (auto& zombie : zombiesOnScene) {
-									sf::FloatRect zb = zombie.anim.sprite.getGlobalBounds();
-									sf::FloatRect pb = plant.anim.sprite.getGlobalBounds();
-									if (plant.anim.row == zombie.anim.row
-										&& zombie.anim.sprite.getPosition().x <= 1300 &&
-										zb.left + zb.width > pb.left - pb.width) {
-										plant.attack = true;
-										break;
+									std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
+									for (auto& zombie : zombiesOnScene) {
+										sf::FloatRect zb = zombie.anim.sprite.getGlobalBounds();
+										sf::FloatRect pb = plant.anim.sprite.getGlobalBounds();
+										if (plant.anim.row == zombie.anim.row
+											&& zombie.anim.sprite.getPosition().x <= 1300 &&
+											zb.left + zb.width > pb.left - pb.width) {
+											plant.attack = true;
+											break;
+										}
 									}
 								}
-							}
-							break;
-						case 1:
-							plant.cd -= static_cast<int>(frameTime.count());
-							if (plant.cd <= 0) {
-								if (std::fabs(plant.anim.frameId - 17.0f * animSpeed) < 1.0f) {
-									plant.cd = 24000 + (std::rand() % 1001);
-									std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
-									createSun(plant.anim.sprite.getPosition()
-										- sf::Vector2f(0.0f, 50.0f), 0, 2);
+								break;
+							case 1:
+								plant.cd -= static_cast<int>(frameTime.count());
+								if (plant.cd <= 0) {
+									if (std::fabs(plant.anim.frameId - 17.0f * animSpeed) < 1.0f) {
+										plant.cd = 24000 + (std::rand() % 1001);
+										std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
+										createSun(plant.anim.sprite.getPosition()
+											- sf::Vector2f(0.0f, 50.0f), 0, 2);
+									}
 								}
+								break;
 							}
-							break;
 						}
 
-						if (plant.attack) {
+						if (plant.attack && pvzScene == 3) {
 							sprite.setTexture(*getPlantAttackTextureById(plant.anim.animId));
 							sprite.setTextureRect(getPlantAttackFrameById(plant.anim.animId)->
 								find(frame)->second.frameRect);
@@ -475,7 +505,7 @@ void asyncPvzSceneUpdate() {
 
 						bool shouldEraseProjectile = it->sprite.getPosition().x > 1500;
 
-						if (!shouldEraseProjectile) {
+						if (!shouldEraseProjectile && pvzScene == 3) {
 							std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
 							auto zIt = zombiesOnScene.begin();
 							while (zIt != zombiesOnScene.end()) {
@@ -516,16 +546,6 @@ void asyncPvzSceneUpdate() {
 						else {
 							++it;
 						}
-					}
-				}
-
-				if (blinkSunText != -1) {
-					if (++blinkSunText < 5 || (blinkSunText > 10 && blinkSunText < 15)) {
-						pvzSunText.setFillColor(sf::Color(255, 0, 0));
-					}
-					else {
-						pvzSunText.setFillColor(sf::Color(0, 0, 0));
-						if (blinkSunText > 20) blinkSunText = -1;
 					}
 				}
 
@@ -597,7 +617,11 @@ void asyncPvzSceneUpdate() {
 					}
 					++it;
 				}
-				break;
+
+				if (pvzScene == 5) {
+					seedPackets[seedPacketIdToString(getPlantIdByLevel())].scale(1.01f, 1.01f);
+				}
+			break;
 			}
 		}
 
