@@ -13,6 +13,7 @@
 #include "Audio.h"
 #include "Colour.h"
 #include "Display.h"
+#include "General.h"
 #include "Level.h"
 #include "Scene1.h"
 #include "State.h"
@@ -414,7 +415,7 @@ void asyncPvzSceneUpdate() {
 						zombiesOnScene.erase(zombiesOnScene.begin() + *it);
 					}
 				}
-				
+
 
 				if (blinkSunText != -1) {
 					if (++blinkSunText < 5 || (blinkSunText > 10 && blinkSunText < 15)) {
@@ -619,9 +620,28 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (pvzScene == 5) {
-					seedPackets[seedPacketIdToString(getPlantIdByLevel())].scale(1.01f, 1.01f);
+					sf::RectangleShape& seedPacket = seedPackets[seedPacketIdToString(getPlantIdByLevel())];
+
+					float remainingAlphaSteps = 255 - winLevelScreen.getFillColor().a;
+					if (remainingAlphaSteps > 0) {
+						sf::Vector2f direction = view_background.getCenter() - seedPacket.getPosition();
+						seedPacket.move(direction / remainingAlphaSteps);
+					}
+					else {
+						seedPacket.setPosition(view_background.getCenter());
+					}
+
+					seedPacket.scale(1.005f, 1.005f);
+
+					winLevelScreen.setFillColor(sf::Color(255, 255, 255,
+						std::min(winLevelScreen.getFillColor().a + 2, 255)));
+
+					if (winLevelScreen.getFillColor().a == 255) {
+						seedPacket.setPosition(view_background.getCenter());
+						pvzScene = 6;
+					}
 				}
-			break;
+				break;
 			}
 		}
 

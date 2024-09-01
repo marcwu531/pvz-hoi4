@@ -1,3 +1,4 @@
+#include <SFML/Graphics.hpp>
 #include <string>
 #include <unordered_map>
 
@@ -17,3 +18,5 @@ void mapShift(std::unordered_map<int, int>& targetMap) {
 
 	targetMap = std::move(tempMap);
 }
+
+sf::RectangleShape winLevelScreen;

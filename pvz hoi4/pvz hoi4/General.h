@@ -8,4 +8,6 @@ struct playerAccount {
 extern playerAccount account;
 
 void mapShift(std::unordered_map<int, int>& myMap);
+
+extern sf::RectangleShape winLevelScreen;
 #endif GENERAL_H

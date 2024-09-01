@@ -580,7 +580,13 @@ void winLevel() {
 
 	sf::RectangleShape& unlockSP = seedPackets[seedPacketIdToString(getPlantIdByLevel())];
 	unlockSP.setOrigin(unlockSP.getSize().x / 2.0f, unlockSP.getSize().y / 2.0f);
-	unlockSP.setPosition(view_background.getCenter());
+	unlockSP.setPosition(view_background.getCenter() +
+		sf::Vector2f(static_cast<float>(rand() % 501) - 250.0f, static_cast<float>(rand() % 501) - 250.0f));
+
+	winLevelScreen.setSize(view_background.getSize());
+	winLevelScreen.setOrigin(winLevelScreen.getSize().x / 2.0f,
+		winLevelScreen.getSize().y / 2.0f);
+	winLevelScreen.setPosition(view_background.getCenter());
 
 	unlockPlantByLevel();
 }

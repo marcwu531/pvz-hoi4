@@ -134,8 +134,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	selectCountryText.setString("Select Your Country");
 	selectCountryText.setFillColor(sf::Color::Black);
 
-	sf::RectangleShape winLevelScreen;
 	winLevelScreen.setFillColor(sf::Color(255, 255, 255, 0));
+
+	flag_texture.create(383, 256);
+	flag_texture.update(getFlagImage("Taiwan"));
+	flag_rect.setTexture(&flag_texture);
 
 	/*float pi = std::atan(1.0f) * 4.0f;
 	float e = std::exp(1.0f);
@@ -310,9 +313,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							enteringUsername = false;
 
 							if (saveUsernameButton.getGlobalBounds().contains(mousePos)) {
-								if (!username.empty()) account.username = username;
-								std::shared_lock<std::shared_mutex> accountReadLock(accountMutex);
-								exportAccountText.setString(encryptAccount(account));
+								if (!username.empty()) {
+									account.username = username;
+									std::shared_lock<std::shared_mutex> accountReadLock(accountMutex);
+									exportAccountText.setString(encryptAccount(account));
+								}
+								else {
+									exportAccountText.setString("Invalid Data");
+								}
 							}
 							else if (usernameBox.getGlobalBounds().contains(mousePos)) {
 								enteringUsername = true;
@@ -320,6 +328,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 						else if (!plantExist(0)) {
 							if (seedPackets[seedPacketIdToString(0)].getGlobalBounds().contains(mousePos)) {
+								flag_rect.setOrigin(0, 0);
 								unlockPlant(0);
 							}
 						}
@@ -480,7 +489,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					10 * mapRatio * viewWorldSizeY / window.getSize().y)); // 3:2
 				flag_rect.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
 					viewWorldCenterY - viewWorldSizeY / 2.0f);
-				//window.draw(flag_rect);
+				window.draw(flag_rect);
 			}
 
 			accountButton.setSize(sf::Vector2f(viewWorldSizeX / 15.0f,
@@ -534,15 +543,21 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					ps.setSize(sf::Vector2f(viewWorldSizeX / 10.0f, viewWorldSizeX / 10.0f * 7.0f / 5.0f));
 					ps.setOrigin(ps.getSize().x / 2.0f, ps.getSize().y);
 					ps.setPosition(viewWorldCenterX,
-						selectCountryScreen.getPosition().y + selectCountryScreen.getSize().y);
+						selectCountryScreen.getPosition().y + selectCountryScreen.getSize().y * 0.9f);
 
 					selectCountryText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 20.0f));
 					selectCountryText.setOrigin(selectCountryText.getGlobalBounds().width / 2.0f, 0.0f);
 					selectCountryText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 2.5f);
 
+					flag_rect.setSize(sf::Vector2f(viewWorldSizeX / 5.0f, viewWorldSizeX / 5.0f * 2.0f / 3.0f));
+					flag_rect.setOrigin(flag_rect.getSize().x / 2.0f, 0);
+					flag_rect.setPosition(viewWorldCenterX, selectCountryScreen.getPosition().y + 
+						selectCountryText.getGlobalBounds().height * 1.5f);
+
 					window.draw(selectCountryScreen);
 					window.draw(seedPackets[seedPacketIdToString(0)]);
 					window.draw(selectCountryText);
+					window.draw(flag_rect);
 				}
 			}
 			break;
@@ -674,12 +689,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 			if (pvzScene == 4 || pvzScene == 5) {
 				if (pvzScene == 5) {
-					winLevelScreen.setSize(view_background.getSize());
-					winLevelScreen.setOrigin(winLevelScreen.getSize().x / 2.0f,
-						winLevelScreen.getSize().y / 2.0f);
-					winLevelScreen.setPosition(view_background.getCenter());
-					winLevelScreen.setFillColor(sf::Color(255, 255, 255, 
-						std::min(winLevelScreen.getFillColor().a + 1, 255)));
 					window.draw(winLevelScreen);
 				}
 
@@ -701,4 +710,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.44
+//Version 1.0.45
