@@ -1,7 +1,16 @@
-﻿  Async.cpp
+﻿  Account.cpp
+  Async.cpp
+D:\c++\pvz hoi4\pvz hoi4\Async.cpp(625,32): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+  Audio.cpp
+  Colour.cpp
   Display.cpp
-  Scene1.cpp
+  General.cpp
+  Json.cpp
+  Level.cpp
   main.cpp
+  Scene1.cpp
+  State.cpp
+  Window.cpp
   Generating code
   Finished generating code
   pvz hoi4.vcxproj -> D:\c++\pvz hoi4\Release\pvz hoi4.exe

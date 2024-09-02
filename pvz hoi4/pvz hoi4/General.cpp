@@ -20,3 +20,4 @@ void mapShift(std::unordered_map<int, int>& targetMap) {
 }
 
 sf::RectangleShape winLevelScreen;
+sf::RectangleShape awardScreen;

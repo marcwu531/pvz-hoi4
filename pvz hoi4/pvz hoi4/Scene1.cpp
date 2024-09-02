@@ -584,9 +584,12 @@ void winLevel() {
 		sf::Vector2f(static_cast<float>(rand() % 501) - 250.0f, static_cast<float>(rand() % 501) - 250.0f));
 
 	winLevelScreen.setSize(view_background.getSize());
-	winLevelScreen.setOrigin(winLevelScreen.getSize().x / 2.0f,
-		winLevelScreen.getSize().y / 2.0f);
+	winLevelScreen.setOrigin(winLevelScreen.getSize().x / 2.0f, winLevelScreen.getSize().y / 2.0f);
 	winLevelScreen.setPosition(view_background.getCenter());
+
+	awardScreen.setSize(view_background.getSize());
+	awardScreen.setOrigin(awardScreen.getSize().x / 2.0f, awardScreen.getSize().y / 2.0f);
+	awardScreen.setPosition(view_background.getCenter());
 
 	unlockPlantByLevel();
 }

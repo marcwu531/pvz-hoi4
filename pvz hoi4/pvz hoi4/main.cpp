@@ -91,8 +91,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	sf::RectangleShape accountButton;
 #ifdef CENSORED
 	auto seedChooserBgImage = loadImageFromResource(nullHInstance, 133);
+	auto awardSceneImage = loadImageFromResource(nullHInstance, 133);
 #else
 	auto seedChooserBgImage = loadImageFromResource(nullHInstance, 138);
+	auto awardScreenImage = loadImageFromResource(nullHInstance, 139);
 #endif
 	accountButtonTexture.loadFromImage(seedChooserBgImage);
 	accountButton.setTexture(&accountButtonTexture);
@@ -143,6 +145,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	/*float pi = std::atan(1.0f) * 4.0f;
 	float e = std::exp(1.0f);
 	float phi = (1.0f + std::sqrt(5.0f)) / 2.0f;*/
+
+	sf::Texture awardScreenTexture;
+	awardScreenTexture.loadFromImage(awardScreenImage);
+	awardScreen.setTexture(&awardScreenTexture);
 
 	while (window.isOpen())
 	{
@@ -565,133 +571,142 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 		case 1:
 			window.setView(view_background);
-			window.draw(background);
 
-			/*const float viewWorldCenterX = view_background.getCenter().x;
-			const float viewWorldCenterY = view_background.getCenter().y;
-			const float viewWorldSizeX = view_background.getSize().x;
-			const float viewWorldSizeY = view_background.getSize().y;*/
+			if (pvzScene < 6) {
+				window.draw(background);
 
-			if (pvzScene == 0 || pvzScene == 1) {
-				window.draw(seedChooser_background);
-				window.draw(seedChooserButton);
-			}
+				/*const float viewWorldCenterX = view_background.getCenter().x;
+				const float viewWorldCenterY = view_background.getCenter().y;
+				const float viewWorldSizeX = view_background.getSize().x;
+				const float viewWorldSizeY = view_background.getSize().y;*/
 
-			if (pvzScene == 2) {
-				window.draw(pvzStartText);
-			}
-
-			pvzSunText.setString(std::to_string(pvzSun));
-			const sf::FloatRect pvzSunTextRect = pvzSunText.getLocalBounds();
-			pvzSunText.setOrigin(pvzSunTextRect.left + pvzSunTextRect.width / 2.0f,
-				pvzSunTextRect.top + pvzSunTextRect.height / 2.0f);
-			window.draw(seedBank);
-			window.draw(pvzSunText);
-
-			if (pvzScene == 0 || pvzScene == 1) {
-				for (int i = 0; i < maxPlantAmount; ++i) {
-					if (plantExist(i)) {
-						window.draw(seedPackets.find(seedPacketIdToString(i))->second);
-					}
-				}
-			}
-			else {
-				for (const auto& sp : seedPacketsSelectedOrder) {
-					if (plantExist(sp.second)) {
-						window.draw(seedPackets.find(seedPacketIdToString(sp.second))->second);
-					}
-				}
-			}
-
-			if (pvzScene == 3) {
-				if (pvzPacketOnSelected) {
-					window.draw(overlayShade);
-					if (canPlant(hoverPlant.getPosition())) {
-						window.draw(hoverPlant);
-						window.draw(hoverShade);
-					}
-					window.draw(idlePlants[idlePlantToString[seedPacketSelectedId]]);
+				if (pvzScene == 0 || pvzScene == 1) {
+					window.draw(seedChooser_background);
+					window.draw(seedChooserButton);
 				}
 
-				if (!plantsOnScene.empty()) {
-					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
+				if (pvzScene == 2) {
+					window.draw(pvzStartText);
+				}
 
-					for (const auto& plant : plantsOnScene) {
-						if (plant.damagedCd > 0) {
-							window.draw(plant.anim.sprite, &damaged_shader);
+				pvzSunText.setString(std::to_string(pvzSun));
+				const sf::FloatRect pvzSunTextRect = pvzSunText.getLocalBounds();
+				pvzSunText.setOrigin(pvzSunTextRect.left + pvzSunTextRect.width / 2.0f,
+					pvzSunTextRect.top + pvzSunTextRect.height / 2.0f);
+				window.draw(seedBank);
+				window.draw(pvzSunText);
+
+				if (pvzScene == 0 || pvzScene == 1) {
+					for (int i = 0; i < maxPlantAmount; ++i) {
+						if (plantExist(i)) {
+							window.draw(seedPackets.find(seedPacketIdToString(i))->second);
+						}
+					}
+				}
+				else {
+					for (const auto& sp : seedPacketsSelectedOrder) {
+						if (plantExist(sp.second)) {
+							window.draw(seedPackets.find(seedPacketIdToString(sp.second))->second);
+						}
+					}
+				}
+
+				if (pvzScene == 3) {
+					if (pvzPacketOnSelected) {
+						window.draw(overlayShade);
+						if (canPlant(hoverPlant.getPosition())) {
+							window.draw(hoverPlant);
+							window.draw(hoverShade);
+						}
+						window.draw(idlePlants[idlePlantToString[seedPacketSelectedId]]);
+					}
+
+					if (!plantsOnScene.empty()) {
+						std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
+
+						for (const auto& plant : plantsOnScene) {
+							if (plant.damagedCd > 0) {
+								window.draw(plant.anim.sprite, &damaged_shader);
+							}
+							else {
+								window.draw(plant.anim.sprite);
+							}
+						}
+					}
+
+					std::shared_lock<std::shared_mutex> projReadLock(projsMutex);
+					if (!projectilesOnScene.empty()) {
+						for (const auto& projectile : projectilesOnScene) {
+							window.draw(projectile.sprite);
+						}
+					}
+				}
+
+				if (!zombiesOnScene.empty()) {
+					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+
+					std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
+
+					for (auto& zombie : zombiesOnScene) {
+						if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row.value())
+							< tempZombies.size())
+							tempZombies[zombie.anim.row.value()].push_back(zombie);
+					}
+
+					zombiesOnScene.clear();
+					for (auto& tmpZ : tempZombies) {
+						zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
+					}
+
+					zombieWriteLock.unlock();
+					std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
+
+					/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
+						[](const zombieState& a, const zombieState& b) {
+						return a.anim.row < b.anim.row;
+					});*/
+
+					for (const auto& zombie : zombiesOnScene) {
+						if (zombie.damagedCd > 0) {
+							window.draw(zombie.anim.sprite, &damaged_shader);
 						}
 						else {
-							window.draw(plant.anim.sprite);
+							window.draw(zombie.anim.sprite);
 						}
 					}
 				}
 
-				std::shared_lock<std::shared_mutex> projReadLock(projsMutex);
-				if (!projectilesOnScene.empty()) {
-					for (const auto& projectile : projectilesOnScene) {
-						window.draw(projectile.sprite);
+				{
+					std::unique_lock<std::shared_mutex> vanishProjWriteLock(vanishProjsMutex);
+					for (auto it = vanishProjectilesOnScene.begin(); it != vanishProjectilesOnScene.end();) {
+						if (++it->frame >= 13) {
+							it = vanishProjectilesOnScene.erase(it);
+						}
+						else {
+							it->proj.sprite.setTextureRect(peaSplatsFrames[std::min(it->frame, 3)].frameRect);
+							window.draw(it->proj.sprite);
+							++it;
+						}
 					}
 				}
-			}
 
-			if (!zombiesOnScene.empty()) {
-				std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
-
-				std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
-
-				for (auto& zombie : zombiesOnScene) {
-					if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row.value())
-						< tempZombies.size())
-						tempZombies[zombie.anim.row.value()].push_back(zombie);
-				}
-
-				zombiesOnScene.clear();
-				for (auto& tmpZ : tempZombies) {
-					zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
-				}
-
-				zombieWriteLock.unlock();
-				std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
-
-				/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
-					[](const zombieState& a, const zombieState& b) {
-					return a.anim.row < b.anim.row;
-				});*/
-
-				for (const auto& zombie : zombiesOnScene) {
-					if (zombie.damagedCd > 0) {
-						window.draw(zombie.anim.sprite, &damaged_shader);
-					}
-					else {
-						window.draw(zombie.anim.sprite);
+				{
+					std::shared_lock<std::shared_mutex> sunReadLock(sunsMutex);
+					for (auto& sun : sunsOnScene) {
+						window.draw(sun.anim.sprite);
 					}
 				}
-			}
 
-			{
-				std::unique_lock<std::shared_mutex> vanishProjWriteLock(vanishProjsMutex);
-				for (auto it = vanishProjectilesOnScene.begin(); it != vanishProjectilesOnScene.end();) {
-					if (++it->frame >= 13) {
-						it = vanishProjectilesOnScene.erase(it);
+				if (pvzScene == 4 || pvzScene == 5) {
+					if (pvzScene == 5) {
+						window.draw(winLevelScreen);
 					}
-					else {
-						it->proj.sprite.setTextureRect(peaSplatsFrames[std::min(it->frame, 3)].frameRect);
-						window.draw(it->proj.sprite);
-						++it;
-					}
+
+					window.draw(seedPackets[seedPacketIdToString(getPlantIdByLevel())]);
 				}
-			}
-
-			std::shared_lock<std::shared_mutex> sunReadLock(sunsMutex);
-			for (auto& sun : sunsOnScene) {
-				window.draw(sun.anim.sprite);
-			}
-
-			if (pvzScene == 4 || pvzScene == 5) {
-				if (pvzScene == 5) {
-					window.draw(winLevelScreen);
-				}
-
+			} else {
+				window.draw(awardScreen);
+				window.draw(winLevelScreen);
 				window.draw(seedPackets[seedPacketIdToString(getPlantIdByLevel())]);
 			}
 			break;
@@ -710,4 +725,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.45.a
+//Version 1.0.46

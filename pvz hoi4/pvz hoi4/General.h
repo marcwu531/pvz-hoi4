@@ -10,4 +10,5 @@ extern playerAccount account;
 void mapShift(std::unordered_map<int, int>& myMap);
 
 extern sf::RectangleShape winLevelScreen;
+extern sf::RectangleShape awardScreen;
 #endif GENERAL_H

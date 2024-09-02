@@ -430,6 +430,7 @@ void asyncPvzSceneUpdate() {
 			[[fallthrough]];
 			case 4:
 			case 5:
+			{
 				if (!plantsOnScene.empty()) {
 					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
 
@@ -622,13 +623,17 @@ void asyncPvzSceneUpdate() {
 				if (pvzScene == 5) {
 					sf::RectangleShape& seedPacket = seedPackets[seedPacketIdToString(getPlantIdByLevel())];
 
-					float remainingAlphaSteps = 255 - winLevelScreen.getFillColor().a;
+					float remainingAlphaSteps = static_cast<float>(255 - winLevelScreen.getFillColor().a);
+					sf::Vector2f destPlace(view_background.getCenter() - 
+						sf::Vector2f(0.0f, 0.2f * view_background.getSize().y));
+
 					if (remainingAlphaSteps > 0) {
-						sf::Vector2f direction = view_background.getCenter() - seedPacket.getPosition();
+						sf::Vector2f direction = destPlace - seedPacket.getPosition()
+							;
 						seedPacket.move(direction / remainingAlphaSteps);
 					}
 					else {
-						seedPacket.setPosition(view_background.getCenter());
+						seedPacket.setPosition(destPlace);
 					}
 
 					seedPacket.scale(1.005f, 1.005f);
@@ -637,11 +642,18 @@ void asyncPvzSceneUpdate() {
 						std::min(winLevelScreen.getFillColor().a + 2, 255)));
 
 					if (winLevelScreen.getFillColor().a == 255) {
-						seedPacket.setPosition(view_background.getCenter());
+						seedPacket.setPosition(destPlace);
 						pvzScene = 6;
 					}
 				}
 				break;
+			}
+			case 6:
+				winLevelScreen.setFillColor(sf::Color(255, 255, 255,
+					std::max(winLevelScreen.getFillColor().a - 2, 0)));
+
+				if (winLevelScreen.getFillColor().a == 0) pvzScene = 7;
+			break;
 			}
 		}
 
