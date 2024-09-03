@@ -155,12 +155,15 @@ static void updateZombieAnim() {
 	}
 }
 
+int idleFrame = 0;
+
 void asyncPvzSceneUpdate() {
 	int pvzScene1moving = 0;
 	const int moveAmount = 50;
 	const float duration = moveAmount * (1000.0f / fps) * 0.5f;
 	float elapsedTimeTotal = 0.0f;
 	int pvzStartScene = 0;
+	seedPacketSelected = 0;
 
 	std::vector<float> yCoords(5 + rand() % 6);
 
@@ -202,11 +205,13 @@ void asyncPvzSceneUpdate() {
 				float sceneZoom = 50.0f * scene1ZoomSize;
 
 				for (int i = 0; i < maxPlantAmount; ++i) {
+					if (!plantExist(i)) continue;
 					auto it = stateToTargetPosition.find((int)seedPacketState[i][0]);
 					if (it != stateToTargetPosition.end()) {
 						if (seedPacketState[i][0] == 3 && seedPacketState[i][1] == 0) {
 							//sf::Mouse::setPosition(sf::Vector2i(175, 300));
 							for (int j = 0; j < maxPlantAmount; ++j) {
+								if (!plantExist(j)) continue;
 								if (i == j) continue;
 
 								sf::RectangleShape& spI = seedPackets[seedPacketIdToString(i)];
@@ -621,7 +626,7 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (pvzScene == 5) {
-					sf::RectangleShape& seedPacket = seedPackets[seedPacketIdToString(getPlantIdByLevel())];
+					sf::RectangleShape& seedPacket = seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
 
 					float remainingAlphaSteps = static_cast<float>(255 - winLevelScreen.getFillColor().a);
 					sf::Vector2f destPlace(view_background.getCenter() - 
@@ -641,8 +646,15 @@ void asyncPvzSceneUpdate() {
 					winLevelScreen.setFillColor(sf::Color(255, 255, 255,
 						std::min(winLevelScreen.getFillColor().a + 2, 255)));
 
+					seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())].setFillColor(
+						sf::Color(255, 255, 255, 255 - winLevelScreen.getFillColor().a));
+
 					if (winLevelScreen.getFillColor().a == 255) {
 						seedPacket.setPosition(destPlace);
+						seedChooserButton.setTexture(&texture_seedChooser);
+						seedChooserButton.setPosition(view_background.getCenter() 
+							+ sf::Vector2f(-seedChooserButton.getSize().x / 2.0f, 
+								view_background.getSize().y * 0.35f));
 						pvzScene = 6;
 					}
 				}
@@ -653,6 +665,12 @@ void asyncPvzSceneUpdate() {
 					std::max(winLevelScreen.getFillColor().a - 2, 0)));
 
 				if (winLevelScreen.getFillColor().a == 0) pvzScene = 7;
+				[[fallthrough]];
+			case 7:
+				if (++idleFrame > getPlantMaxFrameById(getUnlockPlantIdByLevel()) * animSpeed) idleFrame = 0;
+				idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setTextureRect(
+					getPlantAttackFrameById(getUnlockPlantIdByLevel())->
+					find(static_cast<int>(std::trunc(idleFrame / animSpeed)))->second.frameRect);
 			break;
 			}
 		}

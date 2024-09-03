@@ -12,6 +12,7 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
 extern const std::unordered_map<int, sf::Vector2f> stateToTargetPosition;
 extern float easeInOutQuad(float t, float easeRatio = 0.4f, float easeAccMax = 2.5f);
 extern float scene1ZoomSize;
+void initScene1Place();
 void initializeScene1();
 struct spriteAnim {
     sf::Sprite sprite;
@@ -92,5 +93,5 @@ void unlockPlant(int id);
 void unlockPlantByLevel(int vWorld = world, int vLevel = level);
 void initSeedPacketPos();
 void winLevel();
-int getPlantIdByLevel(int vWorld = world, int vLevel = level);
+int getUnlockPlantIdByLevel(int vWorld = world, int vLevel = level);
 #endif

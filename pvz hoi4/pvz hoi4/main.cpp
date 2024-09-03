@@ -30,14 +30,15 @@
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine,
 	_In_ int nCmdShow) { //int main() {
+
+	srand(static_cast<unsigned int>(time(nullptr)));
+
 #ifdef RUN_DEBUG
 	AttachConsole();
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	signal(SIGABRT, &handle_aborts);
 	//std::abort(); //RUN_DEBUG
 #endif
-
-	srand(static_cast<unsigned int>(time(nullptr)));
 
 	initializeAudios(hInstance);
 
@@ -356,6 +357,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 					if (pvzScene == 0 && !selectingSeedPacket) {
 						for (int i = 0; i < maxPlantAmount; ++i) {
+							if (!plantExist(i)) continue;
 							if (seedPackets[seedPacketIdToString(i)].getGlobalBounds().contains(mousePos)) {
 								selectingSeedPacket = true;
 								switch (static_cast<int>(seedPacketState[i][0])) {
@@ -405,9 +407,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 					}
 					else if (pvzScene == 4) {
-						if (seedPackets[seedPacketIdToString(getPlantIdByLevel())]
+						if (seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]
 							.getGlobalBounds().contains(mousePos)) {
 							pvzScene = 5;
+						}
+					}
+					else if (pvzScene == 7) {
+						if (seedChooserButton.getGlobalBounds().contains(mousePos)) {
+							changeScene(0);
+							pvzScene = 0;
+							initScene1Place();
 						}
 					}
 				}
@@ -702,12 +711,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						window.draw(winLevelScreen);
 					}
 
-					window.draw(seedPackets[seedPacketIdToString(getPlantIdByLevel())]);
+					window.draw(seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]);
 				}
 			} else {
 				window.draw(awardScreen);
-				window.draw(winLevelScreen);
-				window.draw(seedPackets[seedPacketIdToString(getPlantIdByLevel())]);
+				window.draw(idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]]);
+				window.draw(seedChooserButton);
+				if (pvzScene == 6) window.draw(winLevelScreen);
 			}
 			break;
 		}
@@ -725,4 +735,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.46
+//Version 1.0.47

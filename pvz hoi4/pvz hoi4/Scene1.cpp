@@ -43,6 +43,7 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
 	auto& state = seedPacketState[i];
 	if (state[1] == 0 && state[0] != 4) {
 		seedPacketSelected += 2 - static_cast<int>(state[0]);
+		std::cout << seedPacketSelected << std::endl;
 	}
 
 	state[1] += elapsedTime * 2;
@@ -159,12 +160,12 @@ void unlockPlant(int id) {
 	}
 }
 
-int getPlantIdByLevel(int vWorld, int vLevel) {
+int getUnlockPlantIdByLevel(int vWorld, int vLevel) {
 	return --vWorld * 10 + vLevel;
 }
 
 void unlockPlantByLevel(int vWorld, int vLevel) {
-	unlockPlant(getPlantIdByLevel(vWorld, vLevel));
+	unlockPlant(getUnlockPlantIdByLevel(vWorld, vLevel));
 }
 
 static void initPlantsStatus() {
@@ -175,36 +176,27 @@ static void initPlantsStatus() {
 	unlockPlant(1); //RUN_DEBUG*/
 }
 
-float scene1ZoomSize = 1.7f;
-void initializeScene1() {
-	initPlantsStatus();
-
-	auto bgImage = getPvzImage("background", "bg1");
-	texture_background.loadFromImage(bgImage);
+void initScene1Place() {
 	float bgCamSizeY = view_background.getSize().y;
+	background.setPosition(0.0f, 0.0f);
 	background.setSize(sf::Vector2f(1400.0f / 600.0f * bgCamSizeY, bgCamSizeY)); //1920.0f, 1046.0f -> bg png size 1400 x 600
 	background.setTexture(&texture_background);
-	view_background.move((background.getSize().x - view_background.getSize().x) / 2.0f, 10.0f);
 
-	auto seedBankImage = getPvzImage("seed_selector", "seedBank");
-	texture_seedBank.loadFromImage(seedBankImage);
+	view_background.setCenter((background.getSize().x - view_background.getSize().x) / 2.0f, 10.0f);
+
 	seedBank.setSize(sf::Vector2f(446.0f * scene1ZoomSize, 87.0f * scene1ZoomSize));
 	seedBank.setTexture(&texture_seedBank);
 	seedBank.setPosition(view_background.getCenter().x - view_background.getSize().x / 2.0f,
 		view_background.getCenter().y - view_background.getSize().y / 2.0f);
 
-	auto seedChooserBgImage = getPvzImage("seed_selector", "seedChooser_background");
-	texture_seedChooser_background.loadFromImage(seedChooserBgImage);
+	pvzStartText.setPosition(view_background.getCenter());
+
 	seedChooser_background.setSize(sf::Vector2f(seedBank.getSize().x,
 		513.0f / 465.0f * seedBank.getSize().x)); //465 x 513
 	seedChooser_background.setTexture(&texture_seedChooser_background);
 	seedChooser_background.setPosition(view_background.getCenter().x - view_background.getSize().x / 2.0f,
 		view_background.getCenter().y - view_background.getSize().y / 2.0f + seedBank.getSize().y);
 
-	auto seedChooserDisabledImage = getPvzImage("seed_selector", "seedChooserDisabled");
-	auto seedChooserButtonImage = getPvzImage("seed_selector", "seedChooserButton");
-	texture_seedChooserDisabled.loadFromImage(seedChooserDisabledImage);
-	texture_seedChooser.loadFromImage(seedChooserButtonImage);
 	seedChooserButton.setSize(sf::Vector2f(278.0f, 72.0f));
 	seedChooserButton.setTexture(&texture_seedChooserDisabled);
 	seedChooserButton.setPosition(seedChooser_background.getPosition().x +
@@ -212,18 +204,10 @@ void initializeScene1() {
 		seedChooser_background.getPosition().y + seedChooser_background.getSize().y -
 		seedChooserButton.getSize().y - 15.0f);
 
-	pvzStartText.setPosition(view_background.getCenter());
-	auto startReadyImage = getPvzImage("seed_selector", "startReady");
-	auto startSetImage = getPvzImage("seed_selector", "startSet");
-	auto startPlantImage = getPvzImage("seed_selector", "startPlant");
-	pvzStartText_ready.loadFromImage(startReadyImage);
-	pvzStartText_set.loadFromImage(startSetImage);
-	pvzStartText_plant.loadFromImage(startPlantImage);
-
 	pvzSunText = sf::Text("", defaultFont, 50);
 	pvzSunText.setFillColor(sf::Color::Black);
-	pvzSunText.setPosition(-633.5f, -390.0f);
-
+	pvzSunText.setPosition(-633.5f, -390.0f); 
+	
 	overlayShade.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
 	overlayShade.setFillColor(sf::Color(0, 0, 0, 180));
 
@@ -234,61 +218,114 @@ void initializeScene1() {
 		hoverShade.getTextureRect().getSize().y / 2.0f);
 	hoverShade.setColor(sf::Color(0, 0, 0, 175));
 
-	auto zombieIdleJson = loadJsonFromResource(118);
-	auto zombieIdleImage = getPvzImage("animations", "zombieIdle");
-	zombieIdleSprites.loadFromImage(zombieIdleImage);
-	zombieIdleFrames = parseSpriteSheetData(zombieIdleJson);
 	zombieIdle.setTexture(zombieIdleSprites);
 	zombieIdle.setTextureRect(zombieIdleFrames[0].frameRect);
 	zombieIdle.setScale(scene1ZoomSize, scene1ZoomSize);
 	zombieIdle.setOrigin(zombieIdle.getTextureRect().getSize().x / 2.0f,
 		zombieIdle.getTextureRect().getSize().y / 2.0f);
 
-	auto zombieIdle1Json = loadJsonFromResource(120);
-	auto zombieIdle1Image = getPvzImage("animations", "zombieIdle1");
-	zombieIdle1Sprites.loadFromImage(zombieIdle1Image);
-	zombieIdle1Frames = parseSpriteSheetData(zombieIdle1Json);
 	zombieIdle1.setTexture(zombieIdle1Sprites);
 	zombieIdle1.setTextureRect(zombieIdle1Frames[0].frameRect);
 	zombieIdle1.setScale(scene1ZoomSize, scene1ZoomSize);
 	zombieIdle1.setOrigin(zombieIdle1.getTextureRect().getSize().x / 2.0f,
 		zombieIdle1.getTextureRect().getSize().y / 2.0f);
 
-	auto zombieWalkJson = loadJsonFromResource(125);
-	auto zombieWalkImage = getPvzImage("animations", "zombieWalk");
-	zombieWalkSprites.loadFromImage(zombieWalkImage);
-	zombieWalkFrames = parseSpriteSheetData(zombieWalkJson);
 	zombieWalk.setTexture(zombieWalkSprites);
 	zombieWalk.setTextureRect(zombieWalkFrames[0].frameRect);
 	zombieWalk.setScale(scene1ZoomSize, scene1ZoomSize);
 	zombieWalk.setOrigin(zombieWalk.getTextureRect().getSize().x / 2.0f,
 		zombieWalk.getTextureRect().getSize().y / 4.0f * 3.0f);
 
-	auto peaImage = getPvzImage("projectiles", "pea");
-	peaTexture.loadFromImage(peaImage);
 	pea.setTexture(peaTexture);
 	pea.setScale(1.5f, 1.5f);
 	pea.setOrigin(pea.getGlobalBounds().width / 2.0f, pea.getGlobalBounds().height / 2.0f + 10.0f);
 
-	auto peaSplatsJson = loadJsonFromResource(127);
-	auto peaSplatsImage = getPvzImage("animations", "peaSplats");
-	peaSplatsSprites.loadFromImage(peaSplatsImage);
-	peaSplatsFrames = parseSpriteSheetData(peaSplatsJson);
 	peaSplats.setTexture(peaSplatsSprites);
 	peaSplats.setTextureRect(peaSplatsFrames[0].frameRect);
 	peaSplats.setScale(scene1ZoomSize, scene1ZoomSize);
 	peaSplats.setOrigin(peaSplats.getTextureRect().getSize().x / 2.0f,
 		peaSplats.getTextureRect().getSize().y / 2.0f + 10.0f);
 
-	auto zombieEatJson = loadJsonFromResource(130);
-	auto zombieEatImage = getPvzImage("animations", "zombieEat");
-	zombieEatSprites.loadFromImage(zombieEatImage);
-	zombieEatFrames = parseSpriteSheetData(zombieEatJson);
 	zombieEat.setTexture(zombieEatSprites);
 	zombieEat.setTextureRect(zombieEatFrames[0].frameRect);
 	zombieEat.setScale(scene1ZoomSize, scene1ZoomSize);
 	zombieEat.setOrigin(zombieEat.getTextureRect().getSize().x / 2.0f,
 		zombieEat.getTextureRect().getSize().y / 4.0f * 3.0f);
+
+	sun.setTexture(sunSprites);
+	sun.setTextureRect(sunFrames[0].frameRect);
+	sun.setScale(scene1ZoomSize, scene1ZoomSize);
+	sun.setOrigin(sun.getTextureRect().getSize().x / 2.0f,
+		sun.getTextureRect().getSize().y / 2.0f);
+
+	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
+		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
+		idlePlants[idlePlantToString[i]].setScale(scene1ZoomSize, scene1ZoomSize);
+		idlePlants[idlePlantToString[i]].setOrigin(idlePlants[idlePlantToString[i]]
+			.getTextureRect().getSize().x / 2.0f,
+			(float)idlePlants[idlePlantToString[i]].getTextureRect().getSize().y);
+		 
+		seedPackets[seedPacketIdToString(i)].setTexture(&seedPacketsTexture[i]);
+	}
+
+	background.setOrigin(background.getSize() / 2.0f);
+
+	hideTempPlants();
+}
+
+float scene1ZoomSize = 1.7f;
+void initializeScene1() {
+	initPlantsStatus();
+
+	auto bgImage = getPvzImage("background", "bg1");
+	texture_background.loadFromImage(bgImage);
+
+	auto seedBankImage = getPvzImage("seed_selector", "seedBank");
+	texture_seedBank.loadFromImage(seedBankImage);
+
+	auto seedChooserBgImage = getPvzImage("seed_selector", "seedChooser_background");
+	texture_seedChooser_background.loadFromImage(seedChooserBgImage);
+
+	auto seedChooserDisabledImage = getPvzImage("seed_selector", "seedChooserDisabled");
+	auto seedChooserButtonImage = getPvzImage("seed_selector", "seedChooserButton");
+	texture_seedChooserDisabled.loadFromImage(seedChooserDisabledImage);
+	texture_seedChooser.loadFromImage(seedChooserButtonImage);
+	
+	auto startReadyImage = getPvzImage("seed_selector", "startReady");
+	auto startSetImage = getPvzImage("seed_selector", "startSet");
+	auto startPlantImage = getPvzImage("seed_selector", "startPlant");
+	pvzStartText_ready.loadFromImage(startReadyImage);
+	pvzStartText_set.loadFromImage(startSetImage);
+	pvzStartText_plant.loadFromImage(startPlantImage);
+
+	auto zombieIdleJson = loadJsonFromResource(118);
+	auto zombieIdleImage = getPvzImage("animations", "zombieIdle");
+	zombieIdleSprites.loadFromImage(zombieIdleImage);
+	zombieIdleFrames = parseSpriteSheetData(zombieIdleJson);
+
+	auto zombieIdle1Json = loadJsonFromResource(120);
+	auto zombieIdle1Image = getPvzImage("animations", "zombieIdle1");
+	zombieIdle1Sprites.loadFromImage(zombieIdle1Image);
+	zombieIdle1Frames = parseSpriteSheetData(zombieIdle1Json);
+
+	auto zombieWalkJson = loadJsonFromResource(125);
+	auto zombieWalkImage = getPvzImage("animations", "zombieWalk");
+	zombieWalkSprites.loadFromImage(zombieWalkImage);
+	zombieWalkFrames = parseSpriteSheetData(zombieWalkJson);
+
+	auto peaImage = getPvzImage("projectiles", "pea");
+	peaTexture.loadFromImage(peaImage);
+
+	auto peaSplatsJson = loadJsonFromResource(127);
+	auto peaSplatsImage = getPvzImage("animations", "peaSplats");
+	peaSplatsSprites.loadFromImage(peaSplatsImage);
+	peaSplatsFrames = parseSpriteSheetData(peaSplatsJson);
+
+	auto zombieEatJson = loadJsonFromResource(130);
+	auto zombieEatImage = getPvzImage("animations", "zombieEat");
+	zombieEatSprites.loadFromImage(zombieEatImage);
+	zombieEatFrames = parseSpriteSheetData(zombieEatJson);
 
 	auto peashooterShootJson = loadJsonFromResource(123);
 	auto peashooterShootImage = getPvzImage("animations", "peashooterShoot");
@@ -299,41 +336,29 @@ void initializeScene1() {
 	auto sunImage = getPvzImage("animations", "sun");
 	sunFrames = parseSpriteSheetData(sunJson);
 	sunSprites.loadFromImage(sunImage);
-	sun.setTexture(sunSprites);
-	sun.setTextureRect(sunFrames[0].frameRect);
-	sun.setScale(scene1ZoomSize, scene1ZoomSize);
-	sun.setOrigin(sun.getTextureRect().getSize().x / 2.0f,
-		sun.getTextureRect().getSize().y / 2.0f);
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		auto plantJson = loadJsonFromResource(getPlantJsonIdById(i));
 		auto plantIdleImage = getPvzImage("animations", idlePlantToString[i] + "Idle");
 		getPlantIdleTextureById(i)->loadFromImage(plantIdleImage);
 		*getPlantIdleFrameById(i) = parseSpriteSheetData(plantJson);
-		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
-		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
-		idlePlants[idlePlantToString[i]].setScale(scene1ZoomSize, scene1ZoomSize);
-		idlePlants[idlePlantToString[i]].setOrigin(idlePlants[idlePlantToString[i]]
-			.getTextureRect().getSize().x / 2.0f,
-			(float)idlePlants[idlePlantToString[i]].getTextureRect().getSize().y);
 
 		auto seedPacketImage = getPvzImage("seed_packet", idlePlantToString[i]);
 		seedPacketsTexture[i].loadFromImage(seedPacketImage);
-		seedPackets[seedPacketIdToString(i)].setTexture(&seedPacketsTexture[i]);
 	}
 
-	background.setOrigin(background.getSize() / 2.0f);
-
-	hideTempPlants();
+	initScene1Place();
 }
 
 void initSeedPacketPos() {
-	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+	for (int i = 0; i < maxPlantAmount; ++i) {
 		seedPackets[seedPacketIdToString(i)].setSize(sf::Vector2f(50.0f * scene1ZoomSize,
 			70.0f * scene1ZoomSize));
 		seedPackets[seedPacketIdToString(i)].setOrigin(0.0f, 0.0f);
+		seedPackets[seedPacketIdToString(i)].setScale(1.0f, 1.0f);
 
 		if (plantExist(i)) {
+			seedPackets[seedPacketIdToString(i)].setFillColor(sf::Color(255, 255, 255, 255));
 			seedPackets[seedPacketIdToString(i)].setPosition(seedChooser_background.getPosition() +
 				sf::Vector2f(20.0f + i * 50.0f * scene1ZoomSize, 55.0f));
 		}
@@ -578,7 +603,7 @@ void winLevel() {
 		selectSun(sun);
 	}
 
-	sf::RectangleShape& unlockSP = seedPackets[seedPacketIdToString(getPlantIdByLevel())];
+	sf::RectangleShape& unlockSP = seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
 	unlockSP.setOrigin(unlockSP.getSize().x / 2.0f, unlockSP.getSize().y / 2.0f);
 	unlockSP.setPosition(view_background.getCenter() +
 		sf::Vector2f(static_cast<float>(rand() % 501) - 250.0f, static_cast<float>(rand() % 501) - 250.0f));
@@ -590,6 +615,9 @@ void winLevel() {
 	awardScreen.setSize(view_background.getSize());
 	awardScreen.setOrigin(awardScreen.getSize().x / 2.0f, awardScreen.getSize().y / 2.0f);
 	awardScreen.setPosition(view_background.getCenter());
+
+	idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setPosition(view_background.getCenter() -
+		sf::Vector2f(0.0f, 0.15f * view_background.getSize().y));
 
 	unlockPlantByLevel();
 }

@@ -116,9 +116,17 @@ HINSTANCE nullHInstance = GetModuleHandle(NULL);
 
 sf::Image world_image = loadImageFromResource(nullHInstance, 101);
 
+#define NROC
+
+#ifdef NROC
+std::unordered_map<std::string, sf::Image> flagImages = {
+	{"Taiwan", loadImageFromResource(nullHInstance, 133)}
+};
+#else
 std::unordered_map<std::string, sf::Image> flagImages = {
 	{"Taiwan", loadImageFromResource(nullHInstance, 102)}
 };
+#endif
 
 //#define CENSORED
 
@@ -249,7 +257,13 @@ std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 
 void changeScene(int targetScene) {
 	stopAllThreads();
-	if (scene == 0) {
+
+	if (targetScene == 0) {
+		thread_asyncBlinkMap = std::thread(asyncBlinkMap);
+		thread_asyncLoadFlag = std::thread(asyncLoadFlag);
+		thread_asyncLoadLevelStart = std::thread(asyncLoadLevelStart);
+	} 
+	else if (targetScene == 1) {
 		if (audios["soundtrack"]["battleofwuhan"]->getStatus() == sf::Music::Playing)
 			audios["soundtrack"]["battleofwuhan"]->stop();
 		thread_asyncPvzSceneUpdate = std::thread(asyncPvzSceneUpdate);
