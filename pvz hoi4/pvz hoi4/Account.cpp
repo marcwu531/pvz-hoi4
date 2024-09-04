@@ -1,3 +1,4 @@
+#include <optional>
 #include <random>
 #include <SFML/Graphics.hpp>
 #include <sstream>
@@ -107,39 +108,63 @@ std::string encryptAccount(const playerAccount& account) {
 	return encryptedOffsetString + '$' + encryptedUsername + '$' + encryptedPlantsLevel;
 }
 
-playerAccount decryptAccount(const std::string& encryptedAccount) {
-	playerAccount account;
-	std::istringstream encryptedStream(encryptedAccount);
-	std::string segment;
+std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount) {
+	try {
+		playerAccount pAccount;
+		std::istringstream encryptedStream(encryptedAccount);
+		std::string segment;
 
-	std::getline(encryptedStream, segment, '$');
-	std::string encryptedOffsetString = segment;
-
-	std::string offsetString = unshiftOffsetString(encryptedOffsetString);
-
-	std::vector<int> offsets;
-	offsets.reserve(offsetString.size());
-	for (char ch : offsetString) {
-		offsets.push_back(static_cast<int>(ch) - 33);
-	}
-
-	std::getline(encryptedStream, segment, '$');
-	account.username = shiftStringWithOffsets(segment, offsets, false);
-
-	std::string plantsLevelString;
-	std::getline(encryptedStream, plantsLevelString);
-
-	std::istringstream plantsStream(plantsLevelString);
-	std::string plantSegment;
-	while (std::getline(plantsStream, plantSegment, '^')) {
-		if (plantSegment.length() >= 2) {
-			char decryptedPlantID = shiftStringWithOffsets(std::string(1, plantSegment[0]), offsets, false)[0];
-			char decryptedLevel = shiftStringWithOffsets(std::string(1, plantSegment[1]), offsets, false)[0];
-			int plantID = static_cast<int>(decryptedPlantID) - 33;
-			int level = static_cast<int>(decryptedLevel) - 33;
-			account.plantsLevel[plantID] = level;
+		if (!std::getline(encryptedStream, segment, '$') || segment.empty()) {
+			return std::nullopt;
 		}
-	}
 
-	return account;
+		std::string encryptedOffsetString = segment;
+
+		std::string offsetString = unshiftOffsetString(encryptedOffsetString);
+		if (offsetString.empty()) return std::nullopt;
+
+		std::vector<int> offsets;
+		offsets.reserve(offsetString.size());
+		for (char ch : offsetString) {
+			offsets.push_back(static_cast<int>(ch) - 33);
+		}
+
+		if (!std::getline(encryptedStream, segment, '$') || segment.empty()) {
+			return std::nullopt;
+		}
+		
+		if (segment.length() != offsets.size()) return std::nullopt;
+		pAccount.username = shiftStringWithOffsets(segment, offsets, false);
+
+		std::string plantsLevelString;
+		if (!std::getline(encryptedStream, plantsLevelString) || plantsLevelString.empty()) {
+			return std::nullopt;
+		}
+
+		std::istringstream plantsStream(plantsLevelString);
+		std::string plantSegment;
+		while (std::getline(plantsStream, plantSegment, '^')) {
+			if (plantSegment.length() >= 2) {
+				char decryptedPlantID = shiftStringWithOffsets(std::string(1, plantSegment[0]), offsets, false)[0];
+				char decryptedLevel = shiftStringWithOffsets(std::string(1, plantSegment[1]), offsets, false)[0];
+				int plantID = static_cast<int>(decryptedPlantID) - 33;
+				int level = static_cast<int>(decryptedLevel) - 33;
+				pAccount.plantsLevel[plantID] = level;
+			}
+		}
+
+		return pAccount;
+	}
+	catch (...) {
+		return std::nullopt;
+	}
+}
+
+bool tryDecryptAccount(const std::string& encryptedAccount) {
+	if (encryptedAccount.empty() || std::count(encryptedAccount.begin(), encryptedAccount.end(), '$') < 2)
+		return false;
+	std::optional<playerAccount> tempAcc = decryptAccount(encryptedAccount);
+	if (!tempAcc) return false;
+	account = tempAcc.value();
+	return true;
 }

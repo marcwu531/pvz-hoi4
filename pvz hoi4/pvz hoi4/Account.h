@@ -4,5 +4,6 @@
 #include "General.h"
 
 std::string encryptAccount(const playerAccount& account);
-playerAccount decryptAccount(const std::string& encryptedAccount);
+std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount);
+bool tryDecryptAccount(const std::string& encryptedAccount);
 #endif

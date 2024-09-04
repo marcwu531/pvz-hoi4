@@ -93,9 +93,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 #ifdef CENSORED
 	auto seedChooserBgImage = loadImageFromResource(nullHInstance, 133);
 	auto awardSceneImage = loadImageFromResource(nullHInstance, 133);
+	auto clipboardImage = loadImageFromResource(nullHInstance, 133);
+	auto clipboardPasteImage = loadImageFromResource(nullHInstance, 133);
 #else
 	auto seedChooserBgImage = loadImageFromResource(nullHInstance, 138);
 	auto awardScreenImage = loadImageFromResource(nullHInstance, 139);
+	auto clipboardCopyImage = loadImageFromResource(nullHInstance, 140);
+	auto clipboardPasteImage = loadImageFromResource(nullHInstance, 141);
 #endif
 	accountButtonTexture.loadFromImage(seedChooserBgImage);
 	accountButton.setTexture(&accountButtonTexture);
@@ -116,6 +120,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	sf::RectangleShape saveUsernameButton;
 	saveUsernameButton.setFillColor(sf::Color::Green);
+
+	sf::RectangleShape loadAccountButton;
+	loadAccountButton.setFillColor(sf::Color::Green);
 
 	sf::Text saveUsernameText;
 	saveUsernameText.setFont(defaultFont);
@@ -150,6 +157,22 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	sf::Texture awardScreenTexture;
 	awardScreenTexture.loadFromImage(awardScreenImage);
 	awardScreen.setTexture(&awardScreenTexture);
+
+	sf::Texture clipboardCopyTexture;
+	clipboardCopyTexture.loadFromImage(clipboardCopyImage);
+	sf::RectangleShape clipboardCopy;
+	clipboardCopy.setTexture(&clipboardCopyTexture);
+
+	sf::Texture clipboardPasteTexture;
+	clipboardPasteTexture.loadFromImage(clipboardPasteImage);
+	sf::RectangleShape clipboardPaste;
+	clipboardPaste.setTexture(&clipboardPasteTexture);
+	clipboardPaste.setFillColor(sf::Color::Green);
+
+	sf::Text loadAccountText;
+	loadAccountText.setFont(defaultFont);
+	loadAccountText.setString("LOAD");
+	loadAccountText.setFillColor(sf::Color::Black);
 
 	while (window.isOpen())
 	{
@@ -332,6 +355,20 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							else if (usernameBox.getGlobalBounds().contains(mousePos)) {
 								enteringUsername = true;
 							}
+							else if (clipboardCopy.getGlobalBounds().contains(mousePos)) {
+								if (!exportAccountText.getString().isEmpty() && !username.empty())
+									sf::Clipboard::setString(exportAccountText.getString());
+							}
+							else if (loadAccountButton.getGlobalBounds().contains(mousePos)) {
+								if (tryDecryptAccount(sf::Clipboard::getString())) {
+									usernameText.setFillColor(sf::Color(0, 0, 0, 255));
+									usernameText.setString(account.username);
+									username = account.username;
+								}
+								else {
+									exportAccountText.setString("Invalid Data");
+								}
+							}
 						}
 						else if (!plantExist(0)) {
 							if (seedPackets[seedPacketIdToString(0)].getGlobalBounds().contains(mousePos)) {
@@ -513,7 +550,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			accountButton.setPosition(viewWorldCenterX + viewWorldSizeX / 2.0f,
 				viewWorldCenterY + viewWorldSizeY * 0.46f);
 			//(e * (pi * pi - 1.0f)) / (10.0f * pi * phi)
-			window.draw(accountButton);
 
 			if (loggingIn) {
 				loginMenu.setSize(sf::Vector2f(viewWorldSizeX / 3.0f, 2.0f * viewWorldSizeY / 3.0f));
@@ -539,7 +575,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 				exportAccountText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 50.0f));
 				exportAccountText.setOrigin(exportAccountText.getGlobalBounds().width / 2.0f, 0.0f);
-				exportAccountText.setPosition(viewWorldCenterX, viewWorldCenterY + viewWorldSizeY / 16.0f);
+				exportAccountText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 8.0f);
+
+				clipboardCopy.setSize(sf::Vector2f(viewWorldSizeX / 50.0f, viewWorldSizeY / 25.0f));
+				clipboardCopy.setPosition(saveUsernameButton.getPosition().x - clipboardCopy.getSize().x,
+					saveUsernameButton.getPosition().y + saveUsernameButton.getSize().y / 2.0f 
+					- clipboardCopy.getSize().y / 2.0f);
+
+				loadAccountButton.setSize(sf::Vector2f(viewWorldSizeX / 8.0f, 2.0f * viewWorldSizeY / 30.0f));
+				loadAccountButton.setPosition(viewWorldCenterX - loadAccountButton.getSize().x / 2.0f,
+					viewWorldCenterY + viewWorldSizeY / 16.0f);
+
+				clipboardPaste.setSize(sf::Vector2f(viewWorldSizeX / 50.0f, viewWorldSizeY / 25.0f));
+				clipboardPaste.setPosition(loadAccountButton.getPosition().x,
+					loadAccountButton.getPosition().y + loadAccountButton.getSize().y / 2.0f
+					- clipboardPaste.getSize().y / 2.0f);
+
+				loadAccountText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 30.0f));
+				loadAccountText.setOrigin(loadAccountText.getGlobalBounds().width / 2.0f, 0.0f);
+				loadAccountText.setPosition(viewWorldCenterX, viewWorldCenterY + viewWorldSizeY / 16.0f);
 
 				window.draw(loginMenu);
 				window.draw(usernameBox);
@@ -547,6 +601,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				window.draw(saveUsernameButton);
 				window.draw(saveUsernameText);
 				window.draw(exportAccountText);
+				window.draw(clipboardCopy);
+				window.draw(loadAccountButton);
+				window.draw(clipboardPaste);
+				window.draw(loadAccountText);
 			}
 			else {
 				if (!plantExist(0)) {
@@ -575,6 +633,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					window.draw(flag_rect);
 				}
 			}
+
+			window.draw(accountButton);
 			break;
 		}
 
@@ -735,4 +795,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.47
+//Version 1.0.48

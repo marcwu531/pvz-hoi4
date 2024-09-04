@@ -603,10 +603,12 @@ void winLevel() {
 		selectSun(sun);
 	}
 
-	sf::RectangleShape& unlockSP = seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
-	unlockSP.setOrigin(unlockSP.getSize().x / 2.0f, unlockSP.getSize().y / 2.0f);
-	unlockSP.setPosition(view_background.getCenter() +
-		sf::Vector2f(static_cast<float>(rand() % 501) - 250.0f, static_cast<float>(rand() % 501) - 250.0f));
+	if (!plantExist(getUnlockPlantIdByLevel())) {
+		sf::RectangleShape& unlockSP = seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
+		unlockSP.setOrigin(unlockSP.getSize().x / 2.0f, unlockSP.getSize().y / 2.0f);
+		unlockSP.setPosition(view_background.getCenter() +
+			sf::Vector2f(static_cast<float>(rand() % 501) - 250.0f, static_cast<float>(rand() % 501) - 250.0f));
+	}
 
 	winLevelScreen.setSize(view_background.getSize());
 	winLevelScreen.setOrigin(winLevelScreen.getSize().x / 2.0f, winLevelScreen.getSize().y / 2.0f);
@@ -618,6 +620,9 @@ void winLevel() {
 
 	idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setPosition(view_background.getCenter() -
 		sf::Vector2f(0.0f, 0.15f * view_background.getSize().y));
+
+	seedPacketState.clear();
+	seedPacketState.resize(2);
 
 	unlockPlantByLevel();
 }
