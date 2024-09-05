@@ -1,12 +1,15 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <shared_mutex>
 #include <string>
 #include <thread>
 #include <windows.h>
 
+#include "Account.h"
 #include "Async.h"
+#include "Audio.h"
 #include "Display.h"
 #include "General.h"
 #include "Json.h"
@@ -205,8 +208,8 @@ void initScene1Place() {
 
 	pvzSunText = sf::Text("", defaultFont, 50);
 	pvzSunText.setFillColor(sf::Color::Black);
-	pvzSunText.setPosition(-633.5f, -390.0f); 
-	
+	pvzSunText.setPosition(-633.5f, -390.0f);
+
 	overlayShade.setSize(sf::Vector2f(50.0f * scene1ZoomSize, 70.0f * scene1ZoomSize));
 	overlayShade.setFillColor(sf::Color(0, 0, 0, 180));
 
@@ -264,6 +267,8 @@ void initScene1Place() {
 	lawnMower.setTexture(lawnMowerTexture);
 	lawnMower.setTextureRect(lawnMowerFrames[0].frameRect);
 	lawnMower.setScale(scene1ZoomSize, scene1ZoomSize);
+	lawnMower.setOrigin(lawnMower.getTextureRect().getSize().x / 2.0f,
+		lawnMower.getTextureRect().getSize().y / 2.0f);
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
@@ -272,7 +277,7 @@ void initScene1Place() {
 		idlePlants[idlePlantToString[i]].setOrigin(idlePlants[idlePlantToString[i]]
 			.getTextureRect().getSize().x / 2.0f,
 			(float)idlePlants[idlePlantToString[i]].getTextureRect().getSize().y);
-		 
+
 		seedPackets[seedPacketIdToString(i)].setTexture(&seedPacketsTexture[i]);
 	}
 
@@ -284,6 +289,7 @@ void initScene1Place() {
 float scene1ZoomSize = 1.7f;
 void initializeScene1() {
 	initPlantsStatus();
+	//initAccount();
 
 	auto bgImage = getPvzImage("background", "bg1");
 	texture_background.loadFromImage(bgImage);
@@ -298,7 +304,7 @@ void initializeScene1() {
 	auto seedChooserButtonImage = getPvzImage("seed_selector", "seedChooserButton");
 	texture_seedChooserDisabled.loadFromImage(seedChooserDisabledImage);
 	texture_seedChooser.loadFromImage(seedChooserButtonImage);
-	
+
 	auto startReadyImage = getPvzImage("seed_selector", "startReady");
 	auto startSetImage = getPvzImage("seed_selector", "startSet");
 	auto startPlantImage = getPvzImage("seed_selector", "startPlant");
@@ -628,8 +634,9 @@ bool loggingIn = true;
 bool isMoneyBag = false;
 
 void winLevel() {
+	if (audios["lawnbgm"]["1"]->getStatus() == sf::Music::Playing) audios["lawnbgm"]["1"]->stop();
 	pvzScene = 4;
-	
+
 	for (auto& sun : sunsOnScene) {
 		selectSun(sun);
 	}
@@ -680,5 +687,5 @@ void createLawnMower(float x, float y) {
 	tempSprite = lawnMower;
 	tempSprite.setPosition(x, y);
 
-	lawnMowersOnScene.push_back({ {tempSprite, 0, 0, getRowByY(y)}, 0});
+	lawnMowersOnScene.push_back({ {tempSprite, 0, 0, getRowByY(y)}, 0 });
 }

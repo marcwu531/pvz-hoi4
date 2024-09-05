@@ -47,6 +47,7 @@ constexpr int CLIPBOARDPASTEPNG = 141;
 constexpr int MONEYBAGPNG = 142;
 constexpr int LAWNMOWERJSON = 143;
 constexpr int LAWNMOWERPNG = 144;
+constexpr int CARKEYSPNG = 145;
 
 // Next default values for new objects
 // 

@@ -105,7 +105,10 @@ std::string encryptAccount(const playerAccount& account) {
 		encryptedPlantsLevel.pop_back();
 	}
 
-	return encryptedOffsetString + '$' + encryptedUsername + '$' + encryptedPlantsLevel;
+	std::string encryptedLawnMower = shiftStringWithOffsets(account.unlockedLawnMower ? "1" : "0", offsets);
+
+	return encryptedOffsetString + '$' + encryptedUsername + '$' + encryptedPlantsLevel + 
+		'$' + encryptedLawnMower;
 }
 
 std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount) {
@@ -137,7 +140,7 @@ std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount)
 		pAccount.username = shiftStringWithOffsets(segment, offsets, false);
 
 		std::string plantsLevelString;
-		if (!std::getline(encryptedStream, plantsLevelString) || plantsLevelString.empty()) {
+		if (!std::getline(encryptedStream, plantsLevelString, '$') || plantsLevelString.empty()) {
 			return std::nullopt;
 		}
 
@@ -153,6 +156,12 @@ std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount)
 			}
 		}
 
+		if (!std::getline(encryptedStream, segment) || segment.empty()) {
+			return std::nullopt;
+		}
+		
+		pAccount.unlockedLawnMower = shiftStringWithOffsets(segment, offsets, false) == "1";
+
 		return pAccount;
 	}
 	catch (...) {
@@ -161,10 +170,12 @@ std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount)
 }
 
 bool tryDecryptAccount(const std::string& encryptedAccount) {
-	if (encryptedAccount.empty() || std::count(encryptedAccount.begin(), encryptedAccount.end(), '$') < 2)
+	if (encryptedAccount.empty() || std::count(encryptedAccount.begin(), encryptedAccount.end(), '$') < 3)
 		return false;
 	std::optional<playerAccount> tempAcc = decryptAccount(encryptedAccount);
 	if (!tempAcc) return false;
 	account = tempAcc.value();
 	return true;
 }
+
+playerAccount account;

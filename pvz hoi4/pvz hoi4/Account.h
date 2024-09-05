@@ -2,8 +2,14 @@
 #define ACCOUNT_H
 
 #include "General.h"
-
-std::string encryptAccount(const playerAccount& account);
+struct playerAccount {
+	std::string username;
+	std::unordered_map<int, int> plantsLevel;
+	bool unlockedLawnMower = false;
+};
+extern playerAccount account;
+std::string encryptAccount(const playerAccount& 
+);
 std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount);
 bool tryDecryptAccount(const std::string& encryptedAccount);
 #endif

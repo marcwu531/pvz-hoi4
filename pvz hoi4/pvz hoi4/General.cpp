@@ -4,8 +4,6 @@
 
 #include "General.h"
 
-playerAccount account;
-
 void mapShift(std::unordered_map<int, int>& targetMap) {
 	std::unordered_map<int, int> tempMap;
 	int newKey = 0;

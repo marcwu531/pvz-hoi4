@@ -23,6 +23,8 @@
 #include "State.h"
 #include "Window.h"
 
+#define NROC
+
 sf::Font defaultFont;
 sf::Texture flag_texture;
 sf::RectangleShape flag_rect;
@@ -121,8 +123,6 @@ HINSTANCE nullHInstance = GetModuleHandle(NULL);
 
 sf::Image world_image = loadImageFromResource(nullHInstance, 101);
 
-#define NROC
-
 #ifdef NROC
 std::unordered_map<std::string, sf::Image> flagImages = {
 	{"Taiwan", loadImageFromResource(nullHInstance, 133)}
@@ -206,7 +206,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"pea", loadImageFromResource(nullHInstance, 122)}
 	}},
 	{"money", {
-		{"moneybag", loadImageFromResource(nullHInstance, 142)}
+		{"moneybag", loadImageFromResource(nullHInstance, 142)},
+		{"carKeys", loadImageFromResource(nullHInstance, 145)}
 	}}
 };
 #endif

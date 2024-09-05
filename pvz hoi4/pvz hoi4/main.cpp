@@ -447,6 +447,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					else if (pvzScene == 4) {
 						if (isMoneyBag) {
 							if (moneyBag.getGlobalBounds().contains(mousePos)) {
+								//play win music
 								pvzScene = 5;
 							}
 						}
@@ -699,14 +700,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
-				if (!lawnMowersOnScene.empty()) {
-					std::shared_lock<std::shared_mutex> lawnMowerReadLock(lawnMowersMutex);
-
-					for (const auto& lawnMower : lawnMowersOnScene) {
-						window.draw(lawnMower.anim.sprite);
-					}
-				}
-
 				if (!plantsOnScene.empty()) {
 					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
 
@@ -783,6 +776,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
+				if (!lawnMowersOnScene.empty()) {
+					std::shared_lock<std::shared_mutex> lawnMowerReadLock(lawnMowersMutex);
+
+					for (const auto& lawnMower : lawnMowersOnScene) {
+						window.draw(lawnMower.anim.sprite);
+					}
+				}
+
 				if (pvzScene == 4 || pvzScene == 5) {
 					if (pvzScene == 5) {
 						window.draw(winLevelScreen);
@@ -817,4 +818,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.49
+//Version 1.0.50

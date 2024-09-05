@@ -5,6 +5,8 @@
 
 #include "Audio.h"
 
+#define NSOUND
+
 static sf::Music* loadMusicFromResource(HINSTANCE hInstance, int resourceId, size_t& resourceSize) {
 	auto music = new sf::Music();
 
@@ -34,13 +36,15 @@ void initializeAudios(HINSTANCE hInstance) {
 	loadAndStoreMusic("sounds", "readysetplant", 114);
 	loadAndStoreMusic("soundtrack", "battleofwuhan", 115);
 
-//#ifdef RUN_DEBUG
+#ifdef NSOUND
 	for (auto& categoryPair : audios) {
 		for (auto& musicPair : categoryPair.second) {
 			musicPair.second->setVolume(0);
 		}
 	}
-//#endif
+#else
+	audios["soundtrack"]["battleofwuhan"]->setVolume(25);
+#endif
 }
 
 void cleanupAudios() {

@@ -9,6 +9,7 @@
 #include <thread>
 #include <windows.h>
 
+#include "Account.h"
 #include "Async.h"
 #include "Audio.h"
 #include "Colour.h"
@@ -31,7 +32,7 @@ int maxSpeed = 1, fps = 60 * maxSpeed, scene = 0;
 sf::Vector2i blinkCoords(0, 0);
 
 std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, mapMutex,
-	lawnMowersMutex; //accountMutex
+lawnMowersMutex; //accountMutex
 
 inline static void updateImage(sf::Image& image, const sf::IntRect& cropArea, sf::Texture& texture) {
 	if (texture.getSize().x != static_cast<unsigned int>(cropArea.width) ||
@@ -265,12 +266,13 @@ void asyncPvzSceneUpdate() {
 					zombiesOnScene.clear();
 					audios["sounds"]["readysetplant"]->play();
 
-					int lmAmount = 0;
+					if (account.unlockedLawnMower) {
+						int lmAmount = 0;
 
-					std::unique_lock<std::shared_mutex> lawnMowerWriteLock(lawnMowersMutex);
-					while (lmAmount < 4) {
-						createLawnMower(-220.0f, 310.0f);
-						++lmAmount;
+						std::unique_lock<std::shared_mutex> lawnMowerWriteLock(lawnMowersMutex);
+						while (++lmAmount <= 5) {
+							createLawnMower(-360.0f, -480.0f + 170.0f * lmAmount);
+						}
 					}
 					break;
 				}
@@ -650,12 +652,12 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (pvzScene == 5) {
-					sf::RectangleShape& targetAward = isMoneyBag ? 
+					sf::RectangleShape& targetAward = isMoneyBag ?
 						moneyBag :
 						seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
 
 					float remainingAlphaSteps = static_cast<float>(255 - winLevelScreen.getFillColor().a);
-					sf::Vector2f destPlace(view_background.getCenter() - 
+					sf::Vector2f destPlace(view_background.getCenter() -
 						sf::Vector2f(0.0f, 0.2f * view_background.getSize().y));
 
 					if (remainingAlphaSteps > 0) {
@@ -678,8 +680,8 @@ void asyncPvzSceneUpdate() {
 					if (winLevelScreen.getFillColor().a == 255) {
 						targetAward.setPosition(destPlace);
 						seedChooserButton.setTexture(&texture_seedChooser);
-						seedChooserButton.setPosition(view_background.getCenter() 
-							+ sf::Vector2f(-seedChooserButton.getSize().x / 2.0f, 
+						seedChooserButton.setPosition(view_background.getCenter()
+							+ sf::Vector2f(-seedChooserButton.getSize().x / 2.0f,
 								view_background.getSize().y * 0.35f));
 						pvzScene = 6;
 					}
@@ -712,7 +714,7 @@ void asyncPvzSceneUpdate() {
 				idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setTextureRect(
 					getPlantAttackFrameById(getUnlockPlantIdByLevel())->
 					find(static_cast<int>(std::trunc(idleFrame / animSpeed)))->second.frameRect);
-			break;
+				break;
 			}
 		}
 
