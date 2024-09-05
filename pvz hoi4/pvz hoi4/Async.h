@@ -20,7 +20,8 @@ extern std::thread thread_asyncLoadLevelStart;
 extern std::thread thread_asyncPvzSceneUpdate;
 void stopAllThreads();
 extern bool pvzPacketOnSelected;
-extern std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, accountMutex, mapMutex;
+extern std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, mapMutex,
+	lawnMowersMutex; //accountMutex
 extern sf::Vector2f worldPos;
 extern int mapSx, mapSy;
 #endif

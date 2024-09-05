@@ -30,7 +30,8 @@ int maxSpeed = 1, fps = 60 * maxSpeed, scene = 0;
 
 sf::Vector2i blinkCoords(0, 0);
 
-std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, accountMutex, mapMutex;
+std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, mapMutex,
+	lawnMowersMutex; //accountMutex
 
 inline static void updateImage(sf::Image& image, const sf::IntRect& cropArea, sf::Texture& texture) {
 	if (texture.getSize().x != static_cast<unsigned int>(cropArea.width) ||
@@ -181,8 +182,8 @@ void asyncPvzSceneUpdate() {
 		}
 	}
 
-	int zombieSpawnTimer = 1; // 1500 + rand() % 500;
-	int sunSpawnTimer = 0;
+	int zombieSpawnTimer = 1500 + rand() % 500;
+	int sunSpawnTimer = 1000 + rand() % 300;
 	float sunAnimSpeed = 0.75f;
 	int currentWave = 0;
 
@@ -190,6 +191,8 @@ void asyncPvzSceneUpdate() {
 	auto nextTime = std::chrono::high_resolution_clock::now() + frameTime;
 
 	initSeedPacketPos();
+
+	pvzSun = getStartSunByLevel();
 
 	while (running.load()) {
 		if (scene == 1) {
@@ -261,6 +264,14 @@ void asyncPvzSceneUpdate() {
 					pvzScene = 2;
 					zombiesOnScene.clear();
 					audios["sounds"]["readysetplant"]->play();
+
+					int lmAmount = 0;
+
+					std::unique_lock<std::shared_mutex> lawnMowerWriteLock(lawnMowersMutex);
+					while (lmAmount < 4) {
+						createLawnMower(-220.0f, 310.0f);
+						++lmAmount;
+					}
 					break;
 				}
 
@@ -321,13 +332,18 @@ void asyncPvzSceneUpdate() {
 
 				if (currentWave < world_level_waves[world][level]) {
 					if (--zombieSpawnTimer <= 0 || noZombie) {
-						++currentWave;
-						zombieSpawnTimer = 1; // 2000 + rand() % 500;
+						zombieSpawnTimer = 2000 + rand() % 500;
 
 						std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
-						for (int i = 0; i < 3 + rand() % 5; i++) {
+						int spawnTier = static_cast<int>(
+							std::pow(2, world_level_spawnTier[world][level] * currentWave));
+
+						while (spawnTier > 0) {
+							--spawnTier;
 							createRandomZombie();
 						}
+
+						++currentWave;
 					}
 				}
 				else if (noZombie) {
@@ -335,7 +351,7 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (--sunSpawnTimer <= 0) {
-					sunSpawnTimer = 100;//2000 + rand() % 300;
+					sunSpawnTimer = 2000 + rand() % 300;
 
 					std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
 					createSkySun();
@@ -403,7 +419,7 @@ void asyncPvzSceneUpdate() {
 							}
 							else {
 								zombie.anim.animId = 2;
-								zombie.anim.sprite.move(-50.0f, 0.0f);//zombie.movementSpeed);
+								zombie.anim.sprite.move(zombie.movementSpeed);
 								zombie.targetPlant = nullptr;
 							}
 
@@ -488,9 +504,11 @@ void asyncPvzSceneUpdate() {
 							sprite.setTexture(*getPlantAttackTextureById(plant.anim.animId));
 							sprite.setTextureRect(getPlantAttackFrameById(plant.anim.animId)->
 								find(frame)->second.frameRect);
-							if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f)
+							if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f) {
+								std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
 								createProjectile(0, plant.anim.sprite.getPosition()
 									+ sf::Vector2f(72.0f, 0.0f));
+							}
 						}
 						else {
 							sprite.setTexture(*getPlantIdleTextureById(plant.anim.animId));
@@ -547,17 +565,23 @@ void asyncPvzSceneUpdate() {
 							}
 						}
 
+						projReadLock.unlock();
+						std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
+
 						if (shouldEraseProjectile) {
 							it = projectilesOnScene.erase(it);
 						}
 						else {
 							++it;
 						}
+
+						projWriteLock.unlock();
+						projReadLock.lock();
 					}
 				}
 
 				std::shared_lock<std::shared_mutex> sunReadLock(sunsMutex);
-				for (auto it = sunsOnScene.begin(); it != sunsOnScene.end(); ) {
+				for (auto it = sunsOnScene.begin(); it != sunsOnScene.end();) {
 					if (++it->anim.frameId / animSpeed * sunAnimSpeed > 12)
 						it->anim.frameId = 0;
 
@@ -626,22 +650,24 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (pvzScene == 5) {
-					sf::RectangleShape& seedPacket = seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
+					sf::RectangleShape& targetAward = isMoneyBag ? 
+						moneyBag :
+						seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
 
 					float remainingAlphaSteps = static_cast<float>(255 - winLevelScreen.getFillColor().a);
 					sf::Vector2f destPlace(view_background.getCenter() - 
 						sf::Vector2f(0.0f, 0.2f * view_background.getSize().y));
 
 					if (remainingAlphaSteps > 0) {
-						sf::Vector2f direction = destPlace - seedPacket.getPosition()
+						sf::Vector2f direction = destPlace - targetAward.getPosition()
 							;
-						seedPacket.move(direction / remainingAlphaSteps);
+						targetAward.move(direction / remainingAlphaSteps);
 					}
 					else {
-						seedPacket.setPosition(destPlace);
+						targetAward.setPosition(destPlace);
 					}
 
-					seedPacket.scale(1.005f, 1.005f);
+					targetAward.scale(1.005f, 1.005f);
 
 					winLevelScreen.setFillColor(sf::Color(255, 255, 255,
 						std::min(winLevelScreen.getFillColor().a + 2, 255)));
@@ -650,7 +676,7 @@ void asyncPvzSceneUpdate() {
 						sf::Color(255, 255, 255, 255 - winLevelScreen.getFillColor().a));
 
 					if (winLevelScreen.getFillColor().a == 255) {
-						seedPacket.setPosition(destPlace);
+						targetAward.setPosition(destPlace);
 						seedChooserButton.setTexture(&texture_seedChooser);
 						seedChooserButton.setPosition(view_background.getCenter() 
 							+ sf::Vector2f(-seedChooserButton.getSize().x / 2.0f, 
@@ -664,7 +690,22 @@ void asyncPvzSceneUpdate() {
 				winLevelScreen.setFillColor(sf::Color(255, 255, 255,
 					std::max(winLevelScreen.getFillColor().a - 2, 0)));
 
-				if (winLevelScreen.getFillColor().a == 0) pvzScene = 7;
+				if (winLevelScreen.getFillColor().a == 0) {
+					pvzScene = 7;
+
+					std::unique_lock<std::shared_mutex> plantWriteLock(plantsMutex);
+					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+					std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
+					std::unique_lock<std::shared_mutex> vanishProjWriteLock(vanishProjsMutex);
+					std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
+
+					plantsOnScene.clear();
+					zombiesOnScene.clear();
+					projectilesOnScene.clear();
+					vanishProjectilesOnScene.clear();
+					sunsOnScene.clear();
+					seedPacketsSelectedOrder.clear();
+				}
 				[[fallthrough]];
 			case 7:
 				if (++idleFrame > getPlantMaxFrameById(getUnlockPlantIdByLevel()) * animSpeed) idleFrame = 0;

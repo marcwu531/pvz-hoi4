@@ -13,9 +13,9 @@
 #include "Scene1.h"
 
 int pvzScene = 0;
-int pvzSun = 150;
+int pvzSun = 0;
 int seedPacketSelected = 0;
-int maxPlantSelectAmount = 0;
+int maxPlantSelectAmount = 6;
 bool selectingSeedPacket = false;
 
 int world, level;
@@ -156,7 +156,6 @@ bool plantExist(int id) {
 void unlockPlant(int id) {
 	if (account.plantsLevel[id] == 0) {
 		account.plantsLevel[id] = 1;
-		++maxPlantSelectAmount;
 	}
 }
 
@@ -216,7 +215,7 @@ void initScene1Place() {
 	hoverShade.setScale(scene1ZoomSize, scene1ZoomSize);
 	hoverShade.setOrigin(hoverShade.getTextureRect().getSize().x / 2.0f,
 		hoverShade.getTextureRect().getSize().y / 2.0f);
-	hoverShade.setColor(sf::Color(0, 0, 0, 175));
+	hoverShade.setColor(sf::Color(0, 0, 0, 150));
 
 	zombieIdle.setTexture(zombieIdleSprites);
 	zombieIdle.setTextureRect(zombieIdleFrames[0].frameRect);
@@ -257,6 +256,14 @@ void initScene1Place() {
 	sun.setScale(scene1ZoomSize, scene1ZoomSize);
 	sun.setOrigin(sun.getTextureRect().getSize().x / 2.0f,
 		sun.getTextureRect().getSize().y / 2.0f);
+
+	moneyBag.setTexture(&moneyBagTexture);
+	moneyBag.setSize(sf::Vector2f(scene1ZoomSize * 91.0f, scene1ZoomSize * 78.0f));
+	moneyBag.setScale(1.0f, 1.0f);
+
+	lawnMower.setTexture(lawnMowerTexture);
+	lawnMower.setTextureRect(lawnMowerFrames[0].frameRect);
+	lawnMower.setScale(scene1ZoomSize, scene1ZoomSize);
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
@@ -337,6 +344,12 @@ void initializeScene1() {
 	sunFrames = parseSpriteSheetData(sunJson);
 	sunSprites.loadFromImage(sunImage);
 
+	moneyBagTexture.loadFromImage(getPvzImage("money", "moneybag"));
+
+	auto lawnMowerJson = loadJsonFromResource(143);
+	lawnMowerFrames = parseSpriteSheetData(lawnMowerJson);
+	lawnMowerTexture.loadFromImage(getPvzImage("animations", "lawnMower"));
+
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		auto plantJson = loadJsonFromResource(getPlantJsonIdById(i));
 		auto plantIdleImage = getPvzImage("animations", idlePlantToString[i] + "Idle");
@@ -368,16 +381,6 @@ void initSeedPacketPos() {
 	}
 }
 
-bool canPlant(sf::Vector2f pos) {
-	return pos.x >= -210 && pos.x <= 910 && pos.y >= -310 && pos.y <= 370;
-}
-
-std::vector<plantState> plantsOnScene;
-std::vector<zombieState> zombiesOnScene;
-std::vector<projectileState> projectilesOnScene;
-std::vector<vanishProjState> vanishProjectilesOnScene;
-std::vector<sunState> sunsOnScene;
-
 static int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
 	switch (static_cast<int>(posY)) {
 	case -310:
@@ -393,6 +396,27 @@ static int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
 		return 4;
 	}
 }
+
+bool canPlant(sf::Vector2f pos) {
+	if (!plantsOnScene.empty()) {
+		std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
+
+		for (const auto& plant : plantsOnScene) {
+			if (pos.x == plant.anim.sprite.getPosition().x && getRowByY(pos.y) == plant.anim.row) {
+				return false;
+			}
+		}
+	}
+
+	return pos.x >= -210 && pos.x <= 910 && pos.y >= -310 && pos.y <= 370;
+}
+
+std::vector<plantState> plantsOnScene;
+std::vector<zombieState> zombiesOnScene;
+std::vector<projectileState> projectilesOnScene;
+std::vector<vanishProjState> vanishProjectilesOnScene;
+std::vector<sunState> sunsOnScene;
+std::vector<lawnMowerState> lawnMowersOnScene;
 
 static int getSunByTypeAndId(int type, int id) { //type 0: plant
 	static int cost[] = { 100, 50 };
@@ -505,11 +529,17 @@ void selectSeedPacket(int id) { //--id;
 			seedPacketSelectedId = id;
 
 			auto& plant = idlePlants[idlePlantToString[id]];
-			hoverPlant.setTexture(*plant.getTexture());
+			hoverPlant.setTexture(*getPlantIdleTextureById(id));
 			hoverPlant.setTextureRect(plant.getTextureRect());
 			hoverPlant.setScale(scene1ZoomSize, scene1ZoomSize);
 			hoverPlant.setOrigin(hoverPlant.getTextureRect().getSize().x / 2.0f,
 				hoverPlant.getTextureRect().getSize().y / 2.0f);
+
+			hoverShade.setTexture(*getPlantIdleTextureById(id));
+			hoverShade.setTextureRect(plant.getTextureRect());
+			hoverShade.setScale(scene1ZoomSize, scene1ZoomSize);
+			hoverShade.setOrigin(hoverShade.getTextureRect().getSize().x / 2.0f,
+				hoverShade.getTextureRect().getSize().y / 2.0f);
 
 			//seedPacketState[i][0] = 1;
 			overlayShade.setPosition(seedPackets.find(seedPacketIdToString(id))->second.getPosition());
@@ -595,6 +625,7 @@ void addSun(int amount) {
 }
 
 bool loggingIn = true;
+bool isMoneyBag = false;
 
 void winLevel() {
 	pvzScene = 4;
@@ -603,10 +634,16 @@ void winLevel() {
 		selectSun(sun);
 	}
 
-	if (!plantExist(getUnlockPlantIdByLevel())) {
+	isMoneyBag = plantExist(getUnlockPlantIdByLevel());
+
+	if (!isMoneyBag) {
 		sf::RectangleShape& unlockSP = seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
 		unlockSP.setOrigin(unlockSP.getSize().x / 2.0f, unlockSP.getSize().y / 2.0f);
 		unlockSP.setPosition(view_background.getCenter() +
+			sf::Vector2f(static_cast<float>(rand() % 501) - 250.0f, static_cast<float>(rand() % 501) - 250.0f));
+	}
+	else {
+		moneyBag.setPosition(view_background.getCenter() +
 			sf::Vector2f(static_cast<float>(rand() % 501) - 250.0f, static_cast<float>(rand() % 501) - 250.0f));
 	}
 
@@ -622,7 +659,26 @@ void winLevel() {
 		sf::Vector2f(0.0f, 0.15f * view_background.getSize().y));
 
 	seedPacketState.clear();
-	seedPacketState.resize(2);
+	seedPacketState.resize(maxPlantAmount);
 
-	unlockPlantByLevel();
+	if (!isMoneyBag) unlockPlantByLevel();
+}
+
+int getStartSunByLevel(int vWorld, int vLevel) {
+	std::unordered_map<int, std::unordered_map<int, int>> sunAmount = {
+		{1, {
+			{1, 1000},
+			{2, 150}
+		}}
+	};
+
+	return sunAmount[vWorld][vLevel];
+}
+
+void createLawnMower(float x, float y) {
+	sf::Sprite tempSprite;
+	tempSprite = lawnMower;
+	tempSprite.setPosition(x, y);
+
+	lawnMowersOnScene.push_back({ {tempSprite, 0, 0, getRowByY(y)}, 0});
 }

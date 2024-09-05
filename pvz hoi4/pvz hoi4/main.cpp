@@ -345,7 +345,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							if (saveUsernameButton.getGlobalBounds().contains(mousePos)) {
 								if (!username.empty()) {
 									account.username = username;
-									std::shared_lock<std::shared_mutex> accountReadLock(accountMutex);
+									//std::shared_lock<std::shared_mutex> accountReadLock(accountMutex);
 									exportAccountText.setString(encryptAccount(account));
 								}
 								else {
@@ -364,6 +364,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 									usernameText.setFillColor(sf::Color(0, 0, 0, 255));
 									usernameText.setString(account.username);
 									username = account.username;
+									exportAccountText.setString("Imported Successfully");
 								}
 								else {
 									exportAccountText.setString("Invalid Data");
@@ -444,9 +445,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 					}
 					else if (pvzScene == 4) {
-						if (seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]
-							.getGlobalBounds().contains(mousePos)) {
-							pvzScene = 5;
+						if (isMoneyBag) {
+							if (moneyBag.getGlobalBounds().contains(mousePos)) {
+								pvzScene = 5;
+							}
+						}
+						else {
+							if (seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]
+								.getGlobalBounds().contains(mousePos)) {
+								pvzScene = 5;
+							}
 						}
 					}
 					else if (pvzScene == 7) {
@@ -510,7 +518,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 				window.draw(levelStart);
 
-				if (world == 1 && level == 1) {
+				if (world == 1 && (level == 1 || level == 2)) {
 					levelStartText.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 38.4f)));
 
 					const sf::FloatRect textBounds = levelStartText.getLocalBounds();
@@ -689,25 +697,34 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 						window.draw(idlePlants[idlePlantToString[seedPacketSelectedId]]);
 					}
+				}
 
-					if (!plantsOnScene.empty()) {
-						std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
+				if (!lawnMowersOnScene.empty()) {
+					std::shared_lock<std::shared_mutex> lawnMowerReadLock(lawnMowersMutex);
 
-						for (const auto& plant : plantsOnScene) {
-							if (plant.damagedCd > 0) {
-								window.draw(plant.anim.sprite, &damaged_shader);
-							}
-							else {
-								window.draw(plant.anim.sprite);
-							}
+					for (const auto& lawnMower : lawnMowersOnScene) {
+						window.draw(lawnMower.anim.sprite);
+					}
+				}
+
+				if (!plantsOnScene.empty()) {
+					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
+
+					for (const auto& plant : plantsOnScene) {
+						if (plant.damagedCd > 0) {
+							window.draw(plant.anim.sprite, &damaged_shader);
+						}
+						else {
+							window.draw(plant.anim.sprite);
 						}
 					}
+				}
 
+				if (!projectilesOnScene.empty()) {
 					std::shared_lock<std::shared_mutex> projReadLock(projsMutex);
-					if (!projectilesOnScene.empty()) {
-						for (const auto& projectile : projectilesOnScene) {
-							window.draw(projectile.sprite);
-						}
+
+					for (const auto& projectile : projectilesOnScene) {
+						window.draw(projectile.sprite);
 					}
 				}
 
@@ -771,7 +788,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						window.draw(winLevelScreen);
 					}
 
-					window.draw(seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]);
+					if (isMoneyBag) {
+						window.draw(moneyBag);
+					}
+					else {
+						window.draw(seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]);
+					}
 				}
 			} else {
 				window.draw(awardScreen);
@@ -795,4 +817,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.48
+//Version 1.0.49

@@ -72,6 +72,11 @@ std::unordered_map<int, SpriteFrame> sunflowerIdleFrames;
 std::unordered_map<int, SpriteFrame> sunFrames;
 sf::Texture sunSprites;
 sf::Sprite sun;
+sf::Texture moneyBagTexture;
+sf::RectangleShape moneyBag;
+sf::Sprite lawnMower;
+sf::Texture lawnMowerTexture;
+std::unordered_map<int, SpriteFrame> lawnMowerFrames;
 
 sf::Texture texture_blink;
 
@@ -157,10 +162,14 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"zombieEat", loadImageFromResource(nullHInstance, 133)},
 		{"peashooterIdle", loadImageFromResource(nullHInstance, 133)},
 		{"sunflowerIdle", loadImageFromResource(nullHInstance, 133)},
-		{"sun", loadImageFromResource(nullHInstance, 133)}
+		{"sun", loadImageFromResource(nullHInstance, 133)},
+		{"lawnMower", loadImageFromResource(nullHInstance, 133)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 133)}
+	}},
+	{"money", {
+		{"moneybag", loadImageFromResource(nullHInstance, 133)}
 	}}
 };
 #else
@@ -190,10 +199,14 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"zombieEat", loadImageFromResource(nullHInstance, 131)},
 		{"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
 		{"sunflowerIdle", loadImageFromResource(nullHInstance, 135)},
-		{"sun", loadImageFromResource(nullHInstance, 137)}
+		{"sun", loadImageFromResource(nullHInstance, 137)},
+		{"lawnMower", loadImageFromResource(nullHInstance, 144)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 122)}
+	}},
+	{"money", {
+		{"moneybag", loadImageFromResource(nullHInstance, 142)}
 	}}
 };
 #endif

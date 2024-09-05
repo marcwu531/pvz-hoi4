@@ -12,15 +12,16 @@ public:
 				return { 0 };
 			}
 			static const int waves = 4;
-			//static const int totalMeta = 4000;
+			static const int spawnTier = 1;
 		};
 
 		class Level_2 {
 		public:
-			static const std::array<int, 2> zombies() {
-				return { 0, 1 };
+			static const std::array<int, 1> zombies() {
+				return { 0 };
 			}
 			static const int waves = 6;
+			static const int spawnTier = 2;
 		};
 	};
 };

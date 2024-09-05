@@ -50,11 +50,16 @@ struct sunState {
     sf::Vector2f targetPos;
     int existTime;
 };
+struct lawnMowerState {
+    spriteAnim anim;
+    int state;
+};
 extern std::vector<plantState> plantsOnScene;
 extern std::vector<zombieState> zombiesOnScene;
 extern std::vector<projectileState> projectilesOnScene;
 extern std::vector<vanishProjState> vanishProjectilesOnScene;
 extern std::vector<sunState> sunsOnScene;
+extern std::vector<lawnMowerState> lawnMowersOnScene;
 void createPlant(std::optional<sf::Vector2f> pos, int id);
 void createZombie(sf::Vector2f pos);
 extern bool canPlant(sf::Vector2f pos);
@@ -94,4 +99,7 @@ void unlockPlantByLevel(int vWorld = world, int vLevel = level);
 void initSeedPacketPos();
 void winLevel();
 int getUnlockPlantIdByLevel(int vWorld = world, int vLevel = level);
+extern bool isMoneyBag;
+int getStartSunByLevel(int vWorld = world, int vLevel = level);
+void createLawnMower(float x, float y);
 #endif

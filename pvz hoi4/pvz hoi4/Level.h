@@ -3,5 +3,5 @@
 
 extern std::unordered_map<int, std::unordered_map<int, std::vector<int>>> world_level_zombies;
 extern std::unordered_map<int, std::unordered_map<int, int>> world_level_waves;
-
+extern std::unordered_map<int, std::unordered_map<int, int>> world_level_spawnTier;
 #endif

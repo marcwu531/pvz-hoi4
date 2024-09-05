@@ -29,3 +29,13 @@ std::unordered_map<int, std::unordered_map<int, int>> world_level_waves = {
         }
     }
 };
+
+std::unordered_map<int, std::unordered_map<int, int>> world_level_spawnTier = {
+    {
+        1, {
+            {1, Level::World_1::Level_1::spawnTier},
+
+            {2, Level::World_1::Level_2::spawnTier}
+        }
+    }
+};
