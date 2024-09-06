@@ -35,6 +35,18 @@ void initializeAudios(HINSTANCE hInstance) {
 	loadAndStoreMusic("lawnbgm", "1", 113);
 	loadAndStoreMusic("sounds", "readysetplant", 114);
 	loadAndStoreMusic("soundtrack", "battleofwuhan", 115);
+	loadAndStoreMusic("sounds", "awooga", 146);
+	loadAndStoreMusic("sounds", "buzzer", 147);
+	loadAndStoreMusic("sounds", "finalwave", 148);
+	loadAndStoreMusic("sounds", "lawnmower", 149);
+	loadAndStoreMusic("sounds", "plant", 150);
+	loadAndStoreMusic("sounds", "plant2", 151);
+	loadAndStoreMusic("sounds", "points", 152);
+	loadAndStoreMusic("sounds", "siren", 153);
+	loadAndStoreMusic("sounds", "splat", 154);
+	loadAndStoreMusic("sounds", "splat2", 155);
+	loadAndStoreMusic("sounds", "splat3", 156);
+	loadAndStoreMusic("sounds", "winmusic", 157);
 
 #ifdef NSOUND
 	for (auto& categoryPair : audios) {
@@ -54,4 +66,26 @@ void cleanupAudios() {
 		}
 	}
 	audios.clear();
+}
+
+void playRngAudio(std::string type) {
+	if (type == "plant") {
+		if (rand() % 2 == 0) {
+			audios["sounds"]["plant"]->play();
+		}
+		else {
+			audios["sounds"]["plant2"]->play();
+		}
+	}
+	else if (type == "splat") {
+		if (rand() % 3 == 0) {
+			audios["sounds"]["splat"]->play();
+		}
+		else if (rand() % 2 == 0) {
+			audios["sounds"]["splat2"]->play();
+		}
+		else {
+			audios["sounds"]["splat3"]->play();
+		}
+	}
 }

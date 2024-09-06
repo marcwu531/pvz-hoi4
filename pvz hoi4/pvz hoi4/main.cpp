@@ -299,8 +299,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !leftClicking) {
 				leftClicking = true;
 
-				if (accountButton.getGlobalBounds().contains(mousePos)) {
+				if (carKeys.getGlobalBounds().contains(mousePos)) {
+					shopping = !shopping;
+					loggingIn = false;
+				} 
+				else if (accountButton.getGlobalBounds().contains(mousePos)) {
 					loggingIn = !loggingIn;
+					shopping = false;
 
 					if (loggingIn && !account.username.empty()) {
 						username = account.username;
@@ -447,13 +452,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					else if (pvzScene == 4) {
 						if (isMoneyBag) {
 							if (moneyBag.getGlobalBounds().contains(mousePos)) {
-								//play win music
+								audios["sounds"]["winmusic"]->play();
 								pvzScene = 5;
 							}
 						}
 						else {
 							if (seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]
 								.getGlobalBounds().contains(mousePos)) {
+								audios["sounds"]["winmusic"]->play();
 								pvzScene = 5;
 							}
 						}
@@ -644,6 +650,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 
 			window.draw(accountButton);
+
+			if (plantExist(0)) { //1
+				carKeys.setSize(sf::Vector2f(viewWorldSizeY / 8.0f / 89.0f * 130.0f, viewWorldSizeY / 8.0f));
+				carKeys.setOrigin(0, carKeys.getGlobalBounds().height);
+				carKeys.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
+					viewWorldCenterY + viewWorldSizeY * 0.46f);
+				carKeys.setTexture(carKeys.getGlobalBounds().contains(mousePos) ? 
+					&carKeysHighlightTexture : &carKeysTexture);
+				window.draw(carKeys);
+			}
 			break;
 		}
 
@@ -818,4 +834,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.50
+//Version 1.0.51

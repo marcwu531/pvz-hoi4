@@ -270,6 +270,9 @@ void initScene1Place() {
 	lawnMower.setOrigin(lawnMower.getTextureRect().getSize().x / 2.0f,
 		lawnMower.getTextureRect().getSize().y / 2.0f);
 
+	carKeys.setTexture(&carKeysTexture);
+	carKeys.setPosition(10000.0f, 10000.0f);
+
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
 		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
@@ -355,6 +358,11 @@ void initializeScene1() {
 	auto lawnMowerJson = loadJsonFromResource(143);
 	lawnMowerFrames = parseSpriteSheetData(lawnMowerJson);
 	lawnMowerTexture.loadFromImage(getPvzImage("animations", "lawnMower"));
+
+	carKeysTexture.loadFromImage(getPvzImage("money", "carKeys"));
+	carKeysHighlightTexture.loadFromImage(getPvzImage("money", "carKeysHighlight"));
+
+	storeCarTexture.loadFromImage(getPvzImage("money", "storeCar"));
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		auto plantJson = loadJsonFromResource(getPlantJsonIdById(i));
@@ -442,6 +450,8 @@ void createPlant(std::optional<sf::Vector2f> pos, int id) {
 
 				plantsOnScene.push_back({ {hoverPlant, id, 0, getRowByY(pos.value().y)}, false, 300, 0, cd });
 				addSun(-getSunByTypeAndId(0, id));
+
+				playRngAudio("plant");
 			}
 			else {
 				blinkSunText = 0;
@@ -507,6 +517,7 @@ void selectSeedPacket(sf::Vector2f mousePos) {
 
 static void selectSun(sunState& sun) {
 	if (sun.style != 1) {
+		audios["sounds"]["points"]->play();
 		sun.existTime = -1;
 		sun.style = 1;
 		sun.targetPos = sf::Vector2f(-630.0f, -455.0f);
@@ -552,6 +563,7 @@ void selectSeedPacket(int id) { //--id;
 		}
 	}
 	else {
+		audios["sounds"]["buzzer"]->play();
 		blinkSunText = 0;
 	}
 }
@@ -631,6 +643,7 @@ void addSun(int amount) {
 }
 
 bool loggingIn = true;
+bool shopping = false;
 bool isMoneyBag = false;
 
 void winLevel() {

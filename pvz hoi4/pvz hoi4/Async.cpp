@@ -345,7 +345,8 @@ void asyncPvzSceneUpdate() {
 							createRandomZombie();
 						}
 
-						++currentWave;
+						if (++currentWave == world_level_waves[world][level])
+							audios["sounds"]["finalwave"]->play();
 					}
 				}
 				else if (noZombie) {
@@ -540,6 +541,7 @@ void asyncPvzSceneUpdate() {
 								sf::FloatRect zombieBounds = zIt->anim.sprite.getGlobalBounds();
 
 								if (projectileBounds.intersects(zombieBounds) && it->row == zIt->anim.row) {
+									playRngAudio("splat");
 									if (damageZombie(*it, *zIt)) {
 										zombieReadLock.unlock();
 										{

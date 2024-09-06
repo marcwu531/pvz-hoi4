@@ -64,6 +64,11 @@ extern sf::RectangleShape moneyBag;
 extern sf::Sprite lawnMower;
 extern sf::Texture lawnMowerTexture;
 extern std::unordered_map<int, SpriteFrame> lawnMowerFrames;
+extern sf::RectangleShape carKeys;
+extern sf::Texture carKeysTexture;
+extern sf::Texture carKeysHighlightTexture;
+extern sf::RectangleShape storeCar;
+extern sf::Texture storeCarTexture;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea);

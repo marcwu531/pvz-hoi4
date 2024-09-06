@@ -79,6 +79,11 @@ sf::RectangleShape moneyBag;
 sf::Sprite lawnMower;
 sf::Texture lawnMowerTexture;
 std::unordered_map<int, SpriteFrame> lawnMowerFrames;
+sf::RectangleShape carKeys;
+sf::Texture carKeysTexture;
+sf::Texture carKeysHighlightTexture;
+sf::RectangleShape storeCar;
+sf::Texture storeCarTexture;
 
 sf::Texture texture_blink;
 
@@ -169,7 +174,10 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"pea", loadImageFromResource(nullHInstance, 133)}
 	}},
 	{"money", {
-		{"moneybag", loadImageFromResource(nullHInstance, 133)}
+		{"moneybag", loadImageFromResource(nullHInstance, 133)},
+		{"carKeys", loadImageFromResource(nullHInstance, 133)},
+		{"carKeysHighlight", loadImageFromResource(nullHInstance, 133)},
+		{"storeCar", loadImageFromResource(nullHInstance, 133)}
 	}}
 };
 #else
@@ -207,7 +215,9 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 	}},
 	{"money", {
 		{"moneybag", loadImageFromResource(nullHInstance, 142)},
-		{"carKeys", loadImageFromResource(nullHInstance, 145)}
+		{"carKeys", loadImageFromResource(nullHInstance, 145)},
+		{"carKeysHighlight", loadImageFromResource(nullHInstance, 158)},
+		{"storeCar", loadImageFromResource(nullHInstance, 159)}
 	}}
 };
 #endif
