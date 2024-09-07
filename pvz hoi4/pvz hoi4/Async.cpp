@@ -166,6 +166,7 @@ void asyncPvzSceneUpdate() {
 	float elapsedTimeTotal = 0.0f;
 	int pvzStartScene = 0;
 	seedPacketSelected = 0;
+	zombiesWonFrameId = 0;
 
 	std::vector<float> yCoords(5 + rand() % 6);
 
@@ -414,7 +415,14 @@ void asyncPvzSceneUpdate() {
 			case 8:
 			{
 				if (pvzScene == 8) {
-
+					if (zombiesWonFrameId < 11 * animSpeed) {
+						zombiesWon.setTextureRect(zombiesWonFrames.find(static_cast<int>(
+							std::trunc(++zombiesWonFrameId / animSpeed)))->second.frameRect);
+					}
+					else {
+						pvzScene = 9;
+						//zombiesWonDark.setFillColor(sf::Color(0, 0, 0, 255));
+					}
 				}
 
 				{
@@ -426,8 +434,8 @@ void asyncPvzSceneUpdate() {
 							auto& zombie = *it;
 
 							if (zombie.anim.sprite.getPosition().x < -531 && pvzScene == 3) {
-								zombie.hp = 0;
-								// loseLevel();
+								//zombie.hp = 0;
+								loseLevel();
 							}
 							else {
 								bool isColliding = false;
@@ -469,7 +477,7 @@ void asyncPvzSceneUpdate() {
 								}
 								else {
 									zombie.anim.animId = 2;
-									zombie.anim.sprite.move(zombie.movementSpeed); //(-50.0f, 0.0f);
+									zombie.anim.sprite.move(-50.0f, 0.0f); // (zombie.movementSpeed); //(-50.0f, 0.0f);
 
 									if (zombie.anim.sprite.getPosition().x < -360.0f) {
 										std::shared_lock<std::shared_mutex> lawnMowerReadLock(lawnMowersMutex);

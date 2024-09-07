@@ -70,6 +70,10 @@ extern sf::Texture carKeysHighlightTexture;
 extern sf::RectangleShape storeCar;
 extern sf::Texture storeCarTexture;
 extern sf::RectangleShape shopLawnMower;
+extern sf::RectangleShape zombiesWon;
+extern sf::Texture zombiesWonTexture;
+extern std::unordered_map<int, SpriteFrame> zombiesWonFrames;
+extern sf::RectangleShape zombiesWonDark;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea);
@@ -89,4 +93,5 @@ sf::Image getPvzImage(const std::string& type, std::string target);
 std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId);
 std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY);
 void changeScene(int targetScene);
+extern int zombiesWonFrameId;
 #endif

@@ -88,6 +88,10 @@ sf::Texture carKeysHighlightTexture;
 sf::RectangleShape storeCar;
 sf::Texture storeCarTexture;
 sf::RectangleShape shopLawnMower;
+sf::RectangleShape zombiesWon;
+sf::Texture zombiesWonTexture;
+std::unordered_map<int, SpriteFrame> zombiesWonFrames;
+sf::RectangleShape zombiesWonDark;
 
 sf::Texture texture_blink;
 
@@ -100,6 +104,8 @@ float mapRatio = 20.0f;
 sf::RectangleShape world_blink;
 //(sf::Vector2f(mapRatio* (State::T::lx - State::T::sx + 1), mapRatio* (State::T::ly - State::T::sy + 1))); 
 //15s
+
+int zombiesWonFrameId;
 
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea) {
 	sf::Image cropped_image;
@@ -212,7 +218,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"peashooterIdle", loadImageFromResource(nullHInstance, 117)},
 		{"sunflowerIdle", loadImageFromResource(nullHInstance, 135)},
 		{"sun", loadImageFromResource(nullHInstance, 137)},
-		{"lawnMower", loadImageFromResource(nullHInstance, 144)}
+		{"lawnMower", loadImageFromResource(nullHInstance, 144)},
+		{"zombiesWon", loadImageFromResource(nullHInstance, 162)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 122)}

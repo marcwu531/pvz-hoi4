@@ -686,7 +686,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		case 1:
 			window.setView(view_background);
 
-			if (pvzScene < 6) {
+			if (pvzScene < 6 || pvzScene == 8) {
 				window.draw(background);
 
 				/*const float viewWorldCenterX = view_background.getCenter().x;
@@ -835,12 +835,31 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					else {
 						window.draw(seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]);
 					}
+				} 
+				else if (pvzScene == 8) {
+					zombiesWon.setOrigin(zombiesWon.getSize().x / 2.0f, zombiesWon.getSize().y / 2.0f);
+					zombiesWon.setPosition(view_background.getCenter());
+
+					zombiesWonDark.setSize(view_background.getSize());
+					zombiesWonDark.setOrigin(zombiesWonDark.getSize().x / 2.0f, zombiesWonDark.getSize().y / 2.0f);
+					zombiesWonDark.setPosition(view_background.getCenter());
+					zombiesWonDark.setFillColor(sf::Color(0, 0, 0,
+						std::min(static_cast<int>(zombiesWonFrameId / animSpeed / 11.0f * 255.0f), 255)));
+
+					window.draw(zombiesWonDark);
+					window.draw(zombiesWon);
 				}
 			} else {
-				window.draw(awardScreen);
-				if (!isMoneyBag) window.draw(idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]]);
-				window.draw(seedChooserButton);
-				if (pvzScene == 6) window.draw(winLevelScreen);
+				if (pvzScene == 9) {
+					window.draw(zombiesWonDark);
+					window.draw(zombiesWon);
+				}
+				else {
+					window.draw(awardScreen);
+					if (!isMoneyBag) window.draw(idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]]);
+					window.draw(seedChooserButton);
+					if (pvzScene == 6) window.draw(winLevelScreen);
+				}
 			}
 			break;
 		}
@@ -856,4 +875,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.52
+//Version 1.0.52.a

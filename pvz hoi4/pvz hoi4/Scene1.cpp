@@ -279,6 +279,11 @@ void initScene1Place() {
 	shopLawnMower.setTexture(&lawnMowerTexture);
 	shopLawnMower.setTextureRect(lawnMowerFrames[0].frameRect);
 
+	zombiesWon.setTexture(&zombiesWonTexture);
+	zombiesWon.setTextureRect(zombiesWonFrames[0].frameRect);
+	zombiesWon.setSize(sf::Vector2f(view_background.getSize().y / 3.0f * 4.0f, 
+		view_background.getSize().y)); //800*600
+
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
 		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
@@ -369,6 +374,9 @@ void initializeScene1() {
 	carKeysHighlightTexture.loadFromImage(getPvzImage("money", "carKeysHighlight"));
 
 	storeCarTexture.loadFromImage(getPvzImage("money", "storeCar"));
+
+	zombiesWonTexture.loadFromImage(getPvzImage("animations", "zombiesWon"));
+	zombiesWonFrames = parseSpriteSheetData(loadJsonFromResource(161));
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		auto plantJson = loadJsonFromResource(getPlantJsonIdById(i));

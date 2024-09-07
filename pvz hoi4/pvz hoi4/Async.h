@@ -24,4 +24,5 @@ extern std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex
 	lawnMowersMutex; //accountMutex
 extern sf::Vector2f worldPos;
 extern int mapSx, mapSy;
+extern float animSpeed;
 #endif
