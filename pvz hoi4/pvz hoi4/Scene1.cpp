@@ -46,7 +46,7 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
 	auto& state = seedPacketState[i];
 	if (state[1] == 0 && state[0] != 4) {
 		seedPacketSelected += 2 - static_cast<int>(state[0]);
-		std::cout << seedPacketSelected << std::endl;
+		//std::cout << seedPacketSelected << std::endl;
 	}
 
 	state[1] += elapsedTime * 2;
@@ -273,6 +273,12 @@ void initScene1Place() {
 	carKeys.setTexture(&carKeysTexture);
 	carKeys.setPosition(10000.0f, 10000.0f);
 
+	storeCar.setTexture(&storeCarTexture);
+	storeCar.setPosition(10000.0f, 10000.0f);
+
+	shopLawnMower.setTexture(&lawnMowerTexture);
+	shopLawnMower.setTextureRect(lawnMowerFrames[0].frameRect);
+
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
 		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
@@ -485,11 +491,6 @@ void createZombie(sf::Vector2f pos, int style) {
 
 	newZombie = getZombieSpriteById(animId);
 
-	if (newZombie.getTexture() == nullptr) {
-		std::cout << "Failed to create sprite for animId: " << animId << std::endl;
-		return;
-	}
-
 	newZombie.setPosition(pos);
 	zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200, 0,
 		sf::Vector2f(-0.5f - (rand() % 26) / 100.0f, 0.0f), nullptr });
@@ -539,6 +540,7 @@ bool selectSun(sf::Vector2f mousePos) {
 
 void selectSeedPacket(int id) { //--id;
 	if (pvzSun >= getSunByTypeAndId(0, id)) {
+		audios["sounds"]["seedlift"]->play();
 		auto it = seedPackets.find(seedPacketIdToString(id));
 		if (it != seedPackets.end()) {
 			//if (seedPacketState[i][0] == 2) {
@@ -563,7 +565,8 @@ void selectSeedPacket(int id) { //--id;
 		}
 	}
 	else {
-		audios["sounds"]["buzzer"]->play();
+		if (audios["sounds"]["buzzer"]->getStatus() != sf::Music::Playing) 
+			audios["sounds"]["buzzer"]->play();
 		blinkSunText = 0;
 	}
 }
@@ -654,13 +657,14 @@ void winLevel() {
 		selectSun(sun);
 	}
 
-	isMoneyBag = plantExist(getUnlockPlantIdByLevel());
+	isMoneyBag = plantExist(getUnlockPlantIdByLevel()) || getUnlockPlantIdByLevel() >= maxPlantAmount;
 
 	if (!isMoneyBag) {
 		sf::RectangleShape& unlockSP = seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())];
 		unlockSP.setOrigin(unlockSP.getSize().x / 2.0f, unlockSP.getSize().y / 2.0f);
 		unlockSP.setPosition(view_background.getCenter() +
 			sf::Vector2f(static_cast<float>(rand() % 501) - 250.0f, static_cast<float>(rand() % 501) - 250.0f));
+		unlockPlantByLevel();
 	}
 	else {
 		moneyBag.setPosition(view_background.getCenter() +
@@ -675,13 +679,13 @@ void winLevel() {
 	awardScreen.setOrigin(awardScreen.getSize().x / 2.0f, awardScreen.getSize().y / 2.0f);
 	awardScreen.setPosition(view_background.getCenter());
 
-	idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setPosition(view_background.getCenter() -
+	if(!isMoneyBag) idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setPosition(view_background.getCenter() -
 		sf::Vector2f(0.0f, 0.15f * view_background.getSize().y));
 
 	seedPacketState.clear();
 	seedPacketState.resize(maxPlantAmount);
 
-	if (!isMoneyBag) unlockPlantByLevel();
+	pvzPacketOnSelected = false;
 }
 
 int getStartSunByLevel(int vWorld, int vLevel) {
@@ -701,4 +705,8 @@ void createLawnMower(float x, float y) {
 	tempSprite.setPosition(x, y);
 
 	lawnMowersOnScene.push_back({ {tempSprite, 0, 0, getRowByY(y)}, 0 });
+}
+
+void loseLevel() {
+	pvzScene = 8;
 }

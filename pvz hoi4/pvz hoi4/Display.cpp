@@ -13,7 +13,10 @@
 #include <thread>
 #include <vector>
 #include <windows.h>
+#include <iostream>
+#include <fstream>
 
+#include "Account.h"
 #include "Async.h"
 #include "Audio.h"
 #include "Colour.h"
@@ -23,7 +26,7 @@
 #include "State.h"
 #include "Window.h"
 
-#define NROC
+//define NROC
 
 sf::Font defaultFont;
 sf::Texture flag_texture;
@@ -84,6 +87,7 @@ sf::Texture carKeysTexture;
 sf::Texture carKeysHighlightTexture;
 sf::RectangleShape storeCar;
 sf::Texture storeCarTexture;
+sf::RectangleShape shopLawnMower;
 
 sf::Texture texture_blink;
 
@@ -286,12 +290,48 @@ void changeScene(int targetScene) {
 		thread_asyncBlinkMap = std::thread(asyncBlinkMap);
 		thread_asyncLoadFlag = std::thread(asyncLoadFlag);
 		thread_asyncLoadLevelStart = std::thread(asyncLoadLevelStart);
-	} 
+	}
 	else if (targetScene == 1) {
 		if (audios["soundtrack"]["battleofwuhan"]->getStatus() == sf::Music::Playing)
 			audios["soundtrack"]["battleofwuhan"]->stop();
 		thread_asyncPvzSceneUpdate = std::thread(asyncPvzSceneUpdate);
 	}
+	/*else if (targetScene == -1) {
+		if (!account.username.empty()) {
+			std::ofstream outFile("account.txt", std::ios::app);
+
+			if (!outFile.is_open()) {
+				char buffer[256];
+				strerror_s(buffer, sizeof(buffer), errno);
+				std::cerr << "Failed to open file. Error: " << buffer << std::endl;
+			}
+			else {
+				std::cerr << "File opened successfully." << std::endl;
+				outFile << "Hello, this is a message inside the file.\n";
+
+				if (outFile.fail()) {
+					char buffer[256];
+					strerror_s(buffer, sizeof(buffer), errno);
+					std::cerr << "Error occurred while writing to file. Error: " << buffer << std::endl;
+				}
+				else {
+					std::cerr << "Write successful." << std::endl;
+				}
+
+				outFile.flush();
+				outFile.close();
+
+				if (outFile.fail()) {
+					char buffer[256];
+					strerror_s(buffer, sizeof(buffer), errno);
+					std::cout << "Error occurred while closing the file. Error: " << buffer << std::endl;
+				}
+				else {
+					std::cerr << "File closed successfully." << std::endl;
+				}
+			}
+		}
+	}*/
 
 	scene = targetScene;
 

@@ -210,7 +210,7 @@ void asyncPvzSceneUpdate() {
 
 				for (int i = 0; i < maxPlantAmount; ++i) {
 					if (!plantExist(i)) continue;
-					auto it = stateToTargetPosition.find((int)seedPacketState[i][0]);
+					auto it = stateToTargetPosition.find(static_cast<int>(seedPacketState[i][0]));
 					if (it != stateToTargetPosition.end()) {
 						if (seedPacketState[i][0] == 3 && seedPacketState[i][1] == 0) {
 							//sf::Mouse::setPosition(sf::Vector2i(175, 300));
@@ -263,7 +263,12 @@ void asyncPvzSceneUpdate() {
 					pvzStartText.setOrigin(pvzStartText.getSize() / 2.0f);
 					elapsedTimeTotal = 0.0f;
 					pvzScene = 2;
-					zombiesOnScene.clear();
+
+					{
+						std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+						zombiesOnScene.clear();
+					}
+
 					audios["sounds"]["readysetplant"]->play();
 
 					if (account.unlockedLawnMower) {
@@ -287,11 +292,13 @@ void asyncPvzSceneUpdate() {
 				seedChooserButton.move(0.0f, 2.0f * easedT);
 				background.move(0.9f * easedT, 0.0f);
 
-				if (!zombiesOnScene.empty()) {
+				{
 					std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
-					updateZombieAnim();
-					for (auto& zombie : zombiesOnScene) {
-						zombie.anim.sprite.move(0.9f * easedT, 0.0f);
+					if (!zombiesOnScene.empty()) {
+						updateZombieAnim();
+						for (auto& zombie : zombiesOnScene) {
+							zombie.anim.sprite.move(0.9f * easedT, 0.0f);
+						}
 					}
 				}
 
@@ -328,29 +335,49 @@ void asyncPvzSceneUpdate() {
 				if (audios["lawnbgm"]["1"]->getStatus() != sf::Music::Playing)
 					audios["lawnbgm"]["1"]->play();
 
-				std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
-				bool noZombie = zombiesOnScene.empty();
-				zombieReadLock.unlock();
-
-				if (currentWave < world_level_waves[world][level]) {
-					if (--zombieSpawnTimer <= 0 || noZombie) {
-						zombieSpawnTimer = 2000 + rand() % 500;
-
-						std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
-						int spawnTier = static_cast<int>(
-							std::pow(2, world_level_spawnTier[world][level] * currentWave));
-
-						while (spawnTier > 0) {
-							--spawnTier;
-							createRandomZombie();
+				{
+					{
+						std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
+						if (zombiesOnScene.empty() && zombieSpawnTimer > 100) {
+							zombieSpawnTimer = 100;
 						}
-
-						if (++currentWave == world_level_waves[world][level])
-							audios["sounds"]["finalwave"]->play();
 					}
-				}
-				else if (noZombie) {
-					winLevel();
+
+					if (currentWave < world_level_waves[world][level] + 1) {
+						if (--zombieSpawnTimer <= 0) {
+							zombieSpawnTimer = 2000 + rand() % 500;
+
+							if (++currentWave == world_level_waves[world][level]) {
+								audios["sounds"]["finalwave"]->play();
+							}
+							else {
+								int spawnTier = static_cast<int>( std::log10(currentWave + 1) * 10.0f * 
+									std::pow(1 + world_level_spawnTier[world][level] / 25.0f, 3)) - 2;
+
+								if (currentWave == world_level_waves[world][level] + 1) {
+									audios["sounds"]["siren"]->play();
+									if (world == 1 && level == 1)
+										spawnTier *= 3;
+								}
+								else if (currentWave == 1) {
+									audios["sounds"]["awooga"]->play();
+								}
+
+								{
+									std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+
+									while (spawnTier > 0) {
+										--spawnTier;
+										createRandomZombie();
+									}
+								}
+							}
+						}
+					}
+					else {
+						std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
+						if (zombiesOnScene.empty()) winLevel();
+					}
 				}
 
 				if (--sunSpawnTimer <= 0) {
@@ -370,76 +397,6 @@ void asyncPvzSceneUpdate() {
 						roundf((mousePos.y - 30.0f) / 170.0f) * 170.0f + 30.0f);
 					hoverShade.setPosition(hoverPlant.getPosition());
 				}
-				if (!zombiesOnScene.empty()) {
-					std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
-					updateZombieAnim();
-
-					std::vector<std::size_t> tempRemoveZombies;
-
-					for (std::size_t i = 0; i < zombiesOnScene.size(); ++i) {
-						auto& zombie = zombiesOnScene[i];
-
-						if (zombie.anim.sprite.getPosition().x < -700) {
-							tempRemoveZombies.push_back(i);
-							continue;
-						}
-						else {
-							bool isColliding = false;
-
-							for (auto& plant : plantsOnScene) {
-								if (plant.anim.row == zombie.anim.row) {
-									sf::FloatRect plantBounds = plant.anim.sprite.getGlobalBounds();
-									sf::FloatRect zombieBounds = zombie.anim.sprite.getGlobalBounds();
-									if (plantBounds.intersects(zombieBounds)) {
-										isColliding = true;
-										zombie.targetPlant = &plant;
-										break;
-									}
-								}
-							}
-
-							//zombie.eating = isColliding;
-							if (isColliding) {
-								zombie.anim.animId = 3;
-								if (zombie.targetPlant != nullptr &&
-									(zombie.anim.frameId == std::trunc(12 * animSpeed
-										* getAnimRatioById(zombie.anim.animId)) ||
-										zombie.anim.frameId == std::trunc(33 * animSpeed
-											* getAnimRatioById(zombie.anim.animId)))) {
-									if (damagePlant(*zombie.targetPlant)) {
-										std::unique_lock<std::shared_mutex> plantWriteLock(plantsMutex);
-										plantsOnScene.erase(std::remove_if(plantsOnScene.begin(),
-											plantsOnScene.end(),
-											[&](const plantState& plant) {
-												return &plant == zombie.targetPlant;
-											}),
-											plantsOnScene.end());
-									}
-									else {
-										zombie.targetPlant->damagedCd = 10;
-									}
-								}
-							}
-							else {
-								zombie.anim.animId = 2;
-								zombie.anim.sprite.move(zombie.movementSpeed);
-								zombie.targetPlant = nullptr;
-							}
-
-							if (zombie.damagedCd > 0) {
-								--zombie.damagedCd;
-							}
-						}
-					}
-
-					zombieReadLock.unlock();
-					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
-
-					for (auto it = tempRemoveZombies.rbegin(); it != tempRemoveZombies.rend(); ++it) {
-						zombiesOnScene.erase(zombiesOnScene.begin() + *it);
-					}
-				}
-
 
 				if (blinkSunText != -1) {
 					if (++blinkSunText < 5 || (blinkSunText > 10 && blinkSunText < 15)) {
@@ -454,74 +411,162 @@ void asyncPvzSceneUpdate() {
 			[[fallthrough]];
 			case 4:
 			case 5:
+			case 8:
 			{
-				if (!plantsOnScene.empty()) {
-					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
+				if (pvzScene == 8) {
 
-					for (auto& plant : plantsOnScene) {
-						if (plant.damagedCd > 0) {
-							--plant.damagedCd;
-						}
+				}
 
-						auto& sprite = plant.anim.sprite;
-						++plant.anim.frameId;
-						if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId) * animSpeed)
-							plant.anim.frameId = 0;
+				{
+					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+					if (!zombiesOnScene.empty()) {
+						updateZombieAnim();
 
-						int frame = static_cast<int>(std::trunc(plant.anim.frameId / animSpeed));
+						for (auto it = zombiesOnScene.begin(); it != zombiesOnScene.end(); ) {
+							auto& zombie = *it;
 
-						if (pvzScene == 3) {
-							switch (plant.anim.animId) {
-							case 0:
-								if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
-									plant.attack = false;
+							if (zombie.anim.sprite.getPosition().x < -531 && pvzScene == 3) {
+								zombie.hp = 0;
+								// loseLevel();
+							}
+							else {
+								bool isColliding = false;
 
-									std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
-									for (auto& zombie : zombiesOnScene) {
-										sf::FloatRect zb = zombie.anim.sprite.getGlobalBounds();
-										sf::FloatRect pb = plant.anim.sprite.getGlobalBounds();
-										if (plant.anim.row == zombie.anim.row
-											&& zombie.anim.sprite.getPosition().x <= 1300 &&
-											zb.left + zb.width > pb.left - pb.width) {
-											plant.attack = true;
-											break;
+								{
+									std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
+									for (auto itPlant = plantsOnScene.rbegin(); itPlant != plantsOnScene.rend(); ++itPlant) {
+										auto& plant = *itPlant;
+										if (plant.anim.row == zombie.anim.row) {
+											sf::FloatRect plantBounds = plant.anim.sprite.getGlobalBounds();
+											sf::FloatRect zombieBounds = zombie.anim.sprite.getGlobalBounds();
+											if (plantBounds.intersects(zombieBounds)) {
+												isColliding = true;
+												zombie.targetPlant = &plant;
+												break;
+											}
 										}
 									}
 								}
-								break;
-							case 1:
-								plant.cd -= static_cast<int>(frameTime.count());
-								if (plant.cd <= 0) {
-									if (std::fabs(plant.anim.frameId - 17.0f * animSpeed) < 1.0f) {
-										plant.cd = 24000 + (std::rand() % 1001);
-										std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
-										createSun(plant.anim.sprite.getPosition()
-											- sf::Vector2f(0.0f, 50.0f), 0, 2);
+
+								if (isColliding) {
+									zombie.anim.animId = 3;
+									if (zombie.targetPlant != nullptr &&
+										(zombie.anim.frameId == std::trunc(12 * animSpeed * getAnimRatioById(zombie.anim.animId)) ||
+											zombie.anim.frameId == std::trunc(33 * animSpeed * getAnimRatioById(zombie.anim.animId)))) {
+										if (damagePlant(*zombie.targetPlant)) {
+											std::unique_lock<std::shared_mutex> plantWriteLock(plantsMutex);
+											plantsOnScene.erase(std::remove_if(plantsOnScene.begin(),
+												plantsOnScene.end(),
+												[&](const plantState& plant) {
+													return &plant == zombie.targetPlant;
+												}),
+												plantsOnScene.end());
+										}
+										else {
+											zombie.targetPlant->damagedCd = 10;
+										}
 									}
 								}
-								break;
+								else {
+									zombie.anim.animId = 2;
+									zombie.anim.sprite.move(zombie.movementSpeed); //(-50.0f, 0.0f);
+
+									if (zombie.anim.sprite.getPosition().x < -360.0f) {
+										std::shared_lock<std::shared_mutex> lawnMowerReadLock(lawnMowersMutex);
+
+										for (auto& lm : lawnMowersOnScene) {
+											if (lm.state == 0 && lm.anim.row == zombie.anim.row) {
+												lm.state = 1;
+											}
+										}
+									}
+
+									zombie.targetPlant = nullptr;
+								}
+							}
+
+							if (zombie.damagedCd > 0) {
+								--zombie.damagedCd;
+							}
+
+							if (zombie.hp <= 0) {
+								it = zombiesOnScene.erase(it);
+							}
+							else {
+								++it;
 							}
 						}
+					}
+				}
 
-						if (plant.attack && pvzScene == 3) {
-							sprite.setTexture(*getPlantAttackTextureById(plant.anim.animId));
-							sprite.setTextureRect(getPlantAttackFrameById(plant.anim.animId)->
-								find(frame)->second.frameRect);
-							if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f) {
-								std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
-								createProjectile(0, plant.anim.sprite.getPosition()
-									+ sf::Vector2f(72.0f, 0.0f));
+				{
+					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
+					if (!plantsOnScene.empty()) {
+						for (auto& plant : plantsOnScene) {
+							if (plant.damagedCd > 0) {
+								--plant.damagedCd;
 							}
-						}
-						else {
-							sprite.setTexture(*getPlantIdleTextureById(plant.anim.animId));
-							sprite.setTextureRect(getPlantIdleFrameById(plant.anim.animId)->find(frame)->
-								second.frameRect);
-						}
 
-						sf::FloatRect bounds = sprite.getGlobalBounds();
-						sprite.setOrigin(sprite.getTextureRect().getSize().x / 2.0f,
-							sprite.getTextureRect().getSize().y - 36.0f); //fix for 2nd plant
+							auto& sprite = plant.anim.sprite;
+							++plant.anim.frameId;
+							if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId) * animSpeed)
+								plant.anim.frameId = 0;
+
+							int frame = static_cast<int>(std::trunc(plant.anim.frameId / animSpeed));
+
+							if (pvzScene == 3) {
+								switch (plant.anim.animId) {
+								case 0:
+									if ((!plant.attack && frame >= 20) || (plant.attack && frame <= 7)) {
+										plant.attack = false;
+
+										std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
+										for (auto& zombie : zombiesOnScene) {
+											sf::FloatRect zb = zombie.anim.sprite.getGlobalBounds();
+											sf::FloatRect pb = plant.anim.sprite.getGlobalBounds();
+											if (plant.anim.row == zombie.anim.row
+												&& zombie.anim.sprite.getPosition().x <= 1300 &&
+												zb.left + zb.width > pb.left - pb.width) {
+												plant.attack = true;
+												break;
+											}
+										}
+									}
+									break;
+								case 1:
+									plant.cd -= static_cast<int>(frameTime.count());
+									if (plant.cd <= 0) {
+										if (std::fabs(plant.anim.frameId - 17.0f * animSpeed) < 1.0f) {
+											plant.cd = 24000 + (std::rand() % 1001);
+											std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
+											createSun(plant.anim.sprite.getPosition()
+												- sf::Vector2f(0.0f, 50.0f), 0, 2);
+										}
+									}
+									break;
+								}
+							}
+
+							if (plant.attack && pvzScene == 3) {
+								sprite.setTexture(*getPlantAttackTextureById(plant.anim.animId));
+								sprite.setTextureRect(getPlantAttackFrameById(plant.anim.animId)->
+									find(frame)->second.frameRect);
+								if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f) {
+									std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
+									createProjectile(0, plant.anim.sprite.getPosition()
+										+ sf::Vector2f(72.0f, 0.0f));
+								}
+							}
+							else {
+								sprite.setTexture(*getPlantIdleTextureById(plant.anim.animId));
+								sprite.setTextureRect(getPlantIdleFrameById(plant.anim.animId)->find(frame)->
+									second.frameRect);
+							}
+
+							sf::FloatRect bounds = sprite.getGlobalBounds();
+							sprite.setOrigin(sprite.getTextureRect().getSize().x / 2.0f,
+								sprite.getTextureRect().getSize().y - 36.0f); //fix for 2nd plant
+						}
 					}
 				}
 
@@ -534,7 +579,7 @@ void asyncPvzSceneUpdate() {
 						bool shouldEraseProjectile = it->sprite.getPosition().x > 1500;
 
 						if (!shouldEraseProjectile && pvzScene == 3) {
-							std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
+							std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
 							auto zIt = zombiesOnScene.begin();
 							while (zIt != zombiesOnScene.end()) {
 								sf::FloatRect projectileBounds = it->sprite.getGlobalBounds();
@@ -543,12 +588,7 @@ void asyncPvzSceneUpdate() {
 								if (projectileBounds.intersects(zombieBounds) && it->row == zIt->anim.row) {
 									playRngAudio("splat");
 									if (damageZombie(*it, *zIt)) {
-										zombieReadLock.unlock();
-										{
-											std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
-											zIt = zombiesOnScene.erase(zIt);
-										}
-										zombieReadLock.lock();
+										zIt = zombiesOnScene.erase(zIt);
 									}
 									else {
 										zIt->damagedCd = 10;
@@ -569,18 +609,17 @@ void asyncPvzSceneUpdate() {
 							}
 						}
 
-						projReadLock.unlock();
-						std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
-
 						if (shouldEraseProjectile) {
-							it = projectilesOnScene.erase(it);
+							projReadLock.unlock();
+							{
+								std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
+								it = projectilesOnScene.erase(it);
+							}
+							projReadLock.lock();
 						}
 						else {
 							++it;
 						}
-
-						projWriteLock.unlock();
-						projReadLock.lock();
 					}
 				}
 
@@ -653,6 +692,53 @@ void asyncPvzSceneUpdate() {
 					++it;
 				}
 
+				{
+					std::shared_lock<std::shared_mutex> lawnMowerReadLock(lawnMowersMutex);
+
+					for (auto itLm = lawnMowersOnScene.begin(); itLm != lawnMowersOnScene.end();) {
+						if (itLm->state == 1) {
+							itLm->anim.sprite.move(10.0f, 0.0f);
+							if (itLm->anim.sprite.getPosition().x > 1500) {
+								lawnMowerReadLock.unlock();
+								{
+									std::unique_lock<std::shared_mutex> lawnMowerWriteLock(lawnMowersMutex);
+									itLm = lawnMowersOnScene.erase(itLm);
+								}
+								lawnMowerReadLock.lock();
+							}
+							else {
+								{
+									std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+
+									for (auto itZ = zombiesOnScene.begin(); itZ != zombiesOnScene.end();) {
+										if (itZ->anim.row == itLm->anim.row) {
+											sf::FloatRect itZBounds = itZ->anim.sprite.getGlobalBounds();
+											sf::FloatRect itLmBounds = itLm->anim.sprite.getGlobalBounds();
+
+											if ((itZBounds.left < itLmBounds.left + itLmBounds.width) &&
+												(itZBounds.left + itZBounds.width > itLmBounds.left)) {
+												itZ = zombiesOnScene.erase(itZ);
+												continue;
+											}
+										}
+										++itZ;
+									}
+								}
+
+								++itLm->anim.frameId;
+								if (itLm->anim.frameId > 11.0f * animSpeed) itLm->anim.frameId = 0;
+								itLm->anim.sprite.setTextureRect(lawnMowerFrames.find(
+									static_cast<int>(std::trunc(itLm->anim.frameId / animSpeed)))->second.frameRect);
+
+								++itLm;
+							}
+						}
+						else {
+							++itLm;
+						}
+					}
+				}
+
 				if (pvzScene == 5) {
 					sf::RectangleShape& targetAward = isMoneyBag ?
 						moneyBag :
@@ -676,7 +762,7 @@ void asyncPvzSceneUpdate() {
 					winLevelScreen.setFillColor(sf::Color(255, 255, 255,
 						std::min(winLevelScreen.getFillColor().a + 2, 255)));
 
-					seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())].setFillColor(
+					if (!isMoneyBag) seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())].setFillColor(
 						sf::Color(255, 255, 255, 255 - winLevelScreen.getFillColor().a));
 
 					if (winLevelScreen.getFillColor().a == 255) {
@@ -712,10 +798,12 @@ void asyncPvzSceneUpdate() {
 				}
 				[[fallthrough]];
 			case 7:
-				if (++idleFrame > getPlantMaxFrameById(getUnlockPlantIdByLevel()) * animSpeed) idleFrame = 0;
-				idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setTextureRect(
-					getPlantAttackFrameById(getUnlockPlantIdByLevel())->
-					find(static_cast<int>(std::trunc(idleFrame / animSpeed)))->second.frameRect);
+				if (!isMoneyBag) {
+					if (++idleFrame > getPlantMaxFrameById(getUnlockPlantIdByLevel()) * animSpeed) idleFrame = 0;
+					idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setTextureRect(
+						getPlantAttackFrameById(getUnlockPlantIdByLevel())->
+						find(static_cast<int>(std::trunc(idleFrame / animSpeed)))->second.frameRect);
+				}
 				break;
 			}
 		}

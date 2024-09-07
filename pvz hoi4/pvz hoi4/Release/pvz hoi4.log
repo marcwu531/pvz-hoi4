@@ -1,4 +1,8 @@
-﻿  Scene1.cpp
+﻿  Async.cpp
+  Audio.cpp
+  Display.cpp
+  Json.cpp
+  Scene1.cpp
   main.cpp
   Generating code
   Finished generating code

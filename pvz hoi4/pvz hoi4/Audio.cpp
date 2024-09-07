@@ -5,7 +5,7 @@
 
 #include "Audio.h"
 
-#define NSOUND
+//#define NSOUND
 
 static sf::Music* loadMusicFromResource(HINSTANCE hInstance, int resourceId, size_t& resourceSize) {
 	auto music = new sf::Music();
@@ -47,6 +47,7 @@ void initializeAudios(HINSTANCE hInstance) {
 	loadAndStoreMusic("sounds", "splat2", 155);
 	loadAndStoreMusic("sounds", "splat3", 156);
 	loadAndStoreMusic("sounds", "winmusic", 157);
+	loadAndStoreMusic("sounds", "seedlift", 160);
 
 #ifdef NSOUND
 	for (auto& categoryPair : audios) {

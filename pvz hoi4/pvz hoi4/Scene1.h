@@ -103,4 +103,5 @@ int getUnlockPlantIdByLevel(int vWorld = world, int vLevel = level);
 extern bool isMoneyBag;
 int getStartSunByLevel(int vWorld = world, int vLevel = level);
 void createLawnMower(float x, float y);
+void loseLevel();
 #endif

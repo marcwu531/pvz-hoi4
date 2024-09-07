@@ -315,6 +315,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				else if (loggingIn && !loginMenu.getGlobalBounds().contains(mousePos)) {
 					loggingIn = false;
 				}
+				else if (shopping) {
+					if (!account.unlockedLawnMower && shopLawnMower.getGlobalBounds().contains(mousePos)) {
+						account.unlockedLawnMower = true;
+					}
+				}
 				else {
 					/*std::cout << "x: " << window.mapPixelToCoords(sf::Mouse::getPosition(window)).x
 					<< " y: " << window.mapPixelToCoords(sf::Mouse::getPosition(window)).y << std::endl;*/
@@ -402,6 +407,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						for (int i = 0; i < maxPlantAmount; ++i) {
 							if (!plantExist(i)) continue;
 							if (seedPackets[seedPacketIdToString(i)].getGlobalBounds().contains(mousePos)) {
+								audios["sounds"]["seedlift"]->play();
 								selectingSeedPacket = true;
 								switch (static_cast<int>(seedPacketState[i][0])) {
 								case 0: //select place
@@ -621,6 +627,20 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				window.draw(clipboardPaste);
 				window.draw(loadAccountText);
 			}
+			else if (shopping) {
+				storeCar.setSize(sf::Vector2f(viewWorldSizeX, viewWorldSizeY));
+				storeCar.setOrigin(storeCar.getGlobalBounds().width / 2.0f, storeCar.getGlobalBounds().height / 2.0f);
+				storeCar.setPosition(viewWorldCenterX, viewWorldCenterY);
+
+				shopLawnMower.setSize(sf::Vector2f(viewWorldSizeX / 13.0f, viewWorldSizeX / 13.0f / 89.0f * 75.0f));
+				shopLawnMower.setPosition(viewWorldCenterX - viewWorldSizeX / 5.0f, 
+					viewWorldCenterY - viewWorldSizeY / 3.0f);
+				shopLawnMower.setFillColor(account.unlockedLawnMower ? sf::Color(100, 100, 100, 200)
+					: sf::Color(255, 255, 255, 255));
+
+				window.draw(storeCar);
+				window.draw(shopLawnMower);
+			}
 			else {
 				if (!plantExist(0)) {
 					selectCountryScreen.setSize(sf::Vector2f(viewWorldSizeX, 4.0f * viewWorldSizeY / 5.0f));
@@ -651,7 +671,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 			window.draw(accountButton);
 
-			if (plantExist(0)) { //1
+			if (plantExist(1)) {
 				carKeys.setSize(sf::Vector2f(viewWorldSizeY / 8.0f / 89.0f * 130.0f, viewWorldSizeY / 8.0f));
 				carKeys.setOrigin(0, carKeys.getGlobalBounds().height);
 				carKeys.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
@@ -737,36 +757,40 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
-				if (!zombiesOnScene.empty()) {
-					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
 
-					std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
-
-					for (auto& zombie : zombiesOnScene) {
-						if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row.value())
-							< tempZombies.size())
-							tempZombies[zombie.anim.row.value()].push_back(zombie);
-					}
-
-					zombiesOnScene.clear();
-					for (auto& tmpZ : tempZombies) {
-						zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
-					}
-
-					zombieWriteLock.unlock();
+				{
 					std::shared_lock<std::shared_mutex> zombieReadLock(zombiesMutex);
+					if (!zombiesOnScene.empty()) {
+						std::array<std::vector<zombieState>, 5> tempZombies; //5 rows rn
 
-					/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
-						[](const zombieState& a, const zombieState& b) {
-						return a.anim.row < b.anim.row;
-					});*/
-
-					for (const auto& zombie : zombiesOnScene) {
-						if (zombie.damagedCd > 0) {
-							window.draw(zombie.anim.sprite, &damaged_shader);
+						for (auto& zombie : zombiesOnScene) {
+							if (zombie.anim.row >= 0 && static_cast<size_t>(zombie.anim.row.value())
+								< tempZombies.size())
+								tempZombies[zombie.anim.row.value()].push_back(zombie);
 						}
-						else {
-							window.draw(zombie.anim.sprite);
+
+						zombieReadLock.unlock();
+						{
+							std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+
+							zombiesOnScene.clear();
+							for (auto& tmpZ : tempZombies) {
+								zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
+							}
+						}
+						zombieReadLock.lock();
+						/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
+							[](const zombieState& a, const zombieState& b) {
+							return a.anim.row < b.anim.row;
+						});*/
+
+						for (const auto& zombie : zombiesOnScene) {
+							if (zombie.damagedCd > 0) {
+								window.draw(zombie.anim.sprite, &damaged_shader);
+							}
+							else {
+								window.draw(zombie.anim.sprite);
+							}
 						}
 					}
 				}
@@ -814,7 +838,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 			} else {
 				window.draw(awardScreen);
-				window.draw(idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]]);
+				if (!isMoneyBag) window.draw(idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]]);
 				window.draw(seedChooserButton);
 				if (pvzScene == 6) window.draw(winLevelScreen);
 			}
@@ -824,8 +848,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		window.display();
 	}
 
-	changeScene(-1);
-
 #ifdef RUN_DEBUG
 	FreeConsole();
 	_CrtDumpMemoryLeaks();
@@ -834,4 +856,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.51
+//Version 1.0.52
