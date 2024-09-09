@@ -174,6 +174,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	loadAccountText.setString("LOAD");
 	loadAccountText.setFillColor(sf::Color::Black);
 
+	sf::Text menuBackText;
+	menuBackText.setFont(defaultFont);
+	menuBackText.setString("BACK");
+	menuBackText.setFillColor(sf::Color::Green);
+
 	while (window.isOpen())
 	{
 		sf::Event evt;
@@ -236,9 +241,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						&& evt.key.code <= 26 + std::min(maxPlantSelectAmount, getOwnedPlantsAmount()))
 						selectSeedPacket(seedPacketsSelectedOrder[evt.key.code - 27]);
 
-					if (evt.key.code == sf::Keyboard::Escape) {
-						changeScene(-1);
-						window.close();
+					if (evt.key.code == sf::Keyboard::Escape || evt.key.code == sf::Keyboard::Space && 
+						pvzScene < 5) {
+						//changeScene(-1);
+						//window.close();
+						if (scene == 1) {
+							openingMenu = !openingMenu;
+							if (openingMenu) {
+								openMenu();
+							}
+						}
 					}
 				}
 				else if (evt.type == sf::Event::Closed) {
@@ -402,83 +414,99 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//<< std::endl;
 					//std::cout << "Mouse position (coords): (" << mousePos.x << ", " << mousePos.y << ")"
 						//<< std::endl;
-
-					if (pvzScene == 0 && !selectingSeedPacket) {
-						for (int i = 0; i < maxPlantAmount; ++i) {
-							if (!plantExist(i)) continue;
-							if (seedPackets[seedPacketIdToString(i)].getGlobalBounds().contains(mousePos)) {
-								audios["sounds"]["seedlift"]->play();
-								selectingSeedPacket = true;
-								switch (static_cast<int>(seedPacketState[i][0])) {
-								case 0: //select place
-									if (seedPacketSelected < std::min(maxPlantSelectAmount,
-										getOwnedPlantsAmount())) {
-										seedPacketsSelectedOrder[seedPacketsSelectedOrder.empty() ? 0 :
-											seedPacketsSelectedOrder.size()] = i;
-										seedPacketState[i][0] = 1;
-									}
-									//stdcoutMap(&seedPacketsSelectedOrder);
-									break;
-								case 2: //selected
-								{
-									for (auto& pair : seedPacketsSelectedOrder) {
-										if (pair.second == i) {
-											pair.second = -1;
-											mapShift(seedPacketsSelectedOrder);
-											break;
-										}
-									}
-
-									//stdcoutMap(&seedPacketsSelectedOrder);
-									seedPacketState[i][0] = 3;
-									break;
+					if (openingMenu) {
+						if (optionsMenuback.getGlobalBounds().contains(mousePos)) {
+							if (menuBackText.getGlobalBounds().contains(mousePos)) {
+								if (pvzScene == 9) {
+									changeScene(0);
 								}
-								//default:
-									//break;
-									//case 1: //moving
-										//seedPacketState[i][1]++; //put in async loop thread
+								else {
+									openingMenu = false;
 								}
-							}
-						}
-
-						if (seedPacketSelected >= std::min(maxPlantSelectAmount, getOwnedPlantsAmount())) {
-							if (seedChooserButton.getGlobalBounds().contains(mousePos)) pvzScene = 1;
-						}
-					}
-					else if (pvzScene == 3) {
-						if (!selectSun(mousePos)) {
-							if (!pvzPacketOnSelected) {
-								selectSeedPacket(mousePos);
-							}
-							else { //plant Plant
-								createPlant(hoverPlant.getPosition(), seedPacketSelectedId);
-							}
-						}
-					}
-					else if (pvzScene == 4) {
-						if (isMoneyBag) {
-							if (moneyBag.getGlobalBounds().contains(mousePos)) {
-								audios["sounds"]["winmusic"]->play();
-								pvzScene = 5;
 							}
 						}
 						else {
-							if (seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]
-								.getGlobalBounds().contains(mousePos)) {
-								audios["sounds"]["winmusic"]->play();
-								pvzScene = 5;
+							openingMenu = false;
+						}
+					}
+					else {
+						if (pvzScene == 0 && !selectingSeedPacket) {
+							for (int i = 0; i < maxPlantAmount; ++i) {
+								if (!plantExist(i)) continue;
+								if (seedPackets[seedPacketIdToString(i)].getGlobalBounds().contains(mousePos)) {
+									audios["sounds"]["seedlift"]->play();
+									selectingSeedPacket = true;
+									switch (static_cast<int>(seedPacketState[i][0])) {
+									case 0: //select place
+										if (seedPacketSelected < std::min(maxPlantSelectAmount,
+											getOwnedPlantsAmount())) {
+											seedPacketsSelectedOrder[seedPacketsSelectedOrder.empty() ? 0 :
+												seedPacketsSelectedOrder.size()] = i;
+											seedPacketState[i][0] = 1;
+										}
+										//stdcoutMap(&seedPacketsSelectedOrder);
+										break;
+									case 2: //selected
+									{
+										for (auto& pair : seedPacketsSelectedOrder) {
+											if (pair.second == i) {
+												pair.second = -1;
+												mapShift(seedPacketsSelectedOrder);
+												break;
+											}
+										}
+
+										//stdcoutMap(&seedPacketsSelectedOrder);
+										seedPacketState[i][0] = 3;
+										break;
+									}
+									//default:
+										//break;
+										//case 1: //moving
+											//seedPacketState[i][1]++; //put in async loop thread
+									}
+								}
+							}
+
+							if (seedPacketSelected >= std::min(maxPlantSelectAmount, getOwnedPlantsAmount())) {
+								if (seedChooserButton.getGlobalBounds().contains(mousePos)) pvzScene = 1;
+							}
+						}
+						else if (pvzScene == 3) {
+							if (!selectSun(mousePos)) {
+								if (!pvzPacketOnSelected) {
+									selectSeedPacket(mousePos);
+								}
+								else { //plant Plant
+									createPlant(hoverPlant.getPosition(), seedPacketSelectedId);
+								}
+							}
+						}
+						else if (pvzScene == 4) {
+							if (isMoneyBag) {
+								if (moneyBag.getGlobalBounds().contains(mousePos)) {
+									audios["sounds"]["winmusic"]->play();
+									pvzScene = 5;
+								}
+							}
+							else {
+								if (seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]
+									.getGlobalBounds().contains(mousePos)) {
+									audios["sounds"]["winmusic"]->play();
+									pvzScene = 5;
+								}
+							}
+						}
+						else if (pvzScene == 7) {
+							if (seedChooserButton.getGlobalBounds().contains(mousePos)) {
+								changeScene(0);
+								pvzScene = 0;
+								initScene1Place();
 							}
 						}
 					}
-					else if (pvzScene == 7) {
-						if (seedChooserButton.getGlobalBounds().contains(mousePos)) {
-							changeScene(0);
-							pvzScene = 0;
-							initScene1Place();
-						}
-					}
 				}
-				if (pvzScene == 3) {
+				if (pvzScene == 3 && !openingMenu) {
 					selectSun(mousePos);
 				}
 			}
@@ -861,6 +889,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					if (pvzScene == 6) window.draw(winLevelScreen);
 				}
 			}
+
+			if (openingMenu) {
+				window.draw(optionsMenuback);
+				window.draw(menuBackText);
+			}
 			break;
 		}
 
@@ -875,4 +908,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.52.a
+//Version 1.0.53

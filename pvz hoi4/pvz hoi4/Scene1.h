@@ -104,4 +104,6 @@ extern bool isMoneyBag;
 int getStartSunByLevel(int vWorld = world, int vLevel = level);
 void createLawnMower(float x, float y);
 void loseLevel();
+extern bool openingMenu;
+void openMenu();
 #endif

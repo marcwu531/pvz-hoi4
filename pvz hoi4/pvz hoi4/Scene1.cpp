@@ -284,6 +284,11 @@ void initScene1Place() {
 	zombiesWon.setSize(sf::Vector2f(view_background.getSize().y / 3.0f * 4.0f, 
 		view_background.getSize().y)); //800*600
 
+	optionsMenuback.setTexture(&optionsMenubackTexture);
+	optionsMenuback.setSize(sf::Vector2f(view_background.getSize().y * 3.0f / 4.0f / 498.0f * 423.0f,
+		view_background.getSize().y * 3.0f / 4.0f));
+	optionsMenuback.setOrigin(optionsMenuback.getSize().x / 2.0f, optionsMenuback.getSize().y / 2.0f);
+
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
 		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
@@ -377,6 +382,8 @@ void initializeScene1() {
 
 	zombiesWonTexture.loadFromImage(getPvzImage("animations", "zombiesWon"));
 	zombiesWonFrames = parseSpriteSheetData(loadJsonFromResource(161));
+
+	optionsMenubackTexture.loadFromImage(getPvzImage("window", "optionsMenuback"));
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		auto plantJson = loadJsonFromResource(getPlantJsonIdById(i));
@@ -656,6 +663,7 @@ void addSun(int amount) {
 bool loggingIn = true;
 bool shopping = false;
 bool isMoneyBag = false;
+bool openingMenu = false;
 
 void winLevel() {
 	if (audios["lawnbgm"]["1"]->getStatus() == sf::Music::Playing) audios["lawnbgm"]["1"]->stop();
@@ -717,4 +725,12 @@ void createLawnMower(float x, float y) {
 
 void loseLevel() {
 	pvzScene = 8;
+}
+
+void openMenu() {
+	openingMenu = true;
+	optionsMenuback.setPosition(view_background.getCenter());
+	menuBackText.setOrigin(menuBackText.getGlobalBounds().width / 2.0f,
+		menuBackText.getGlobalBounds().height / 2.0f);
+	menuBackText.setPosition(view_background.getCenter());
 }

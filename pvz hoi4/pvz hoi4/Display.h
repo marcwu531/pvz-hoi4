@@ -74,6 +74,8 @@ extern sf::RectangleShape zombiesWon;
 extern sf::Texture zombiesWonTexture;
 extern std::unordered_map<int, SpriteFrame> zombiesWonFrames;
 extern sf::RectangleShape zombiesWonDark;
+extern sf::RectangleShape optionsMenuback;
+extern sf::Texture optionsMenubackTexture;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea);

@@ -26,7 +26,7 @@
 #include "State.h"
 #include "Window.h"
 
-//define NROC
+#define NROC
 
 sf::Font defaultFont;
 sf::Texture flag_texture;
@@ -92,6 +92,8 @@ sf::RectangleShape zombiesWon;
 sf::Texture zombiesWonTexture;
 std::unordered_map<int, SpriteFrame> zombiesWonFrames;
 sf::RectangleShape zombiesWonDark;
+sf::RectangleShape optionsMenuback;
+sf::Texture optionsMenubackTexture;
 
 sf::Texture texture_blink;
 
@@ -229,6 +231,9 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"carKeys", loadImageFromResource(nullHInstance, 145)},
 		{"carKeysHighlight", loadImageFromResource(nullHInstance, 158)},
 		{"storeCar", loadImageFromResource(nullHInstance, 159)}
+	}},
+	{"window", {
+		{"optionsMenuback", loadImageFromResource(nullHInstance, 163)}
 	}}
 };
 #endif

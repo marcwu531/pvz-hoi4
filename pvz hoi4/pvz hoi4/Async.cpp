@@ -197,7 +197,7 @@ void asyncPvzSceneUpdate() {
 	pvzSun = getStartSunByLevel();
 
 	while (running.load()) {
-		if (scene == 1) {
+		if (scene == 1 && !openingMenu) {
 			switch (pvzScene) {
 			default:
 			case 0:
@@ -421,6 +421,7 @@ void asyncPvzSceneUpdate() {
 					}
 					else {
 						pvzScene = 9;
+						openMenu();
 						//zombiesWonDark.setFillColor(sf::Color(0, 0, 0, 255));
 					}
 				}
