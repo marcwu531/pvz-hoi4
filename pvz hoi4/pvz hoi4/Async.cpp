@@ -578,18 +578,17 @@ void asyncPvzSceneUpdate() {
 									break;
 								case 2:
 									if (plant.anim.frameId == 0) {
-										plantReadLock.unlock();
+										{
+											std::unique_lock<std::shared_mutex> particleWriteLock(particlesMutex);
+											spawnParticle(0, plant.anim.sprite.getPosition() + 
+												plant.anim.sprite.getOrigin());
+										}
 
+										plantReadLock.unlock();
 										{
 											std::unique_lock<std::shared_mutex> plantWriteLock(plantsMutex);
 											it = plantsOnScene.erase(it);
 										}
-
-										{
-											std::unique_lock<std::shared_mutex> particleWriteLock(particlesMutex);
-											spawnParticle(0, plant.anim.sprite.getPosition());
-										}
-
 										plantReadLock.lock();
 										continue;
 									}

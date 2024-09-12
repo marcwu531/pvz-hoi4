@@ -6,6 +6,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include <queue>
+#include <random>
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <shared_mutex>
@@ -104,8 +105,8 @@ sf::Texture cherrybombIdleSprites;
 std::unordered_map<int, SpriteFrame> cherrybombIdleFrames;
 sf::Texture explosionCloudTexture;
 sf::Texture explosionPowieTexture;
-sf::RectangleShape explosionCloud;
-sf::RectangleShape explosionPowie;
+sf::Sprite explosionCloud;
+sf::Sprite explosionPowie;
 
 sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
 //(1920, 1046)
@@ -377,7 +378,7 @@ void changeScene(int targetScene) {
 	if (targetScene == -1) cleanupAudios();
 }
 
-int getJsonByParticleId(int id) {
+static int getJsonByParticleId(int id) {
 	static const int ids[] = { 166 };
 	return ids[id];
 }
@@ -391,54 +392,89 @@ void initParticle() {
 	}
 }
 
-std::optional<sf::RectangleShape> getParticleElem(std::string str) {
+static std::optional<sf::Sprite> getParticleElem(std::string str) {
 	if (str == "IMAGE_EXPLOSIONCLOUD") {
 		return explosionCloud;
 	}
 	return std::nullopt;
 }
 
-std::vector<sf::RectangleShape> particlesOnScene;
+inline static std::mt19937& getRandomEngine() {
+	static std::mt19937 engine(std::random_device{}());
+	return engine;
+}
 
-static float getParticalInitialFloat(const std::variant<std::string, float>& var) {
+inline static float generateRandomNumber(const std::string& range, bool radius = true) {
+	float a, b;
+
+	std::stringstream ss(range);
+	char ignore;
+	ss >> ignore >> a >> b >> ignore;
+
+	std::uniform_real_distribution<> dis(a, b);
+	float randomValue = static_cast<float>(dis(getRandomEngine()));
+
+	if (radius) {
+		return randomValue * (std::uniform_int_distribution<>(0, 1)(getRandomEngine()) == 0 ? -1.0f : 1.0f);
+	}
+
+	return randomValue;
+}
+
+inline static float getParticalInitialFloat(const std::variant<std::string, float>& var) {
 	if (std::holds_alternative<float>(var)) {
 		return std::get<float>(var);
 	}
-	else if (std::holds_alternative<std::string>(var)) {
-		std::string str = std::get<std::string>(var);
+
+	const std::string& str = std::get<std::string>(var);
+
+	size_t startPos = str.find('[');
+	size_t endPos = str.find(']', startPos);
+
+	if (startPos == std::string::npos || endPos == std::string::npos) {
 		size_t pos = str.find_first_of(", ");
 		return std::stof(str.substr(0, pos));
 	}
-	throw;
+
+	return generateRandomNumber(str.substr(startPos, endPos - startPos + 1), false);
+}
+
+inline static sf::Uint8 clampColor(float value) {
+	return static_cast<sf::Uint8>(std::clamp(value * 255.0f, 0.0f, 255.0f));
 }
 
 void spawnParticle(int id, sf::Vector2f pos) {
 	for (const auto& [name, emitter] : particlesData[id]) {
-		std::optional<sf::RectangleShape> tempRect;
-		tempRect = getParticleElem(emitter.image);
+		std::optional<sf::Sprite> tempRect = getParticleElem(emitter.image);
+		if (!tempRect) continue;
 
-		if (tempRect.has_value()) {
-			sf::RectangleShape particleRect;
+		int repeat = emitter.spawnRate;
+		if (emitter.spawnMinLaunched != -1) repeat = std::max(repeat, emitter.spawnMinLaunched);
+		if (emitter.spawnMaxLaunched != -1) repeat = std::min(repeat, emitter.spawnMaxLaunched);
 
-			particleRect = tempRect.value();
-			particleRect.setPosition(pos);
+		for (int i = 0; i < repeat; ++i) {
+			sf::Sprite particleRect = tempRect.value();
+			particleRect.setPosition(pos + sf::Vector2f(
+				generateRandomNumber(emitter.emitterRadius),
+				generateRandomNumber(emitter.emitterRadius)));
 
 			float red = getParticalInitialFloat(emitter.particleRed);
 			float green = getParticalInitialFloat(emitter.particleGreen);
 			float blue = getParticalInitialFloat(emitter.particleBlue);
 			float alpha = getParticalInitialFloat(emitter.particleAlpha);
-			particleRect.setFillColor(sf::Color(
-				static_cast<sf::Uint8>(std::clamp(red * 255.0f, 0.0f, 255.0f)),
-				static_cast<sf::Uint8>(std::clamp(green * 255.0f, 0.0f, 255.0f)),
-				static_cast<sf::Uint8>(std::clamp(blue * 255.0f, 0.0f, 255.0f)),
-				static_cast<sf::Uint8>(std::clamp(alpha * 255.0f, 0.0f, 255.0f))
+			particleRect.setColor(sf::Color(
+				clampColor(red),
+				clampColor(green),
+				clampColor(blue),
+				clampColor(alpha)
 			));
-			std::cout << "R: " << static_cast<int>(red) << std::endl;
-			std::cout << "G: " << static_cast<int>(green) << std::endl;
-			std::cout << "B: " << static_cast<int>(blue) << std::endl;
-			std::cout << "A: " << static_cast<int>(alpha) << std::endl;
 
-			particlesOnScene.push_back(particleRect);
+			if (!emitter.particleScale.empty()) {
+				float scale = getParticalInitialFloat(emitter.particleScale);
+				particleRect.setScale(scale, scale);
+			}
+
+			particlesOnScene.push_back({ { particleRect, id, 0, std::nullopt }, emitter });
 		}
 	}
 }

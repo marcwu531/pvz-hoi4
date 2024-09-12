@@ -319,8 +319,12 @@ void initScene1Place() {
 		view_background.getSize().y * 3.0f / 4.0f));
 	optionsMenuback.setOrigin(optionsMenuback.getSize().x / 2.0f, optionsMenuback.getSize().y / 2.0f);
 
-	explosionCloud.setTexture(&explosionCloudTexture);
-	explosionPowie.setTexture(&explosionPowieTexture);
+	explosionCloud.setTexture(explosionCloudTexture);
+	explosionCloud.setScale(scene1ZoomSize, scene1ZoomSize);
+	explosionCloud.setOrigin(explosionCloud.getGlobalBounds().width / 2.0f,
+		explosionCloud.getGlobalBounds().height / 2.0f);
+
+	explosionPowie.setTexture(explosionPowieTexture);
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
@@ -468,9 +472,10 @@ std::vector<projectileState> projectilesOnScene;
 std::vector<vanishProjState> vanishProjectilesOnScene;
 std::vector<sunState> sunsOnScene;
 std::vector<lawnMowerState> lawnMowersOnScene;
+std::vector<particleState> particlesOnScene;
 
 static int getSunByTypeAndId(int type, int id) { //type 0: plant
-	static int cost[] = { 100, 50, 150 };
+	static int cost[] = { 100, 50, 0 };
 	static int* costT[] = { cost };
 
 	return costT[type][id];

@@ -859,11 +859,19 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
-				if (!lawnMowersOnScene.empty()) {
+				{
 					std::shared_lock<std::shared_mutex> lawnMowerReadLock(lawnMowersMutex);
 
 					for (const auto& lawnMower : lawnMowersOnScene) {
 						window.draw(lawnMower.anim.sprite);
+					}
+				}
+
+				{
+					std::shared_lock<std::shared_mutex> particleReadLock(particlesMutex);
+
+					for (const auto& particles : particlesOnScene) {
+						window.draw(particles.anim.sprite);
 					}
 				}
 
@@ -928,4 +936,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.54
+//Version 1.0.55

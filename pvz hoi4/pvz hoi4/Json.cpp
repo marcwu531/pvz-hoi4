@@ -93,7 +93,7 @@ std::unordered_map<std::string, Emitter> parseEmitterData(const nlohmann::json& 
 		if (item.contains("SpawnMinActive")) emitter.spawnMinActive = item["SpawnMinActive"].get<int>();
 		if (item.contains("SpawnMaxActive")) emitter.spawnMaxActive = item["SpawnMaxActive"].get<int>();
 		if (item.contains("SpawnMinLaunched")) emitter.spawnMinLaunched = item["SpawnMinLaunched"].get<int>();
-		if (item.contains("spawnMaxLaunched")) emitter.spawnMaxLaunched = item["SpawnMaxLaunched"].get<int>();
+		if (item.contains("SpawnMaxLaunched")) emitter.spawnMaxLaunched = item["SpawnMaxLaunched"].get<int>();
 		if (item.contains("LaunchSpeed")) emitter.launchSpeed = item["LaunchSpeed"].get<std::string>();
 		if (item.contains("LaunchAngle")) emitter.launchAngle = item["LaunchAngle"].get<float>();
 		if (item.contains("ParticleScale")) emitter.particleScale = item["ParticleScale"].get<std::string>();

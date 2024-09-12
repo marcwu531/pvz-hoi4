@@ -54,12 +54,17 @@ struct lawnMowerState {
 	spriteAnim anim;
 	int state;
 };
+struct particleState {
+	spriteAnim anim;
+	Emitter emitter;
+};
 extern std::vector<plantState> plantsOnScene;
 extern std::vector<zombieState> zombiesOnScene;
 extern std::vector<projectileState> projectilesOnScene;
 extern std::vector<vanishProjState> vanishProjectilesOnScene;
 extern std::vector<sunState> sunsOnScene;
 extern std::vector<lawnMowerState> lawnMowersOnScene;
+extern std::vector<particleState> particlesOnScene;
 void createPlant(std::optional<sf::Vector2f> pos, int id);
 void createZombie(sf::Vector2f pos);
 extern bool canPlant(sf::Vector2f pos);
