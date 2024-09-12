@@ -1,6 +1,8 @@
 #include <array>
 #include <chrono>
+#include <fstream>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <queue>
@@ -13,8 +15,6 @@
 #include <thread>
 #include <vector>
 #include <windows.h>
-#include <iostream>
-#include <fstream>
 
 #include "Account.h"
 #include "Async.h"
@@ -94,8 +94,18 @@ std::unordered_map<int, SpriteFrame> zombiesWonFrames;
 sf::RectangleShape zombiesWonDark;
 sf::RectangleShape optionsMenuback;
 sf::Texture optionsMenubackTexture;
-
+sf::Text menuBackText;
+sf::Text menuRestartText;
 sf::Texture texture_blink;
+sf::Text menuMenuText;
+sf::Texture cherrybombExplodeSprites;
+std::unordered_map<int, SpriteFrame> cherrybombExplodeFrames;
+sf::Texture cherrybombIdleSprites;
+std::unordered_map<int, SpriteFrame> cherrybombIdleFrames;
+sf::Texture explosionCloudTexture;
+sf::Texture explosionPowieTexture;
+sf::RectangleShape explosionCloud;
+sf::RectangleShape explosionPowie;
 
 sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
 //(1920, 1046)
@@ -168,7 +178,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 	}},
 	{"seed_packet", {
 		{"peashooter", loadImageFromResource(nullHInstance, 133)},
-		{"sunflower", loadImageFromResource(nullHInstance, 133)}
+		{"sunflower", loadImageFromResource(nullHInstance, 133)},
+		{"cherrybomb", loadImageFromResource(nullHInstance, 133)}
 	}},
 	{"animations", {
 		{"peashooterShoot", loadImageFromResource(nullHInstance, 133)},
@@ -180,7 +191,9 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"peashooterIdle", loadImageFromResource(nullHInstance, 133)},
 		{"sunflowerIdle", loadImageFromResource(nullHInstance, 133)},
 		{"sun", loadImageFromResource(nullHInstance, 133)},
-		{"lawnMower", loadImageFromResource(nullHInstance, 133)}
+		{"lawnMower", loadImageFromResource(nullHInstance, 133)},
+		{"cherrybombExplode", loadImageFromResource(nullHInstance, 133)},
+		{"cherrybombIdle", loadImageFromResource(nullHInstance, 133)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 133)}
@@ -190,6 +203,13 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"carKeys", loadImageFromResource(nullHInstance, 133)},
 		{"carKeysHighlight", loadImageFromResource(nullHInstance, 133)},
 		{"storeCar", loadImageFromResource(nullHInstance, 133)}
+	}},
+	{"window", {
+		{"optionsMenuback", loadImageFromResource(nullHInstance, 133)}
+	}},
+	{"particles", {
+		{"explosionCloud", loadImageFromResource(nullHInstance, 133)},
+		{"explosionPowie", loadImageFromResource(nullHInstance, 133)}
 	}}
 };
 #else
@@ -208,7 +228,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 	}},
 	{"seed_packet", {
 		{"peashooter", loadImageFromResource(nullHInstance, 106)},
-		{"sunflower", loadImageFromResource(nullHInstance, 132)}
+		{"sunflower", loadImageFromResource(nullHInstance, 132)},
+		{"cherrybomb", loadImageFromResource(nullHInstance, 171)}
 	}},
 	{"animations", {
 		{"peashooterShoot", loadImageFromResource(nullHInstance, 124)},
@@ -221,7 +242,9 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"sunflowerIdle", loadImageFromResource(nullHInstance, 135)},
 		{"sun", loadImageFromResource(nullHInstance, 137)},
 		{"lawnMower", loadImageFromResource(nullHInstance, 144)},
-		{"zombiesWon", loadImageFromResource(nullHInstance, 162)}
+		{"zombiesWon", loadImageFromResource(nullHInstance, 162)},
+		{"cherrybombExplode", loadImageFromResource(nullHInstance, 165)},
+		{"cherrybombIdle", loadImageFromResource(nullHInstance, 170)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 122)}
@@ -234,6 +257,10 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 	}},
 	{"window", {
 		{"optionsMenuback", loadImageFromResource(nullHInstance, 163)}
+	}},
+	{"particles", {
+		{"explosionCloud", loadImageFromResource(nullHInstance, 167)},
+		{"explosionPowie", loadImageFromResource(nullHInstance, 168)}
 	}}
 };
 #endif
@@ -348,4 +375,70 @@ void changeScene(int targetScene) {
 	scene = targetScene;
 
 	if (targetScene == -1) cleanupAudios();
+}
+
+int getJsonByParticleId(int id) {
+	static const int ids[] = { 166 };
+	return ids[id];
+}
+
+std::vector<std::unordered_map<std::string, Emitter>> particlesData(maxParticleAmount);
+
+void initParticle() {
+	for (int i = 0; i < maxParticleAmount; ++i) {
+		nlohmann::json targetJson = loadJsonFromResource(getJsonByParticleId(i));
+		particlesData[i] = parseEmitterData(targetJson);
+	}
+}
+
+std::optional<sf::RectangleShape> getParticleElem(std::string str) {
+	if (str == "IMAGE_EXPLOSIONCLOUD") {
+		return explosionCloud;
+	}
+	return std::nullopt;
+}
+
+std::vector<sf::RectangleShape> particlesOnScene;
+
+static float getParticalInitialFloat(const std::variant<std::string, float>& var) {
+	if (std::holds_alternative<float>(var)) {
+		return std::get<float>(var);
+	}
+	else if (std::holds_alternative<std::string>(var)) {
+		std::string str = std::get<std::string>(var);
+		size_t pos = str.find_first_of(", ");
+		return std::stof(str.substr(0, pos));
+	}
+	throw;
+}
+
+void spawnParticle(int id, sf::Vector2f pos) {
+	for (const auto& [name, emitter] : particlesData[id]) {
+		std::optional<sf::RectangleShape> tempRect;
+		tempRect = getParticleElem(emitter.image);
+
+		if (tempRect.has_value()) {
+			sf::RectangleShape particleRect;
+
+			particleRect = tempRect.value();
+			particleRect.setPosition(pos);
+
+			float red = getParticalInitialFloat(emitter.particleRed);
+			float green = getParticalInitialFloat(emitter.particleGreen);
+			float blue = getParticalInitialFloat(emitter.particleBlue);
+			float alpha = getParticalInitialFloat(emitter.particleAlpha);
+			particleRect.setFillColor(sf::Color(
+				static_cast<sf::Uint8>(std::clamp(red * 255.0f, 0.0f, 255.0f)),
+				static_cast<sf::Uint8>(std::clamp(green * 255.0f, 0.0f, 255.0f)),
+				static_cast<sf::Uint8>(std::clamp(blue * 255.0f, 0.0f, 255.0f)),
+				static_cast<sf::Uint8>(std::clamp(alpha * 255.0f, 0.0f, 255.0f))
+			));
+			std::cout << "R: " << static_cast<int>(red) << std::endl;
+			std::cout << "G: " << static_cast<int>(green) << std::endl;
+			std::cout << "B: " << static_cast<int>(blue) << std::endl;
+			std::cout << "A: " << static_cast<int>(alpha) << std::endl;
+
+			particlesOnScene.push_back(particleRect);
+		}
+	}
 }

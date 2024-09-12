@@ -1,0 +1,56 @@
+{
+  "Emitters": [
+    {
+      "Name": "PowieSmallClouds",
+      "SpawnRate": 150,
+      "SpawnMaxLaunched": 14,
+      "ParticleAlpha": "1,70 0",
+      "ParticleRed": 1,
+      "ParticleGreen": ".7 0",
+      "ParticleBlue": 0,
+      "ParticleScale": ".5,60 0",
+      "SystemAlpha": "1,80 0",
+      "EmitterRadius": "[10 50]",
+      "LaunchSpeed": "[2000 2500]",
+      "ParticleDuration": "[40 60]",
+      "SystemDuration": 200,
+      "Image": "IMAGE_EXPLOSIONCLOUD",
+      "Field": {
+        "FieldType": "Friction",
+        "X": "0.15,40 1",
+        "Y": "0.18,40 1"
+      },
+      "RandomLaunchSpin": 1,
+      "ParticleSpinSpeed": "[-200 200]"
+    },
+    {
+      "Name": "PowieBigClouds",
+      "SpawnRate": 150,
+      "SpawnMaxLaunched": 14,
+      "ParticleAlpha": "1,70 0",
+      "ParticleRed": 1,
+      "ParticleGreen": ".9 .4",
+      "ParticleBlue": 0,
+      "ParticleScale": "[1.2 1.6],60 0",
+      "SystemAlpha": "1,80 0",
+      "EmitterRadius": "[10 50]",
+      "LaunchSpeed": "[500 1200]",
+      "ParticleDuration": "[40 60]",
+      "SystemDuration": 200,
+      "Image": "IMAGE_EXPLOSIONCLOUD",
+      "Field": {
+        "FieldType": "Friction",
+        "X": "0.12,40 1",
+        "Y": "0.18,40 1"
+      },
+      "RandomLaunchSpin": 1,
+      "ParticleSpinSpeed": "[-200 200]"
+    },
+    {
+      "Name": "PowieWord",
+      "SpawnMinActive": 1,
+      "SystemDuration": 50,
+      "Image": "IMAGE_EXPLOSIONPOWIE"
+    }
+  ]
+}

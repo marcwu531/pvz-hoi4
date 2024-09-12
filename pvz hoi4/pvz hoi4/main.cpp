@@ -30,8 +30,7 @@
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine,
 	_In_ int nCmdShow) { //int main() {
-
-	srand(static_cast<unsigned int>(time(nullptr)));
+	randomRNG();
 
 #ifdef RUN_DEBUG
 	AttachConsole();
@@ -46,6 +45,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	defaultFont.loadFromMemory(fontData.data(), fontData.size());
 
 	initializeScene1();
+	initParticle();
 
 	//audios["soundtrack"]["battleofwuhan"]->setVolume(25); //RUN_NDEBUG
 
@@ -174,10 +174,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	loadAccountText.setString("LOAD");
 	loadAccountText.setFillColor(sf::Color::Black);
 
-	sf::Text menuBackText;
 	menuBackText.setFont(defaultFont);
 	menuBackText.setString("BACK");
 	menuBackText.setFillColor(sf::Color::Green);
+
+	menuRestartText.setFont(defaultFont);
+	menuRestartText.setString("RESTART");
+	menuRestartText.setFillColor(sf::Color::Green);
+
+	menuMenuText.setFont(defaultFont);
+	menuMenuText.setString("MENU");
+	menuMenuText.setFillColor(sf::Color::Green);
 
 	while (window.isOpen())
 	{
@@ -419,12 +426,21 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							if (menuBackText.getGlobalBounds().contains(mousePos)) {
 								if (pvzScene == 9) {
 									changeScene(0);
+									openingMenu = false;
 								}
 								else {
 									openingMenu = false;
 								}
 							}
-						}
+							else if (menuRestartText.getGlobalBounds().contains(mousePos)) {
+								changeScene(1);
+								openingMenu = false;
+							}
+							else if (menuMenuText.getGlobalBounds().contains(mousePos)) {
+								changeScene(0);
+								openingMenu = false;
+							}
+ 						}
 						else {
 							openingMenu = false;
 						}
@@ -500,8 +516,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						else if (pvzScene == 7) {
 							if (seedChooserButton.getGlobalBounds().contains(mousePos)) {
 								changeScene(0);
-								pvzScene = 0;
-								initScene1Place();
+								//initScene1Place();
 							}
 						}
 					}
@@ -893,6 +908,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			if (openingMenu) {
 				window.draw(optionsMenuback);
 				window.draw(menuBackText);
+
+				if (pvzScene != 9) {
+					window.draw(menuRestartText);
+					window.draw(menuMenuText);
+				}
 			}
 			break;
 		}
@@ -908,4 +928,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.53
+//Version 1.0.54

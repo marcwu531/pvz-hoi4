@@ -76,3 +76,58 @@ nlohmann::json loadJsonFromResource(int resourceId) {
 
 	return nlohmann::json::parse(std::string(resourcePtr, resourceSize));
 }
+
+std::variant<std::string, float> parseStringOrFloat(const nlohmann::json& value) {
+	return value.is_string() ? std::variant<std::string, float>(value.get<std::string>()) :
+		std::variant<std::string, float>(value.get<float>());
+}
+
+std::unordered_map<std::string, Emitter> parseEmitterData(const nlohmann::json& json) {
+	std::unordered_map<std::string, Emitter> emitters;
+
+	for (const auto& item : json["Emitters"]) {
+		Emitter emitter;
+		emitter.name = item["Name"].get<std::string>();
+
+		if (item.contains("SpawnRate")) emitter.spawnRate = item["SpawnRate"].get<int>();
+		if (item.contains("SpawnMinActive")) emitter.spawnMinActive = item["SpawnMinActive"].get<int>();
+		if (item.contains("SpawnMaxActive")) emitter.spawnMaxActive = item["SpawnMaxActive"].get<int>();
+		if (item.contains("SpawnMinLaunched")) emitter.spawnMinLaunched = item["SpawnMinLaunched"].get<int>();
+		if (item.contains("spawnMaxLaunched")) emitter.spawnMaxLaunched = item["SpawnMaxLaunched"].get<int>();
+		if (item.contains("LaunchSpeed")) emitter.launchSpeed = item["LaunchSpeed"].get<std::string>();
+		if (item.contains("LaunchAngle")) emitter.launchAngle = item["LaunchAngle"].get<float>();
+		if (item.contains("ParticleScale")) emitter.particleScale = item["ParticleScale"].get<std::string>();
+		if (item.contains("ParticleDuration")) emitter.particleDuration = item["ParticleDuration"].get<std::string>();
+		if (item.contains("ParticleSpinSpeed")) emitter.particleSpinSpeed = item["ParticleSpinSpeed"].get<std::string>();
+		if (item.contains("ParticleStretch")) emitter.particleStretch = item["ParticleStretch"].get<float>();
+		if (item.contains("ParticleLoops")) emitter.particleLoops = item["ParticleLoops"].get<bool>();
+		if (item.contains("ParticleAlpha")) emitter.particleAlpha = parseStringOrFloat(item["ParticleAlpha"]);
+		if (item.contains("ParticleRed")) emitter.particleRed = parseStringOrFloat(item["ParticleRed"]);
+		if (item.contains("ParticleGreen")) emitter.particleGreen = parseStringOrFloat(item["ParticleGreen"]);
+		if (item.contains("ParticleBlue")) emitter.particleBlue = parseStringOrFloat(item["ParticleBlue"]);
+		if (item.contains("ParticleBrightness")) emitter.particleBrightness = item["ParticleBrightness"].get<float>();
+		if (item.contains("ParticleSpinAngle")) emitter.particleSpinAngle = item["ParticleSpinAngle"].get<float>();
+		if (item.contains("SystemDuration")) emitter.systemDuration = item["SystemDuration"].get<int>();
+		if (item.contains("SystemAlpha")) emitter.systemAlpha = item["SystemAlpha"].get<std::string>();
+		if (item.contains("SystemLoops")) emitter.systemLoops = item["SystemLoops"].get<bool>();
+		if (item.contains("CollisionReflect")) emitter.collisionReflect = item["CollisionReflect"].get<float>();
+		if (item.contains("CollisionSpin")) emitter.collisionSpin = item["CollisionSpin"].get<float>();
+		if (item.contains("EmitterRadius")) emitter.emitterRadius = item["EmitterRadius"].get<std::string>();
+		if (item.contains("EmitterOffset")) emitter.emitterOffset = item["EmitterOffset"].get<std::string>();
+		if (item.contains("Additive")) emitter.additive = item["Additive"].get<bool>();
+		if (item.contains("Image")) emitter.image = item["Image"].get<std::string>();
+		if (item.contains("ImageFrames")) emitter.imageFrames = item["ImageFrames"].get<int>();
+		if (item.contains("ImageRow")) emitter.imageRow = item["ImageRow"].get<int>();
+		if (item.contains("RandomLaunchSpin")) emitter.randomLaunchSpin = item["RandomLaunchSpin"].get<int>();
+
+		if (item.contains("Field")) {
+			if (item["Field"].contains("FieldType")) emitter.field.fieldType = item["Field"]["FieldType"].get<std::string>();
+			if (item["Field"].contains("X")) emitter.field.x = item["Field"]["X"].get<std::string>();
+			if (item["Field"].contains("Y")) emitter.field.y = item["Field"]["Y"].get<std::string>();
+		}
+
+		emitters[emitter.name] = std::move(emitter);
+	}
+
+	return emitters;
+}

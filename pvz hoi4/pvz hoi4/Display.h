@@ -1,6 +1,8 @@
 #ifndef DISPLAY_H    // To make sure you don't declare the function more than once by including the header multiple times.
 #define DISPLAY_H
 
+#include <variant>
+
 extern sf::Font defaultFont;
 
 extern sf::Texture flag_texture;
@@ -8,11 +10,52 @@ extern sf::RectangleShape flag_rect;
 extern std::string current_flag;
 
 struct SpriteFrame {
-    sf::IntRect frameRect;
-    bool rotated = false;
-    bool trimmed = false;
-    sf::Vector2i spriteSourceSize;
-    sf::Vector2i sourceSize;
+	sf::IntRect frameRect;
+	bool rotated = false;
+	bool trimmed = false;
+	sf::Vector2i spriteSourceSize;
+	sf::Vector2i sourceSize;
+};
+
+struct EmitterField {
+	std::string fieldType;
+	std::string x;
+	std::string y;
+};
+
+struct Emitter {
+    std::string name;
+    int spawnRate;
+    int spawnMinActive;
+    int spawnMaxActive;
+    int spawnMinLaunched;
+    int spawnMaxLaunched;
+    std::string launchSpeed;
+    float launchAngle;
+    std::string particleScale;
+    std::string particleDuration;
+    std::string particleSpinSpeed;
+    float particleStretch;
+    bool particleLoops;
+    std::variant<std::string, float> particleAlpha;
+    std::variant<std::string, float> particleRed;
+    std::variant<std::string, float> particleGreen;
+    std::variant<std::string, float> particleBlue;
+    float particleBrightness;
+    float particleSpinAngle;
+    int systemDuration;
+    std::string systemAlpha;
+    bool systemLoops;
+    float collisionReflect;
+    float collisionSpin;
+    std::string emitterRadius;
+    std::string emitterOffset;
+    bool additive;
+    std::string image;
+    int imageFrames;
+    int imageRow;
+    int randomLaunchSpin;
+	EmitterField field;
 };
 
 extern sf::Text pvzSunText;
@@ -76,6 +119,17 @@ extern std::unordered_map<int, SpriteFrame> zombiesWonFrames;
 extern sf::RectangleShape zombiesWonDark;
 extern sf::RectangleShape optionsMenuback;
 extern sf::Texture optionsMenubackTexture;
+extern sf::Text menuBackText;
+extern sf::Text menuRestartText;
+extern sf::Text menuMenuText;
+extern sf::Texture cherrybombExplodeSprites;
+extern std::unordered_map<int, SpriteFrame> cherrybombExplodeFrames;
+extern sf::Texture cherrybombIdleSprites;
+extern std::unordered_map<int, SpriteFrame> cherrybombIdleFrames;
+extern sf::Texture explosionCloudTexture;
+extern sf::Texture explosionPowieTexture;
+extern sf::RectangleShape explosionCloud;
+extern sf::RectangleShape explosionPowie;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea);
@@ -96,4 +150,7 @@ std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId);
 std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY);
 void changeScene(int targetScene);
 extern int zombiesWonFrameId;
+void spawnParticle(int id, sf::Vector2f pos);
+void initParticle();
+const int maxParticleAmount = 1;
 #endif

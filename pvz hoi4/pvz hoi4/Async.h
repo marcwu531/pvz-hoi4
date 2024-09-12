@@ -25,4 +25,5 @@ extern std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex
 extern sf::Vector2f worldPos;
 extern int mapSx, mapSy;
 extern float animSpeed;
+void randomRNG();
 #endif

@@ -27,12 +27,13 @@ std::atomic<bool> blinkMap_readyToDraw(false);
 std::atomic<bool> loadFlag_readyToDraw(false);
 std::atomic<bool> loadLevelStart_readyToDraw(false);
 
+
 int maxSpeed = 1, fps = 60 * maxSpeed, scene = 0;
 
 sf::Vector2i blinkCoords(0, 0);
 
 std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, mapMutex,
-lawnMowersMutex; //accountMutex
+lawnMowersMutex, particlesMutex; //accountMutex
 
 inline static void updateImage(sf::Image& image, const sf::IntRect& cropArea, sf::Texture& texture) {
 	if (texture.getSize().x != static_cast<unsigned int>(cropArea.width) ||
@@ -160,13 +161,18 @@ static void updateZombieAnim() {
 int idleFrame = 0;
 
 void asyncPvzSceneUpdate() {
+	pvzScene = 0;
+
+	clearPvzVar();
+	randomRNG();
+	initScene1Place();
+	pvzSun = getStartSunByLevel();
+
 	int pvzScene1moving = 0;
 	const int moveAmount = 50;
 	const float duration = moveAmount * (1000.0f / fps) * 0.5f;
 	float elapsedTimeTotal = 0.0f;
 	int pvzStartScene = 0;
-	seedPacketSelected = 0;
-	zombiesWonFrameId = 0;
 
 	std::vector<float> yCoords(5 + rand() % 6);
 
@@ -191,10 +197,6 @@ void asyncPvzSceneUpdate() {
 
 	const auto frameTime = std::chrono::milliseconds(1000 / fps);
 	auto nextTime = std::chrono::high_resolution_clock::now() + frameTime;
-
-	initSeedPacketPos();
-
-	pvzSun = getStartSunByLevel();
 
 	while (running.load()) {
 		if (scene == 1 && !openingMenu) {
@@ -478,7 +480,7 @@ void asyncPvzSceneUpdate() {
 								}
 								else {
 									zombie.anim.animId = 2;
-									zombie.anim.sprite.move(-50.0f, 0.0f); // (zombie.movementSpeed); //(-50.0f, 0.0f);
+									zombie.anim.sprite.move(zombie.movementSpeed); //(-50.0f, 0.0f);
 
 									if (zombie.anim.sprite.getPosition().x < -360.0f) {
 										std::shared_lock<std::shared_mutex> lawnMowerReadLock(lawnMowersMutex);
@@ -511,14 +513,16 @@ void asyncPvzSceneUpdate() {
 				{
 					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
 					if (!plantsOnScene.empty()) {
-						for (auto& plant : plantsOnScene) {
+						for (auto it = plantsOnScene.begin(); it != plantsOnScene.end();) {
+							auto& plant = *it;
+
 							if (plant.damagedCd > 0) {
 								--plant.damagedCd;
 							}
 
 							auto& sprite = plant.anim.sprite;
 							++plant.anim.frameId;
-							if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId) * animSpeed)
+							if (plant.anim.frameId > getPlantMaxFrameById(plant.anim.animId, !plant.attack) * animSpeed)
 								plant.anim.frameId = 0;
 
 							int frame = static_cast<int>(std::trunc(plant.anim.frameId / animSpeed));
@@ -553,6 +557,9 @@ void asyncPvzSceneUpdate() {
 										}
 									}
 									break;
+								case 2:
+									plant.attack = true;
+									break;
 								}
 							}
 
@@ -560,10 +567,32 @@ void asyncPvzSceneUpdate() {
 								sprite.setTexture(*getPlantAttackTextureById(plant.anim.animId));
 								sprite.setTextureRect(getPlantAttackFrameById(plant.anim.animId)->
 									find(frame)->second.frameRect);
-								if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f) {
-									std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
-									createProjectile(0, plant.anim.sprite.getPosition()
-										+ sf::Vector2f(72.0f, 0.0f));
+
+								switch (plant.anim.animId) {
+								case 0:
+									if (std::fabs(plant.anim.frameId - 12.0f * animSpeed) < 1.0f) {
+										std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
+										createProjectile(0, plant.anim.sprite.getPosition()
+											+ sf::Vector2f(72.0f, 0.0f));
+									}
+									break;
+								case 2:
+									if (plant.anim.frameId == 0) {
+										plantReadLock.unlock();
+
+										{
+											std::unique_lock<std::shared_mutex> plantWriteLock(plantsMutex);
+											it = plantsOnScene.erase(it);
+										}
+
+										{
+											std::unique_lock<std::shared_mutex> particleWriteLock(particlesMutex);
+											spawnParticle(0, plant.anim.sprite.getPosition());
+										}
+
+										plantReadLock.lock();
+										continue;
+									}
 								}
 							}
 							else {
@@ -575,6 +604,8 @@ void asyncPvzSceneUpdate() {
 							sf::FloatRect bounds = sprite.getGlobalBounds();
 							sprite.setOrigin(sprite.getTextureRect().getSize().x / 2.0f,
 								sprite.getTextureRect().getSize().y - 36.0f); //fix for 2nd plant
+
+							++it;
 						}
 					}
 				}
@@ -791,19 +822,7 @@ void asyncPvzSceneUpdate() {
 
 				if (winLevelScreen.getFillColor().a == 0) {
 					pvzScene = 7;
-
-					std::unique_lock<std::shared_mutex> plantWriteLock(plantsMutex);
-					std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
-					std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
-					std::unique_lock<std::shared_mutex> vanishProjWriteLock(vanishProjsMutex);
-					std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
-
-					plantsOnScene.clear();
-					zombiesOnScene.clear();
-					projectilesOnScene.clear();
-					vanishProjectilesOnScene.clear();
-					sunsOnScene.clear();
-					seedPacketsSelectedOrder.clear();
+					clearPvzVar();
 				}
 				[[fallthrough]];
 			case 7:
@@ -820,6 +839,10 @@ void asyncPvzSceneUpdate() {
 		std::this_thread::sleep_until(nextTime);
 		nextTime = std::chrono::high_resolution_clock::now() + frameTime;
 	}
+}
+
+void randomRNG() {
+	srand(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
 }
 
 std::thread thread_asyncBlinkMap;
