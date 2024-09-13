@@ -57,6 +57,7 @@ struct lawnMowerState {
 struct particleState {
 	spriteAnim anim;
 	Emitter emitter;
+	sf::Sprite ogSprite;
 };
 extern std::vector<plantState> plantsOnScene;
 extern std::vector<zombieState> zombiesOnScene;

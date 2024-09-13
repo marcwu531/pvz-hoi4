@@ -421,7 +421,7 @@ inline static float generateRandomNumber(const std::string& range, bool radius =
 	return randomValue;
 }
 
-inline static float getParticalInitialFloat(const std::variant<std::string, float>& var) {
+float getParticalInitialFloat(const std::variant<std::string, float>& var) {
 	if (std::holds_alternative<float>(var)) {
 		return std::get<float>(var);
 	}
@@ -439,7 +439,38 @@ inline static float getParticalInitialFloat(const std::variant<std::string, floa
 	return generateRandomNumber(str.substr(startPos, endPos - startPos + 1), false);
 }
 
-inline static sf::Uint8 clampColor(float value) {
+std::optional<std::array<float, 2>> getParticleFloatAsArray(const std::variant<std::string, float>& var) {
+	if (std::holds_alternative<float>(var)) return std::nullopt;
+
+	const std::string& str = std::get<std::string>(var);
+	if (str.empty()) return std::nullopt;
+
+	size_t secondPos = str.find(',');
+	if (secondPos == std::string::npos) return std::nullopt;
+
+	std::string afterComma = str.substr(secondPos + 1);
+	afterComma.erase(0, afterComma.find_first_not_of(' '));
+
+	std::array<float, 2> result = { 0.0f, 0.0f };
+
+	size_t spacePos = afterComma.find(' ');
+	if (spacePos != std::string::npos) {
+		std::string secondValueStr = afterComma.substr(0, spacePos);
+		result[0] = std::stof(secondValueStr);
+
+		std::string afterSpace = afterComma.substr(spacePos + 1);
+		afterSpace.erase(0, afterSpace.find_first_not_of(' '));
+
+		if (!afterSpace.empty()) result[1] = std::stof(afterSpace);
+	}
+	else {
+		result[0] = std::stof(afterComma);
+	}
+
+	return result;
+}
+
+sf::Uint8 clampColor(float value) {
 	return static_cast<sf::Uint8>(std::clamp(value * 255.0f, 0.0f, 255.0f));
 }
 
@@ -471,10 +502,10 @@ void spawnParticle(int id, sf::Vector2f pos) {
 
 			if (!emitter.particleScale.empty()) {
 				float scale = getParticalInitialFloat(emitter.particleScale);
-				particleRect.setScale(scale, scale);
+				particleRect.scale(scale, scale);
 			}
 
-			particlesOnScene.push_back({ { particleRect, id, 0, std::nullopt }, emitter });
+			particlesOnScene.push_back({ { particleRect, id, 0, std::nullopt }, emitter, particleRect });
 		}
 	}
 }

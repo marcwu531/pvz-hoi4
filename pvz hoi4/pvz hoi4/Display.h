@@ -153,4 +153,7 @@ extern int zombiesWonFrameId;
 void spawnParticle(int id, sf::Vector2f pos);
 void initParticle();
 const int maxParticleAmount = 1;
+float getParticalInitialFloat(const std::variant<std::string, float>& var);
+std::optional<std::array<float, 2>> getParticleFloatAsArray(const std::variant<std::string, float>& var);
+sf::Uint8 clampColor(float value);
 #endif

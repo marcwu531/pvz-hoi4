@@ -662,73 +662,75 @@ void asyncPvzSceneUpdate() {
 					}
 				}
 
-				std::shared_lock<std::shared_mutex> sunReadLock(sunsMutex);
-				for (auto it = sunsOnScene.begin(); it != sunsOnScene.end();) {
-					if (++it->anim.frameId / animSpeed * sunAnimSpeed > 12)
-						it->anim.frameId = 0;
+				{
+					std::shared_lock<std::shared_mutex> sunReadLock(sunsMutex);
+					for (auto it = sunsOnScene.begin(); it != sunsOnScene.end();) {
+						if (++it->anim.frameId / animSpeed * sunAnimSpeed > 12)
+							it->anim.frameId = 0;
 
-					it->anim.sprite.setTextureRect(sunFrames.find(static_cast<int>(
-						std::trunc(it->anim.frameId / animSpeed * sunAnimSpeed)))->second.frameRect);
+						it->anim.sprite.setTextureRect(sunFrames.find(static_cast<int>(
+							std::trunc(it->anim.frameId / animSpeed * sunAnimSpeed)))->second.frameRect);
 
-					if (it->anim.sprite.getPosition() != it->targetPos) {
-						if (it->style == 0) {
-							it->anim.sprite.move(0.0f, 1.0f);
+						if (it->anim.sprite.getPosition() != it->targetPos) {
+							if (it->style == 0) {
+								it->anim.sprite.move(0.0f, 1.0f);
 
-							if (it->anim.sprite.getPosition().y > it->targetPos.y)
-								it->anim.sprite.setPosition(it->targetPos);
-						}
-						else if (it->style == 1 || it->style == 2) {
-							float maxSpeed = it->style == 1 ? 50.0f : 5.0f;
-
-							sf::Vector2f currentPos = it->anim.sprite.getPosition();
-							sf::Vector2f direction = it->targetPos - currentPos;
-							float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-
-							if (length != 0.0f) {
-								direction.x /= length;
-								direction.y /= length;
+								if (it->anim.sprite.getPosition().y > it->targetPos.y)
+									it->anim.sprite.setPosition(it->targetPos);
 							}
+							else if (it->style == 1 || it->style == 2) {
+								float maxSpeed = it->style == 1 ? 50.0f : 5.0f;
 
-							float speed = maxSpeed * (length / 500.0f);
-							if (speed < 2.5f) speed = 2.5f;
+								sf::Vector2f currentPos = it->anim.sprite.getPosition();
+								sf::Vector2f direction = it->targetPos - currentPos;
+								float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
 
-							if (it->style == 2 && it->anim.sprite.getScale() !=
-								sf::Vector2f(scene1ZoomSize, scene1ZoomSize)) {
-								it->anim.sprite.setScale(it->anim.sprite.getScale()
-									+ sf::Vector2f(0.1f, 0.1f));
+								if (length != 0.0f) {
+									direction.x /= length;
+									direction.y /= length;
+								}
 
-								if (it->anim.sprite.getScale().x > scene1ZoomSize ||
-									it->anim.sprite.getScale().y > scene1ZoomSize) {
+								float speed = maxSpeed * (length / 500.0f);
+								if (speed < 2.5f) speed = 2.5f;
+
+								if (it->style == 2 && it->anim.sprite.getScale() !=
+									sf::Vector2f(scene1ZoomSize, scene1ZoomSize)) {
+									it->anim.sprite.setScale(it->anim.sprite.getScale()
+										+ sf::Vector2f(0.1f, 0.1f));
+
+									if (it->anim.sprite.getScale().x > scene1ZoomSize ||
+										it->anim.sprite.getScale().y > scene1ZoomSize) {
+										it->anim.sprite.setScale(scene1ZoomSize, scene1ZoomSize);
+									}
+								}
+								else if (it->anim.sprite.getScale() !=
+									sf::Vector2f(scene1ZoomSize, scene1ZoomSize)) {
 									it->anim.sprite.setScale(scene1ZoomSize, scene1ZoomSize);
 								}
-							}
-							else if (it->anim.sprite.getScale() !=
-								sf::Vector2f(scene1ZoomSize, scene1ZoomSize)) {
-								it->anim.sprite.setScale(scene1ZoomSize, scene1ZoomSize);
-							}
 
-							if (it->style == 1 || (it->anim.sprite.getScale().x > 0.75f))
-								it->anim.sprite.move(direction.x * speed, direction.y * speed);
+								if (it->style == 1 || (it->anim.sprite.getScale().x > 0.75f))
+									it->anim.sprite.move(direction.x * speed, direction.y * speed);
 
-							if (std::abs(currentPos.x - it->targetPos.x) < speed &&
-								std::abs(currentPos.y - it->targetPos.y) < speed) {
-								if (it->style == 1) {
-									addSun(getSunAmountByType(it->type));
-									sunReadLock.unlock();
-									{
-										std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
-										it = sunsOnScene.erase(it);
+								if (std::abs(currentPos.x - it->targetPos.x) < speed &&
+									std::abs(currentPos.y - it->targetPos.y) < speed) {
+									if (it->style == 1) {
+										addSun(getSunAmountByType(it->type));
+										sunReadLock.unlock();
+										{
+											std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
+											it = sunsOnScene.erase(it);
+										}
+										sunReadLock.lock();
+										continue;
 									}
-									sunReadLock.lock();
-									continue;
-								}
-								else {
-									it->anim.sprite.setPosition(it->targetPos);
+									else {
+										it->anim.sprite.setPosition(it->targetPos);
+									}
 								}
 							}
 						}
+						++it;
 					}
-					++it;
 				}
 
 				{
@@ -774,6 +776,83 @@ void asyncPvzSceneUpdate() {
 						}
 						else {
 							++itLm;
+						}
+					}
+				}
+
+				{
+					std::shared_lock<std::shared_mutex> particleReadLock(particlesMutex);
+
+					for (auto it = particlesOnScene.begin(); it != particlesOnScene.end();) {
+						float r = 0.0f, g = 0.0f, b = 0.0f, a = 0.0f, scale = 0;
+
+						std::optional<std::array<float, 2>> particleRedArray =
+							getParticleFloatAsArray(it->emitter.particleRed);
+						std::optional<std::array<float, 2>> particleGreenArray =
+							getParticleFloatAsArray(it->emitter.particleGreen);
+						std::optional<std::array<float, 2>> particleBlueArray =
+							getParticleFloatAsArray(it->emitter.particleBlue);
+						std::optional<std::array<float, 2>> particleAlphaArray =
+							getParticleFloatAsArray(it->emitter.particleAlpha);
+						std::optional<std::array<float, 2>> particleScaleArray =
+							getParticleFloatAsArray(it->emitter.particleScale);
+
+						if (particleRedArray.has_value() || particleGreenArray.has_value() ||
+							particleBlueArray.has_value() || particleAlphaArray.has_value()) {
+							if (particleRedArray.has_value()) {
+								r = it->ogSprite.getColor().r;
+								r += it->anim.frameId * (particleRedArray.value()[1] - r) /
+									particleRedArray.value()[0];
+							}
+							else {
+								r = it->ogSprite.getColor().r;
+							}
+							if (particleGreenArray.has_value()) {
+								g = it->ogSprite.getColor().g;
+								g += it->anim.frameId * (particleGreenArray.value()[1] - g) /
+									particleGreenArray.value()[0];
+							}
+							else {
+								g = it->ogSprite.getColor().g;
+							}
+							if (particleBlueArray.has_value()) {
+								b = it->ogSprite.getColor().b;
+								b += it->anim.frameId * (particleBlueArray.value()[1] - b) /
+									particleBlueArray.value()[0];
+							}
+							else {
+								b = it->ogSprite.getColor().b;
+							}
+							if (particleAlphaArray.has_value()) {
+								a = it->ogSprite.getColor().a;
+								a += it->anim.frameId * (particleAlphaArray.value()[1] - a) /
+									particleAlphaArray.value()[0];
+							}
+							else {
+								a = it->ogSprite.getColor().a;
+							}
+							it->anim.sprite.setColor(sf::Color(clampColor(r), clampColor(g),
+								clampColor(b), clampColor(a)));
+						}
+
+						if (particleScaleArray.has_value()) {
+							scale = it->ogSprite.getScale().x;
+							scale += std::min(static_cast<float>(it->anim.frameId), particleScaleArray.value()[0])
+								* (particleScaleArray.value()[1] - scale) / particleScaleArray.value()[0];
+							scale *= scene1ZoomSize;
+							it->anim.sprite.setScale(scale, scale);
+						}
+
+						if (++it->anim.frameId > it->emitter.systemDuration) {
+							particleReadLock.unlock();
+							{
+								std::unique_lock<std::shared_mutex> particleWriteLock(particlesMutex);
+								it = particlesOnScene.erase(it);
+							}
+							particleReadLock.lock();
+						}
+						else {
+							++it;
 						}
 					}
 				}

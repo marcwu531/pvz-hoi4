@@ -783,4 +783,5 @@ void clearPvzVar() {
 	vanishProjectilesOnScene.clear();
 	sunsOnScene.clear();
 	seedPacketsSelectedOrder.clear();
+	particlesOnScene.clear();
 }
