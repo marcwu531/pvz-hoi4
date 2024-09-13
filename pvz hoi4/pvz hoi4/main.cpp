@@ -232,6 +232,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						inputs.pop();
 					}
 					if (isKonamiCodeEntered(inputs)) {
+						//winLevel();
 						ShellExecute(0, 0, L"https://tinyurl.com/marcwu531underphaith706", 0, 0, SW_SHOW);
 						while (!inputs.empty()) {
 							inputs.pop();
@@ -574,7 +575,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 				window.draw(levelStart);
 
-				if (world == 1 && (level == 1 || level == 2)) {
+				if (world == 1 && level <= 3) {
 					levelStartText.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 38.4f)));
 
 					const sf::FloatRect textBounds = levelStartText.getLocalBounds();
@@ -746,6 +747,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					window.draw(pvzStartText);
 				}
 
+				{
+					std::shared_lock<std::shared_mutex> particleReadLock(particlesMutex);
+
+					for (const auto& particles : particlesOnScene) {
+						window.draw(particles.anim.sprite);
+					}
+				}
+
 				pvzSunText.setString(std::to_string(pvzSun));
 				const sf::FloatRect pvzSunTextRect = pvzSunText.getLocalBounds();
 				pvzSunText.setOrigin(pvzSunTextRect.left + pvzSunTextRect.width / 2.0f,
@@ -761,6 +770,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 				else {
+					std::shared_lock<std::shared_mutex> seedPacketReadLock(seedPacketsMutex);
 					for (const auto& sp : seedPacketsSelectedOrder) {
 						if (plantExist(sp.second)) {
 							window.draw(seedPackets.find(seedPacketIdToString(sp.second))->second);
@@ -779,7 +789,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
-				if (!plantsOnScene.empty()) {
+				{
 					std::shared_lock<std::shared_mutex> plantReadLock(plantsMutex);
 
 					for (const auto& plant : plantsOnScene) {
@@ -792,7 +802,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
-				if (!projectilesOnScene.empty()) {
+				{
 					std::shared_lock<std::shared_mutex> projReadLock(projsMutex);
 
 					for (const auto& projectile : projectilesOnScene) {
@@ -867,14 +877,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 
-				{
-					std::shared_lock<std::shared_mutex> particleReadLock(particlesMutex);
-
-					for (const auto& particles : particlesOnScene) {
-						window.draw(particles.anim.sprite);
-					}
-				}
-
 				if (pvzScene == 4 || pvzScene == 5) {
 					if (pvzScene == 5) {
 						window.draw(winLevelScreen);
@@ -936,4 +938,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.56
+//Version 1.0.57

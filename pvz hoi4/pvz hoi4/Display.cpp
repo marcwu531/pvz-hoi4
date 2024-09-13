@@ -27,7 +27,7 @@
 #include "State.h"
 #include "Window.h"
 
-#define NROC
+//#define NROC
 
 sf::Font defaultFont;
 sf::Texture flag_texture;
@@ -326,14 +326,19 @@ std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 void changeScene(int targetScene) {
 	stopAllThreads();
 
+	for (auto& categoryPair : audios) {
+		for (auto& musicPair : categoryPair.second) {
+			if (musicPair.second->getStatus() == sf::Music::Playing) musicPair.second->stop();
+		}
+	}
+
 	if (targetScene == 0) {
 		thread_asyncBlinkMap = std::thread(asyncBlinkMap);
 		thread_asyncLoadFlag = std::thread(asyncLoadFlag);
 		thread_asyncLoadLevelStart = std::thread(asyncLoadLevelStart);
 	}
 	else if (targetScene == 1) {
-		if (audios["soundtrack"]["battleofwuhan"]->getStatus() == sf::Music::Playing)
-			audios["soundtrack"]["battleofwuhan"]->stop();
+		pvzScene = 0;
 		thread_asyncPvzSceneUpdate = std::thread(asyncPvzSceneUpdate);
 	}
 	/*else if (targetScene == -1) {
@@ -395,6 +400,9 @@ void initParticle() {
 static std::optional<sf::Sprite> getParticleElem(std::string str) {
 	if (str == "IMAGE_EXPLOSIONCLOUD") {
 		return explosionCloud;
+	}
+	else if (str == "IMAGE_EXPLOSIONPOWIE") {
+		return explosionPowie;
 	}
 	return std::nullopt;
 }
@@ -474,6 +482,16 @@ sf::Uint8 clampColor(float value) {
 	return static_cast<sf::Uint8>(std::clamp(value * 255.0f, 0.0f, 255.0f));
 }
 
+inline static bool isVariantValidColor(const std::variant<std::string, float>& var) {
+	if (std::holds_alternative<float>(var)) {
+		return std::get<float>(var) != -1.0f;
+	}
+	else if (std::holds_alternative<std::string>(var)) {
+		return !std::get<std::string>(var).empty();
+	}
+	return true;
+}
+
 void spawnParticle(int id, sf::Vector2f pos) {
 	for (const auto& [name, emitter] : particlesData[id]) {
 		std::optional<sf::Sprite> tempRect = getParticleElem(emitter.image);
@@ -482,30 +500,47 @@ void spawnParticle(int id, sf::Vector2f pos) {
 		int repeat = emitter.spawnRate;
 		if (emitter.spawnMinLaunched != -1) repeat = std::max(repeat, emitter.spawnMinLaunched);
 		if (emitter.spawnMaxLaunched != -1) repeat = std::min(repeat, emitter.spawnMaxLaunched);
+		if (emitter.spawnMinActive != -1) repeat = std::max(repeat, emitter.spawnMinActive);
+		if (emitter.spawnMaxActive != -1) repeat = std::min(repeat, emitter.spawnMaxActive);
 
 		for (int i = 0; i < repeat; ++i) {
 			sf::Sprite particleRect = tempRect.value();
-			particleRect.setPosition(pos + sf::Vector2f(
+			particleRect.setPosition(pos);
+			if (!emitter.emitterRadius.empty()) particleRect.move(sf::Vector2f(
 				generateRandomNumber(emitter.emitterRadius),
 				generateRandomNumber(emitter.emitterRadius)));
 
-			float red = getParticalInitialFloat(emitter.particleRed);
-			float green = getParticalInitialFloat(emitter.particleGreen);
-			float blue = getParticalInitialFloat(emitter.particleBlue);
-			float alpha = getParticalInitialFloat(emitter.particleAlpha);
-			particleRect.setColor(sf::Color(
-				clampColor(red),
-				clampColor(green),
-				clampColor(blue),
-				clampColor(alpha)
-			));
+			if (isVariantValidColor(emitter.particleRed) && isVariantValidColor(emitter.particleGreen) &&
+				isVariantValidColor(emitter.particleBlue) && isVariantValidColor(emitter.particleAlpha)) {
+				float red = getParticalInitialFloat(emitter.particleRed);
+				float green = getParticalInitialFloat(emitter.particleGreen);
+				float blue = getParticalInitialFloat(emitter.particleBlue);
+				float alpha = getParticalInitialFloat(emitter.particleAlpha);
+				particleRect.setColor(sf::Color(
+					clampColor(red),
+					clampColor(green),
+					clampColor(blue),
+					clampColor(alpha)
+				));
+			}
 
 			if (!emitter.particleScale.empty()) {
 				float scale = getParticalInitialFloat(emitter.particleScale);
 				particleRect.scale(scale, scale);
 			}
 
-			particlesOnScene.push_back({ { particleRect, id, 0, std::nullopt }, emitter, particleRect });
+			std::unordered_map<std::string, float> particleValue;
+
+			if (!emitter.particleSpinSpeed.empty()) {
+				particleValue["particleSpinSpeed"] = generateRandomNumber(emitter.particleSpinSpeed, false);
+			}
+			if (!emitter.launchSpeed.empty()) {
+				particleValue["launchSpeedX"] = generateRandomNumber(emitter.launchSpeed);
+				particleValue["launchSpeedY"] = generateRandomNumber(emitter.launchSpeed);
+			}
+
+			particlesOnScene.push_back({ { particleRect, id, 0, std::nullopt }, 
+				emitter, particleRect, particleValue });
 		}
 	}
 }

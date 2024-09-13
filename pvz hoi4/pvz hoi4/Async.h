@@ -21,7 +21,7 @@ extern std::thread thread_asyncPvzSceneUpdate;
 void stopAllThreads();
 extern bool pvzPacketOnSelected;
 extern std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, mapMutex,
-	lawnMowersMutex, particlesMutex;
+	lawnMowersMutex, particlesMutex, seedPacketsMutex;
 extern sf::Vector2f worldPos;
 extern int mapSx, mapSy;
 extern float animSpeed;

@@ -58,6 +58,7 @@ struct particleState {
 	spriteAnim anim;
 	Emitter emitter;
 	sf::Sprite ogSprite;
+	std::unordered_map<std::string, float> particleValue;
 };
 extern std::vector<plantState> plantsOnScene;
 extern std::vector<zombieState> zombiesOnScene;
@@ -75,6 +76,7 @@ void createZombie(sf::Vector2f pos, int style);
 void createRandomZombie();
 void createProjectile(int type, sf::Vector2f pos);
 bool damageZombie(projectileState projectile, zombieState& zombie);
+bool damageZombie(int amount, zombieState& zombie);
 bool damagePlant(plantState& plant);
 void createProjectileVanishAnim(projectileState proj);
 extern int seedPacketSelectedId;

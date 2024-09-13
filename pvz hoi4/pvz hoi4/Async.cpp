@@ -33,7 +33,7 @@ int maxSpeed = 1, fps = 60 * maxSpeed, scene = 0;
 sf::Vector2i blinkCoords(0, 0);
 
 std::shared_mutex plantsMutex, zombiesMutex, projsMutex, vanishProjsMutex, sunsMutex, mapMutex,
-lawnMowersMutex, particlesMutex; //accountMutex
+lawnMowersMutex, particlesMutex, seedPacketsMutex; //accountMutex
 
 inline static void updateImage(sf::Image& image, const sf::IntRect& cropArea, sf::Texture& texture) {
 	if (texture.getSize().x != static_cast<unsigned int>(cropArea.width) ||
@@ -161,8 +161,6 @@ static void updateZombieAnim() {
 int idleFrame = 0;
 
 void asyncPvzSceneUpdate() {
-	pvzScene = 0;
-
 	clearPvzVar();
 	randomRNG();
 	initScene1Place();
@@ -190,8 +188,8 @@ void asyncPvzSceneUpdate() {
 		}
 	}
 
-	int zombieSpawnTimer = 1500 + rand() % 500;
-	int sunSpawnTimer = 1000 + rand() % 300;
+	int zombieSpawnTimer = 2000 + rand() % 500;
+	int sunSpawnTimer = 750 + rand() % 300;
 	float sunAnimSpeed = 0.75f;
 	int currentWave = 0;
 
@@ -348,10 +346,11 @@ void asyncPvzSceneUpdate() {
 
 					if (currentWave < world_level_waves[world][level] + 1) {
 						if (--zombieSpawnTimer <= 0) {
-							zombieSpawnTimer = 2000 + rand() % 500;
+							zombieSpawnTimer = 2500 + rand() % 500;
 
 							if (++currentWave == world_level_waves[world][level]) {
 								audios["sounds"]["finalwave"]->play();
+								zombieSpawnTimer = 100;
 							}
 							else {
 								int spawnTier = static_cast<int>( std::log10(currentWave + 1) * 10.0f * 
@@ -384,7 +383,7 @@ void asyncPvzSceneUpdate() {
 				}
 
 				if (--sunSpawnTimer <= 0) {
-					sunSpawnTimer = 2000 + rand() % 300;
+					sunSpawnTimer = 1000 + rand() % 300;
 
 					std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
 					createSkySun();
@@ -580,8 +579,27 @@ void asyncPvzSceneUpdate() {
 									if (plant.anim.frameId == 0) {
 										{
 											std::unique_lock<std::shared_mutex> particleWriteLock(particlesMutex);
-											spawnParticle(0, plant.anim.sprite.getPosition() + 
-												plant.anim.sprite.getOrigin());
+											sf::FloatRect bounds = plant.anim.sprite.getGlobalBounds();
+											spawnParticle(0, sf::Vector2f(bounds.left + bounds.width / 2.0f, 
+												bounds.top + bounds.height / 2.0f));
+										}
+
+										{
+											std::unique_lock<std::shared_mutex> zombieWriteLock(zombiesMutex);
+											auto zIt = zombiesOnScene.begin();
+											while (zIt != zombiesOnScene.end()) {
+												if (std::abs(zIt->anim.sprite.getPosition().x - plant.anim.sprite.getPosition().x) < 230 &&
+													std::abs(zIt->anim.row.value() - plant.anim.row.value()) <= 1) {
+													if (damageZombie(1800, *zIt)) {
+														zIt = zombiesOnScene.erase(zIt);
+														continue;
+													}
+													else {
+														zIt->damagedCd = 10;
+													}
+												}
+												++zIt;
+											}
 										}
 
 										plantReadLock.unlock();
@@ -841,6 +859,51 @@ void asyncPvzSceneUpdate() {
 								* (particleScaleArray.value()[1] - scale) / particleScaleArray.value()[0];
 							scale *= scene1ZoomSize;
 							it->anim.sprite.setScale(scale, scale);
+							it->anim.sprite.setOrigin(it->anim.sprite.getLocalBounds().getSize() / 2.0f);
+						}
+
+						auto particleSpinSpeed = it->particleValue.find("particleSpinSpeed");
+						if (particleSpinSpeed != it->particleValue.end()) {
+							it->anim.sprite.rotate(particleSpinSpeed->second / it->emitter.systemDuration);
+						}
+
+						auto launchSpeedX = it->particleValue.find("launchSpeedX");
+						auto launchSpeedY = it->particleValue.find("launchSpeedY");
+						if (launchSpeedX != it->particleValue.end() && launchSpeedY != it->particleValue.end()) {
+							if (!it->emitter.field.fieldType.empty()) {
+								if (it->emitter.field.fieldType == "Friction") {
+									std::optional<std::array<float, 2>> particleFrictionXArray =
+										getParticleFloatAsArray(it->emitter.field.x);
+									std::optional<std::array<float, 2>> particleFrictionYArray =
+										getParticleFloatAsArray(it->emitter.field.y);
+									if (particleFrictionXArray.has_value() && particleFrictionYArray.has_value()) {
+										float particleFrictionX = getParticalInitialFloat(it->emitter.field.x), 
+											particleFrictionY = getParticalInitialFloat(it->emitter.field.y);
+
+										particleFrictionX += std::min(static_cast<float>(it->anim.frameId), particleFrictionXArray.value()[0])
+											* (particleFrictionXArray.value()[1] - particleFrictionX) / particleFrictionXArray.value()[0];
+										particleFrictionY += std::min(static_cast<float>(it->anim.frameId), particleFrictionYArray.value()[0])
+											* (particleFrictionYArray.value()[1] - particleFrictionY) / particleFrictionYArray.value()[0];
+
+										particleFrictionX *= 100.0f;
+										particleFrictionY *= 100.0f;
+
+										if (std::abs(launchSpeedX->second) < particleFrictionX) {
+											launchSpeedX->second = 0.0f;
+										}
+										else {
+											launchSpeedX->second += launchSpeedX->second < 0 ? particleFrictionX : -particleFrictionX;
+										}
+										if (std::abs(launchSpeedY->second) < particleFrictionY) {
+											launchSpeedY->second = 0.0f;
+										}
+										else {
+											launchSpeedY->second += launchSpeedY->second < 0 ? particleFrictionY : -particleFrictionY;
+										}
+									}
+								}
+							}
+							it->anim.sprite.move(launchSpeedX->second / 500.0f, launchSpeedY->second / 500.0f);
 						}
 
 						if (++it->anim.frameId > it->emitter.systemDuration) {
@@ -907,7 +970,7 @@ void asyncPvzSceneUpdate() {
 				if (!isMoneyBag) {
 					if (++idleFrame > getPlantMaxFrameById(getUnlockPlantIdByLevel()) * animSpeed) idleFrame = 0;
 					idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setTextureRect(
-						getPlantAttackFrameById(getUnlockPlantIdByLevel())->
+						getPlantIdleFrameById(getUnlockPlantIdByLevel())->
 						find(static_cast<int>(std::trunc(idleFrame / animSpeed)))->second.frameRect);
 				}
 				break;

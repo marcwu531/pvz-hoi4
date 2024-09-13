@@ -23,6 +23,15 @@ public:
 			static const int waves = 6;
 			static const int spawnTier = 2;
 		};
+
+		class Level_3 {
+		public:
+			static const std::array<int, 1> zombies() {
+				return { 0 };
+			}
+			static const int waves = 8;
+			static const int spawnTier = 1;
+		};
 	};
 };
 

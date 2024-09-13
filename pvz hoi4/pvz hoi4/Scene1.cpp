@@ -152,7 +152,7 @@ std::string getAttackAnimName(int id) {
 	return names[id];
 }
 
-int getPlantJsonIdById(int id, bool idle = true) {
+static int getPlantJsonIdById(int id, bool idle = true) {
 	static const int idleJsonIds[] = { 116, 134, 169 };
 	static const int attackJsonIds[] = { 123, 134, 164 };
 	return (idle ? idleJsonIds : attackJsonIds)[id];
@@ -186,7 +186,7 @@ static void initPlantsStatus() {
 	for (int i = 0; i < maxPlantAmount; ++i) {
 		account.plantsLevel[i] = 0;
 	}
-	unlockPlant(2); //RUN_DEBUG
+	//unlockPlant(2); //RUN_DEBUG
 }
 
 void initSeedPacketPos() {
@@ -325,6 +325,8 @@ void initScene1Place() {
 		explosionCloud.getGlobalBounds().height / 2.0f);
 
 	explosionPowie.setTexture(explosionPowieTexture);
+	explosionPowie.setOrigin(explosionPowie.getGlobalBounds().width / 2.0f,
+		explosionPowie.getGlobalBounds().height / 2.0f);
 
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
@@ -475,7 +477,7 @@ std::vector<lawnMowerState> lawnMowersOnScene;
 std::vector<particleState> particlesOnScene;
 
 static int getSunByTypeAndId(int type, int id) { //type 0: plant
-	static int cost[] = { 100, 50, 0 };
+	static int cost[] = { 100, 50, 150 };
 	static int* costT[] = { cost };
 
 	return costT[type][id];
@@ -612,7 +614,11 @@ static int getProjectileDamageById(int id) {
 }
 
 bool damageZombie(projectileState projectile, zombieState& zombie) {
-	zombie.hp -= getProjectileDamageById(projectile.id);
+	return damageZombie(getProjectileDamageById(projectile.id), zombie);
+}
+
+bool damageZombie(int amount, zombieState& zombie) {
+	zombie.hp -= amount;
 	return zombie.hp <= 0;
 }
 
@@ -729,7 +735,8 @@ int getStartSunByLevel(int vWorld, int vLevel) {
 	std::unordered_map<int, std::unordered_map<int, int>> sunAmount = {
 		{1, {
 			{1, 1000},
-			{2, 150}
+			{2, 150},
+			{3, 50}
 		}}
 	};
 
@@ -770,6 +777,9 @@ void clearPvzVar() {
 	std::unique_lock<std::shared_mutex> projWriteLock(projsMutex);
 	std::unique_lock<std::shared_mutex> vanishProjWriteLock(vanishProjsMutex);
 	std::unique_lock<std::shared_mutex> sunWriteLock(sunsMutex);
+	std::unique_lock<std::shared_mutex> lawnMowerWriteLock(lawnMowersMutex);
+	std::unique_lock<std::shared_mutex> particleWriteLock(particlesMutex);
+	std::unique_lock<std::shared_mutex> seedPacketWriteLock(seedPacketsMutex);
 
 	seedPacketSelected = 0;
 	zombiesWonFrameId = 0;
@@ -783,5 +793,6 @@ void clearPvzVar() {
 	vanishProjectilesOnScene.clear();
 	sunsOnScene.clear();
 	seedPacketsSelectedOrder.clear();
+	lawnMowersOnScene.clear();
 	particlesOnScene.clear();
 }
