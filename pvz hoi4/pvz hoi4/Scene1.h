@@ -114,4 +114,6 @@ void loseLevel();
 extern bool openingMenu;
 void openMenu();
 void clearPvzVar();
+void createZombie(sf::Vector2f pos, int animId, int row);
+int getRowByY(float posY);
 #endif

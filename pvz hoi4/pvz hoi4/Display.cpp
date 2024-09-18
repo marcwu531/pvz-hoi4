@@ -107,6 +107,9 @@ sf::Texture explosionCloudTexture;
 sf::Texture explosionPowieTexture;
 sf::Sprite explosionCloud;
 sf::Sprite explosionPowie;
+sf::Sprite zombieFlagWalk;
+std::unordered_map<int, SpriteFrame> zombieFlagWalkFrames;
+sf::Texture zombieFlagWalkSprites;
 
 sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
 //(1920, 1046)
@@ -194,7 +197,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"sun", loadImageFromResource(nullHInstance, 133)},
 		{"lawnMower", loadImageFromResource(nullHInstance, 133)},
 		{"cherrybombExplode", loadImageFromResource(nullHInstance, 133)},
-		{"cherrybombIdle", loadImageFromResource(nullHInstance, 133)}
+		{"cherrybombIdle", loadImageFromResource(nullHInstance, 133)},
+		{"zombieFlagWalk", loadImageFromResource(nullHInstance, 133)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 133)}
@@ -245,7 +249,8 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"lawnMower", loadImageFromResource(nullHInstance, 144)},
 		{"zombiesWon", loadImageFromResource(nullHInstance, 162)},
 		{"cherrybombExplode", loadImageFromResource(nullHInstance, 165)},
-		{"cherrybombIdle", loadImageFromResource(nullHInstance, 170)}
+		{"cherrybombIdle", loadImageFromResource(nullHInstance, 170)},
+		{"zombieFlagWalk", loadImageFromResource(nullHInstance, 173)}
 	}},
 	{"projectiles", {
 		{"pea", loadImageFromResource(nullHInstance, 122)}
@@ -324,6 +329,7 @@ std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 }
 
 void changeScene(int targetScene) {
+	randomRNG();
 	stopAllThreads();
 
 	for (auto& categoryPair : audios) {

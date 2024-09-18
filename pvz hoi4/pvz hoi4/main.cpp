@@ -88,6 +88,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	damaged_shader.setUniform("texture", sf::Shader::CurrentTexture);
 	damaged_shader.setUniform("brightness", 1.75f);
 
+	//sf::Sprite dummy;
+	window.draw(levelStartButton, &damaged_shader);
+
 	sf::Texture accountButtonTexture;
 	sf::RectangleShape accountButton;
 #ifdef CENSORED
@@ -830,21 +833,22 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							for (auto& tmpZ : tempZombies) {
 								zombiesOnScene.insert(zombiesOnScene.end(), tmpZ.begin(), tmpZ.end());
 							}
+
+							for (auto& zombie : zombiesOnScene) {
+								//window.draw(zombie.anim.sprite); continue;
+								if (zombie.damagedCd > 0) {
+									window.draw(zombie.anim.sprite, &damaged_shader);
+								}
+								else {
+									window.draw(zombie.anim.sprite);
+								}
+							}
 						}
-						zombieReadLock.lock();
+						//zombieReadLock.lock();
 						/*(std::sort(zombiesOnScene.begin(), zombiesOnScene.end(),
 							[](const zombieState& a, const zombieState& b) {
 							return a.anim.row < b.anim.row;
 						});*/
-
-						for (const auto& zombie : zombiesOnScene) {
-							if (zombie.damagedCd > 0) {
-								window.draw(zombie.anim.sprite, &damaged_shader);
-							}
-							else {
-								window.draw(zombie.anim.sprite);
-							}
-						}
 					}
 				}
 
@@ -938,4 +942,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.57
+//Version 1.0.58

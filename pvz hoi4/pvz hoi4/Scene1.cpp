@@ -328,6 +328,12 @@ void initScene1Place() {
 	explosionPowie.setOrigin(explosionPowie.getGlobalBounds().width / 2.0f,
 		explosionPowie.getGlobalBounds().height / 2.0f);
 
+	zombieFlagWalk.setTexture(zombieFlagWalkSprites);
+	zombieFlagWalk.setTextureRect(zombieFlagWalkFrames[0].frameRect);
+	zombieFlagWalk.setScale(scene1ZoomSize, scene1ZoomSize);
+	zombieFlagWalk.setOrigin(zombieFlagWalk.getTextureRect().getSize().x / 4.0f * 3.0f,
+		zombieFlagWalk.getTextureRect().getSize().y / 5.0f * 4.0f);
+
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
 		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
@@ -423,6 +429,11 @@ void initializeScene1() {
 	explosionCloudTexture.loadFromImage(getPvzImage("particles", "explosionCloud"));
 	explosionPowieTexture.loadFromImage(getPvzImage("particles", "explosionPowie"));
 
+	auto zombieFlagWalkJson = loadJsonFromResource(172);
+	auto zombieFlagWalkImage = getPvzImage("animations", "zombieFlagWalk");
+	zombieFlagWalkSprites.loadFromImage(zombieFlagWalkImage);
+	zombieFlagWalkFrames = parseSpriteSheetData(zombieFlagWalkJson);
+
 	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
 		getPlantIdleTextureById(i)->loadFromImage(getPvzImage("animations", idlePlantToString[i] + "Idle"));
 		*getPlantIdleFrameById(i) = parseSpriteSheetData(loadJsonFromResource(getPlantJsonIdById(i)));
@@ -438,7 +449,7 @@ void initializeScene1() {
 	initScene1Place();
 }
 
-static int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
+int getRowByY(float posY) { //0:-310 1:-140 2:30 3:200 4:370
 	switch (static_cast<int>(posY)) {
 	case -310:
 	default:
@@ -508,7 +519,7 @@ void createPlant(std::optional<sf::Vector2f> pos, int id) {
 }
 
 sf::Sprite getZombieSpriteById(int id) {
-	static sf::Sprite sprites[] = { zombieIdle, zombieIdle1, zombieWalk };
+	static sf::Sprite sprites[] = { zombieIdle, zombieIdle1, zombieWalk, zombieEat, zombieFlagWalk };
 	return sprites[id];
 }
 
@@ -523,15 +534,21 @@ void createRandomZombie() {
 
 void createZombie(sf::Vector2f pos, int style) {
 	//type: world_level_zombies[world][level]
-	sf::Sprite newZombie;
 	int animId = style == 0 ? rand() % 2 : 2;
 	int row = style == 1 ? getRowByY(pos.y) : 0;
 
-	newZombie = getZombieSpriteById(animId);
+	createZombie(pos, animId, row);
+}
 
+void createZombie(sf::Vector2f pos, int animId, int row) {
+	sf::Sprite newZombie;
+	newZombie = getZombieSpriteById(animId);
 	newZombie.setPosition(pos);
+
+	float movementSpeedX = animId  == 4 ? -0.75f - (rand() % 26) / 100.0f : -0.5f - (rand() % 26) / 100.0f;
+
 	zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200, 0,
-		sf::Vector2f(-0.5f - (rand() % 26) / 100.0f, 0.0f), nullptr });
+		sf::Vector2f(movementSpeedX, 0.0f), nullptr });
 }
 
 void createProjectile(int type, sf::Vector2f pos) {
@@ -735,12 +752,17 @@ int getStartSunByLevel(int vWorld, int vLevel) {
 	std::unordered_map<int, std::unordered_map<int, int>> sunAmount = {
 		{1, {
 			{1, 1000},
-			{2, 150},
-			{3, 50}
+			{2, 150}
 		}}
 	};
 
-	return sunAmount[vWorld][vLevel];
+	if (sunAmount.find(vWorld) != sunAmount.end()) {
+		if (sunAmount[vWorld].find(vLevel) != sunAmount[vWorld].end()) {
+			return sunAmount[vWorld][vLevel];
+		}
+	}
+
+	return 50;
 }
 
 void createLawnMower(float x, float y) {

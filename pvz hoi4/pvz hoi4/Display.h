@@ -130,6 +130,9 @@ extern sf::Texture explosionCloudTexture;
 extern sf::Texture explosionPowieTexture;
 extern sf::Sprite explosionCloud;
 extern sf::Sprite explosionPowie;
+extern sf::Sprite zombieFlagWalk;
+extern std::unordered_map<int, SpriteFrame> zombieFlagWalkFrames;
+extern sf::Texture zombieFlagWalkSprites;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea);
