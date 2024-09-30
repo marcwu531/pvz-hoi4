@@ -110,6 +110,12 @@ sf::Sprite explosionPowie;
 sf::Sprite zombieFlagWalk;
 std::unordered_map<int, SpriteFrame> zombieFlagWalkFrames;
 sf::Texture zombieFlagWalkSprites;
+std::unordered_map<int, sf::RectangleShape> focuses;
+std::unordered_map<int, sf::Texture> focus_textures;
+std::unordered_map<int, sf::RectangleShape> focuses_bg;
+sf::RectangleShape focus_select;
+sf::RectangleShape focus_bg;
+std::unordered_map<int, sf::Text> focuses_text;
 
 sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
 //(1920, 1046)
@@ -122,6 +128,8 @@ sf::RectangleShape world_blink;
 //15s
 
 int zombiesWonFrameId;
+
+sf::Color TaiwanColour(0, 0, 149);
 
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea) {
 	sf::Image cropped_image;
@@ -152,7 +160,9 @@ sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID) {
 
 HINSTANCE nullHInstance = GetModuleHandle(NULL);
 
+sf::Texture texture_world;
 sf::Image world_image = loadImageFromResource(nullHInstance, 101);
+sf::Image og_world_image = world_image;
 
 #ifdef NROC
 std::unordered_map<std::string, sf::Image> flagImages = {
@@ -217,6 +227,16 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"explosionPowie", loadImageFromResource(nullHInstance, 133)}
 	}}
 };
+
+std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> hoi4Images = {
+	{
+		"focus", {
+			{"can_start_bg", loadImageFromResource(nullHInstance, 133)},
+			{"unavailable_bg", loadImageFromResource(nullHInstance, 133)},
+			{"tiled_bg", loadImageFromResource(nullHInstance, 133)}
+		}
+	}
+};
 #else
 std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzImages = {
 	{"background", {
@@ -269,6 +289,17 @@ std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzI
 		{"explosionPowie", loadImageFromResource(nullHInstance, 168)}
 	}}
 };
+
+std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> hoi4Images = {
+	{
+		"focus", {
+			{"can_start_bg", loadImageFromResource(nullHInstance, 174)},
+			{"unavailable_bg", loadImageFromResource(nullHInstance, 175)},
+			{"tiled_bg", loadImageFromResource(nullHInstance, 176)},
+			{"goal_generic_national_unity", loadImageFromResource(nullHInstance, 179)}
+		}
+	}
+};
 #endif
 
 sf::Image getFlagImage(const std::string& country) {
@@ -277,6 +308,10 @@ sf::Image getFlagImage(const std::string& country) {
 
 sf::Image getPvzImage(const std::string& type, std::string target) {
 	return pvzImages.at(type).at(target);
+}
+
+sf::Image getHoi4Image(const std::string& type, std::string target) {
+	return hoi4Images.at(type).at(target);
 }
 
 std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId) {
@@ -310,7 +345,7 @@ std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 
 		for (int x = state_int[clicking_state]["sx"](); x <= state_int[clicking_state]["lx"](); ++x) {
 			for (int y = state_int[clicking_state]["sy"](); y <= state_int[clicking_state]["ly"](); ++y) {
-				if (getRGBA(world_image, x, y) == state_rgba[clicking_state]["RGBA"]()) {
+				if (getRGBA(og_world_image, x, y) == state_rgba[clicking_state]["RGBA"]()) {
 					targetCoords.push_back({ x, y });
 				}
 			}
@@ -323,6 +358,9 @@ std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY) {
 		level = state_int[clicking_state]["id"]();
 
 		return std::to_string(world) + "-" + std::to_string(level);
+	}
+	else {
+		clicking_state = "";
 	}
 
 	return "";
@@ -548,5 +586,82 @@ void spawnParticle(int id, sf::Vector2f pos) {
 			particlesOnScene.push_back({ { particleRect, id, 0, std::nullopt }, 
 				emitter, particleRect, particleValue });
 		}
+	}
+}
+
+static std::string getCityById(int id) {
+	return Regions["Taiwan"][id];
+}
+
+void updateWorldColour() {
+	world_image = og_world_image;
+	bool requireUpdate = false;
+
+	for (int i = 1; i < maxPlantAmount; ++i) {
+		if (plantExist(i)) {
+			if (updateSpecificWorldColour(i, false)) {
+				requireUpdate = true;
+			}
+		}
+	}
+
+	if (requireUpdate) {
+		texture_world.update(world_image);
+	}
+}
+
+bool updateSpecificWorldColour(int j, bool update) {
+	bool requireUpdate = false;
+
+	if (--j < 0) return false;
+
+	for (int x = state_int[getCityById(j)]["sx"](); x <= state_int[getCityById(j)]["lx"](); ++x) {
+		for (int y = state_int[getCityById(j)]["sy"](); y <= state_int[getCityById(j)]["ly"](); ++y) {
+			if (getRGBA(world_image, x, y) == state_rgba[getCityById(j)]["RGBA"]()) {
+				if (world_image.getPixel(x, y) != TaiwanColour) {
+					if (!requireUpdate) requireUpdate = true;
+					world_image.setPixel(x, y, TaiwanColour);
+				}
+			}
+		}
+	}
+
+	if (update && requireUpdate) {
+		texture_world.update(world_image);
+	}
+
+	return requireUpdate;
+}
+
+void initFocus() {
+	focus_textures[0].loadFromImage(getHoi4Image("focus", "goal_generic_national_unity"));
+
+	for (int i = 0; i < maxFocusAmount; ++i) {
+		focuses[i].setTexture(&focus_textures[i]);
+	}
+}
+
+void setFocusProperties(float viewWorldSizeX, float viewWorldSizeY, 
+	float viewWorldCenterX, float viewWorldCenterY) {
+	focus_bg.setSize(sf::Vector2f(viewWorldSizeX, viewWorldSizeY));
+	focus_bg.setOrigin(focus_bg.getSize().x / 2.0f, focus_bg.getSize().y / 2.0f);
+	focus_bg.setPosition(viewWorldCenterX, viewWorldCenterY);
+
+	focuses[0].setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 4.0f);
+	focuses_text[0] = sf::Text("Three Principles of the People", defaultFont, 50);
+
+	for (int i = 0; i < maxFocusAmount; ++i) {
+		focuses[i].setSize(sf::Vector2f(viewWorldSizeX / 9.0f, viewWorldSizeX / 9.0f / 94.0f * 86.0f));
+		focuses[i].setOrigin(focuses[i].getSize().x / 2.0f, focuses[i].getSize().y / 2.0f);
+
+		focuses_bg[i] = focus_select;
+		focuses_bg[i].setSize(sf::Vector2f(focuses_bg[i].getSize().x * 2.0f, focuses_bg[i].getSize().y));
+		focuses_bg[i].setPosition(focuses[i].getPosition() + sf::Vector2f(0.0f, 
+			focuses[i].getSize().y / 2.0f));
+		focuses_bg[i].setOrigin(focuses_bg[i].getSize().x / 2.0f, focuses_bg[i].getSize().y / 2.0f);
+
+		focuses_text[i].setOrigin(focuses_text[i].getGlobalBounds().getSize().x / 2.0f,
+			focuses_text[i].getGlobalBounds().getSize().y / 2.0f);
+		focuses_text[i].setPosition(focuses_bg[i].getPosition());
 	}
 }

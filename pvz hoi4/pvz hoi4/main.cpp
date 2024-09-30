@@ -52,7 +52,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	sf::RectangleShape worldRect(sf::Vector2f(mapRatio * 5632.0f, mapRatio * 2048.0f)); //5632*2048
 	//window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
 	//world.setOrigin(93000.0f, 19500.0f);
-	sf::Texture texture_world;
 	//world_image.loadFromFile("world_images/world.png");
 	texture_world.loadFromImage(world_image); //sf::IntRect(4555, 920, 200, 200)
 	worldRect.setTexture(&texture_world);
@@ -189,11 +188,27 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	menuMenuText.setString("MENU");
 	menuMenuText.setFillColor(sf::Color::Green);
 
+	sf::Texture focus_select_texture;
+	focus_select_texture.loadFromImage(getHoi4Image("focus", "can_start_bg"));
+	focus_select.setTexture(&focus_select_texture);
+
+	sf::Texture focus_bg_texture;
+	focus_bg_texture.loadFromImage(getHoi4Image("focus", "tiled_bg"));
+	focus_bg.setTexture(&focus_bg_texture);
+
+	bool inFocus = false;
+	initFocus();
+
 	while (window.isOpen())
 	{
 		sf::Event evt;
 		sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
 		sf::Vector2f mousePos = window.mapPixelToCoords(pixelPos);
+
+		const float viewWorldCenterX = view_world.getCenter().x;
+		const float viewWorldCenterY = view_world.getCenter().y;
+		const float viewWorldSizeX = view_world.getSize().x;
+		const float viewWorldSizeY = view_world.getSize().y;
 
 		while (window.pollEvent(evt))
 		{
@@ -201,7 +216,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			default:
 			case 0:
 				if (evt.type == sf::Event::MouseWheelScrolled) {
-					if (!loggingIn && plantExist(0)) {
+					if (!loggingIn && plantExist(0) && !inFocus) {
 						zoomViewAt({ evt.mouseWheelScroll.x, evt.mouseWheelScroll.y }, window,
 							std::pow(1.1f, -evt.mouseWheelScroll.delta), view_world);
 						view_world = window.getView();
@@ -235,8 +250,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						inputs.pop();
 					}
 					if (isKonamiCodeEntered(inputs)) {
-						//winLevel();
-						ShellExecute(0, 0, L"https://tinyurl.com/marcwu531underphaith706", 0, 0, SW_SHOW);
+						winLevel();
+						//ShellExecute(0, 0, L"https://tinyurl.com/marcwu531underphaith706", 0, 0, SW_SHOW);
 						while (!inputs.empty()) {
 							inputs.pop();
 						}
@@ -290,7 +305,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			//view = window.getView();
 			int dtx = 0, dty = 0;
 
-			if (!loggingIn && plantExist(0)) {
+			if (!loggingIn && plantExist(0) && !inFocus) {
 				if (!(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) &&
 					sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))) {
 					if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) dtx = 1;
@@ -322,7 +337,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !leftClicking) {
 				leftClicking = true;
 
-				if (carKeys.getGlobalBounds().contains(mousePos)) {
+				if (inFocus) {
+					if (focus_select.getGlobalBounds().contains(mousePos)) {
+						inFocus = false;
+					}
+				}
+				else if (carKeys.getGlobalBounds().contains(mousePos)) {
 					shopping = !shopping;
 					loggingIn = false;
 				} 
@@ -356,19 +376,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							window.mapPixelToCoords(sf::Mouse::getPosition(window)).x / mapRatio,
 							window.mapPixelToCoords(sf::Mouse::getPosition(window)).y / mapRatio);*/
 					if (!loggingIn && plantExist(0)) {
-						const sf::FloatRect rectBounds = levelStart.getGlobalBounds();
-
-						if (clicking_state.empty() || !rectBounds.contains(mousePos)) {
-							//std::cout << mouseInMapPosX << std::endl;
-							//std::cout << mouseInMapPosY << std::endl;
-
-							std::string levelIdStr =
-								checkClickingState((mousePos.x - worldRect.getPosition().x) / mapRatio,
-									(mousePos.y - worldRect.getPosition().y) / mapRatio);
-							if (!levelIdStr.empty()) levelId.setString(levelIdStr);
+						if (focus_select.getGlobalBounds().contains(mousePos)) {
+							inFocus = true;
+							setFocusProperties(viewWorldSizeX, viewWorldSizeY, viewWorldCenterX, viewWorldCenterY);
 						}
-						else if (levelStartButton.getGlobalBounds().contains(mousePos)) {
-							changeScene(1);
+						else {
+							const sf::FloatRect rectBounds = levelStart.getGlobalBounds();
+
+							if (clicking_state.empty() || !rectBounds.contains(mousePos)) {
+								//std::cout << mouseInMapPosX << std::endl;
+								//std::cout << mouseInMapPosY << std::endl;
+
+								std::string levelIdStr =
+									checkClickingState((mousePos.x - worldRect.getPosition().x) / mapRatio,
+										(mousePos.y - worldRect.getPosition().y) / mapRatio);
+								if (!levelIdStr.empty()) levelId.setString(levelIdStr);
+							}
+							else if (levelStartButton.getGlobalBounds().contains(mousePos)) {
+								changeScene(1);
+							}
 						}
 					}
 					else {
@@ -398,6 +424,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 									usernameText.setString(account.username);
 									username = account.username;
 									exportAccountText.setString("Imported Successfully");
+									updateWorldColour();
 								}
 								else {
 									exportAccountText.setString("Invalid Data");
@@ -408,6 +435,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							if (seedPackets[seedPacketIdToString(0)].getGlobalBounds().contains(mousePos)) {
 								flag_rect.setOrigin(0, 0);
 								unlockPlant(0);
+								flag = "Taiwan";
 							}
 						}
 					}
@@ -542,190 +570,205 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		case 0:
 		{
 			window.setView(view_world);
-			window.draw(worldRect); // render first: at bottom
 
-			worldPos = worldRect.getPosition();
-			const float viewWorldCenterX = view_world.getCenter().x;
-			const float viewWorldCenterY = view_world.getCenter().y;
-			const float viewWorldSizeX = view_world.getSize().x;
-			const float viewWorldSizeY = view_world.getSize().y;
+			if (inFocus) {
+				window.draw(focus_bg);
+				window.draw(focus_select);
 
-			if (blinkMap_readyToDraw.load()) {
-				world_blink.setTexture(&texture_blink);
-				blinkMap_readyToDraw.store(false);
-			}
-
-			if (!clicking_state.empty()) {
-				{
-					std::shared_lock<std::shared_mutex> mapReadLock(mapMutex);
-					world_blink.setPosition(sf::Vector2f(mapSx * mapRatio, mapSy * mapRatio) + worldPos);
-					window.draw(world_blink);
+				for (int i = 0; i < maxFocusAmount; ++i) {
+					window.draw(focuses_bg[i]);
+					window.draw(focuses[i]);
+					window.draw(focuses_text[i]);
 				}
-
-				levelStart.setSize(sf::Vector2f(viewWorldSizeX / 2.0f, viewWorldSizeY));
-				levelStart.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
-					viewWorldCenterY - viewWorldSizeY / 2.0f);
-
-				const sf::FloatRect rectBounds = levelStart.getGlobalBounds();
-
-				const sf::FloatRect levelIdTextBounds = levelId.getLocalBounds();
-
-				levelId.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 20.0f)));
-				levelId.setOrigin(levelIdTextBounds.left + levelIdTextBounds.width / 2.0f,
-					levelIdTextBounds.top + levelIdTextBounds.height / 2.0f);
-				levelId.setPosition(std::trunc(rectBounds.left + rectBounds.width / 2.0f),
-					std::trunc(rectBounds.top + rectBounds.height / 3.0f));
-
-				window.draw(levelStart);
-
-				if (world == 1 && level <= 3) {
-					levelStartText.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 38.4f)));
-
-					const sf::FloatRect textBounds = levelStartText.getLocalBounds();
-
-					levelStartText.setOrigin(textBounds.left + textBounds.width / 2.0f,
-						textBounds.top + textBounds.height / 2.0f);
-					levelStartText.setPosition(std::trunc(rectBounds.left + rectBounds.width / 2.0f),
-						std::trunc(rectBounds.top + rectBounds.height / 2.0f));
-
-					levelStartButton.setSize(sf::Vector2f(textBounds.width, textBounds.height));
-					levelStartButton.setPosition(levelStartText.getPosition().x - textBounds.width / 2.0f,
-						levelStartText.getPosition().y - textBounds.height / 2.0f);
-
-					window.draw(levelStartButton);
-					window.draw(levelStartText);
-				}
-
-				window.draw(levelId);
-			}
-
-			if (loadFlag_readyToDraw.load()) {
-				flag_rect.setTexture(&flag_texture);
-				loadFlag_readyToDraw.store(false);
-			}
-
-			if (!flag.empty()) {
-				flag_rect.setSize(sf::Vector2f(15 * mapRatio * viewWorldSizeX / window.getSize().x,
-					10 * mapRatio * viewWorldSizeY / window.getSize().y)); // 3:2
-				flag_rect.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
-					viewWorldCenterY - viewWorldSizeY / 2.0f);
-				window.draw(flag_rect);
-			}
-
-			accountButton.setSize(sf::Vector2f(viewWorldSizeX / 15.0f,
-				viewWorldSizeX / 15.0f / (1.0f + std::sqrt(5.0f)) * 2.0f));
-			accountButton.setOrigin(accountButton.getSize());
-			accountButton.setPosition(viewWorldCenterX + viewWorldSizeX / 2.0f,
-				viewWorldCenterY + viewWorldSizeY * 0.46f);
-			//(e * (pi * pi - 1.0f)) / (10.0f * pi * phi)
-
-			if (loggingIn) {
-				loginMenu.setSize(sf::Vector2f(viewWorldSizeX / 3.0f, 2.0f * viewWorldSizeY / 3.0f));
-				loginMenu.setPosition(viewWorldCenterX - loginMenu.getSize().x / 2.0f,
-					viewWorldCenterY - 3.0f * viewWorldSizeY / 8.0f);
-
-				usernameBox.setSize(sf::Vector2f(viewWorldSizeX / 5.0f, 2.0f * viewWorldSizeY / 50.0f));
-				usernameBox.setPosition(viewWorldCenterX - usernameBox.getSize().x / 2.0f,
-					viewWorldCenterY - viewWorldSizeY / 4.0f);
-				usernameBox.setOutlineThickness(viewWorldSizeX / 1000.0f);
-
-				usernameText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 50.0f));
-				usernameText.setOrigin(usernameText.getGlobalBounds().width / 2.0f, 0.0f);
-				usernameText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 4.0f);
-
-				saveUsernameButton.setSize(sf::Vector2f(viewWorldSizeX / 8.0f, 2.0f * viewWorldSizeY / 30.0f));
-				saveUsernameButton.setPosition(viewWorldCenterX - saveUsernameButton.getSize().x / 2.0f,
-					viewWorldCenterY - viewWorldSizeY / 32.0f);
-
-				saveUsernameText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 30.0f));
-				saveUsernameText.setOrigin(saveUsernameText.getGlobalBounds().width / 2.0f, 0.0f);
-				saveUsernameText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 32.0f);
-
-				exportAccountText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 50.0f));
-				exportAccountText.setOrigin(exportAccountText.getGlobalBounds().width / 2.0f, 0.0f);
-				exportAccountText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 8.0f);
-
-				clipboardCopy.setSize(sf::Vector2f(viewWorldSizeX / 50.0f, viewWorldSizeY / 25.0f));
-				clipboardCopy.setPosition(saveUsernameButton.getPosition().x - clipboardCopy.getSize().x,
-					saveUsernameButton.getPosition().y + saveUsernameButton.getSize().y / 2.0f 
-					- clipboardCopy.getSize().y / 2.0f);
-
-				loadAccountButton.setSize(sf::Vector2f(viewWorldSizeX / 8.0f, 2.0f * viewWorldSizeY / 30.0f));
-				loadAccountButton.setPosition(viewWorldCenterX - loadAccountButton.getSize().x / 2.0f,
-					viewWorldCenterY + viewWorldSizeY / 16.0f);
-
-				clipboardPaste.setSize(sf::Vector2f(viewWorldSizeX / 50.0f, viewWorldSizeY / 25.0f));
-				clipboardPaste.setPosition(loadAccountButton.getPosition().x,
-					loadAccountButton.getPosition().y + loadAccountButton.getSize().y / 2.0f
-					- clipboardPaste.getSize().y / 2.0f);
-
-				loadAccountText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 30.0f));
-				loadAccountText.setOrigin(loadAccountText.getGlobalBounds().width / 2.0f, 0.0f);
-				loadAccountText.setPosition(viewWorldCenterX, viewWorldCenterY + viewWorldSizeY / 16.0f);
-
-				window.draw(loginMenu);
-				window.draw(usernameBox);
-				window.draw(usernameText);
-				window.draw(saveUsernameButton);
-				window.draw(saveUsernameText);
-				window.draw(exportAccountText);
-				window.draw(clipboardCopy);
-				window.draw(loadAccountButton);
-				window.draw(clipboardPaste);
-				window.draw(loadAccountText);
-			}
-			else if (shopping) {
-				storeCar.setSize(sf::Vector2f(viewWorldSizeX, viewWorldSizeY));
-				storeCar.setOrigin(storeCar.getGlobalBounds().width / 2.0f, storeCar.getGlobalBounds().height / 2.0f);
-				storeCar.setPosition(viewWorldCenterX, viewWorldCenterY);
-
-				shopLawnMower.setSize(sf::Vector2f(viewWorldSizeX / 13.0f, viewWorldSizeX / 13.0f / 89.0f * 75.0f));
-				shopLawnMower.setPosition(viewWorldCenterX - viewWorldSizeX / 5.0f, 
-					viewWorldCenterY - viewWorldSizeY / 3.0f);
-				shopLawnMower.setFillColor(account.unlockedLawnMower ? sf::Color(100, 100, 100, 200)
-					: sf::Color(255, 255, 255, 255));
-
-				window.draw(storeCar);
-				window.draw(shopLawnMower);
 			}
 			else {
-				if (!plantExist(0)) {
-					selectCountryScreen.setSize(sf::Vector2f(viewWorldSizeX, 4.0f * viewWorldSizeY / 5.0f));
-					selectCountryScreen.setPosition(viewWorldCenterX - selectCountryScreen.getSize().x / 2.0f,
-						viewWorldCenterY - selectCountryScreen.getSize().y / 2.0f);
+				window.draw(worldRect); // render first: at bottom
 
-					sf::RectangleShape& ps = seedPackets[seedPacketIdToString(0)];
-					ps.setSize(sf::Vector2f(viewWorldSizeX / 10.0f, viewWorldSizeX / 10.0f * 7.0f / 5.0f));
-					ps.setOrigin(ps.getSize().x / 2.0f, ps.getSize().y);
-					ps.setPosition(viewWorldCenterX,
-						selectCountryScreen.getPosition().y + selectCountryScreen.getSize().y * 0.9f);
+				worldPos = worldRect.getPosition();
 
-					selectCountryText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 20.0f));
-					selectCountryText.setOrigin(selectCountryText.getGlobalBounds().width / 2.0f, 0.0f);
-					selectCountryText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 2.5f);
-
-					flag_rect.setSize(sf::Vector2f(viewWorldSizeX / 5.0f, viewWorldSizeX / 5.0f * 2.0f / 3.0f));
-					flag_rect.setOrigin(flag_rect.getSize().x / 2.0f, 0);
-					flag_rect.setPosition(viewWorldCenterX, selectCountryScreen.getPosition().y + 
-						selectCountryText.getGlobalBounds().height * 1.5f);
-
-					window.draw(selectCountryScreen);
-					window.draw(seedPackets[seedPacketIdToString(0)]);
-					window.draw(selectCountryText);
-					window.draw(flag_rect);
+				if (blinkMap_readyToDraw.load()) {
+					world_blink.setTexture(&texture_blink);
+					blinkMap_readyToDraw.store(false);
 				}
-			}
 
-			window.draw(accountButton);
+				if (!clicking_state.empty()) {
+					{
+						std::shared_lock<std::shared_mutex> mapReadLock(mapMutex);
+						world_blink.setPosition(sf::Vector2f(mapSx * mapRatio, mapSy * mapRatio) + worldPos);
+						window.draw(world_blink);
+					}
 
-			if (plantExist(1)) {
-				carKeys.setSize(sf::Vector2f(viewWorldSizeY / 8.0f / 89.0f * 130.0f, viewWorldSizeY / 8.0f));
-				carKeys.setOrigin(0, carKeys.getGlobalBounds().height);
-				carKeys.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
+					levelStart.setSize(sf::Vector2f(viewWorldSizeX / 2.0f, viewWorldSizeY));
+					levelStart.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
+						viewWorldCenterY - viewWorldSizeY / 2.0f);
+
+					const sf::FloatRect rectBounds = levelStart.getGlobalBounds();
+
+					const sf::FloatRect levelIdTextBounds = levelId.getLocalBounds();
+
+					levelId.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 20.0f)));
+					levelId.setOrigin(levelIdTextBounds.left + levelIdTextBounds.width / 2.0f,
+						levelIdTextBounds.top + levelIdTextBounds.height / 2.0f);
+					levelId.setPosition(std::trunc(rectBounds.left + rectBounds.width / 2.0f),
+						std::trunc(rectBounds.top + rectBounds.height / 3.0f));
+
+					window.draw(levelStart);
+
+					if (world == 1 && level <= 3) {
+						levelStartText.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 38.4f)));
+
+						const sf::FloatRect textBounds = levelStartText.getLocalBounds();
+
+						levelStartText.setOrigin(textBounds.left + textBounds.width / 2.0f,
+							textBounds.top + textBounds.height / 2.0f);
+						levelStartText.setPosition(std::trunc(rectBounds.left + rectBounds.width / 2.0f),
+							std::trunc(rectBounds.top + rectBounds.height / 2.0f));
+
+						levelStartButton.setSize(sf::Vector2f(textBounds.width, textBounds.height));
+						levelStartButton.setPosition(levelStartText.getPosition().x - textBounds.width / 2.0f,
+							levelStartText.getPosition().y - textBounds.height / 2.0f);
+
+						window.draw(levelStartButton);
+						window.draw(levelStartText);
+					}
+
+					window.draw(levelId);
+				}
+
+				accountButton.setSize(sf::Vector2f(viewWorldSizeX / 15.0f,
+					viewWorldSizeX / 15.0f / (1.0f + std::sqrt(5.0f)) * 2.0f));
+				accountButton.setOrigin(accountButton.getSize());
+				accountButton.setPosition(viewWorldCenterX + viewWorldSizeX / 2.0f,
 					viewWorldCenterY + viewWorldSizeY * 0.46f);
-				carKeys.setTexture(carKeys.getGlobalBounds().contains(mousePos) ? 
-					&carKeysHighlightTexture : &carKeysTexture);
-				window.draw(carKeys);
+				//(e * (pi * pi - 1.0f)) / (10.0f * pi * phi)
+
+				if (loggingIn) {
+					loginMenu.setSize(sf::Vector2f(viewWorldSizeX / 3.0f, 2.0f * viewWorldSizeY / 3.0f));
+					loginMenu.setPosition(viewWorldCenterX - loginMenu.getSize().x / 2.0f,
+						viewWorldCenterY - 3.0f * viewWorldSizeY / 8.0f);
+
+					usernameBox.setSize(sf::Vector2f(viewWorldSizeX / 5.0f, 2.0f * viewWorldSizeY / 50.0f));
+					usernameBox.setPosition(viewWorldCenterX - usernameBox.getSize().x / 2.0f,
+						viewWorldCenterY - viewWorldSizeY / 4.0f);
+					usernameBox.setOutlineThickness(viewWorldSizeX / 1000.0f);
+
+					usernameText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 50.0f));
+					usernameText.setOrigin(usernameText.getGlobalBounds().width / 2.0f, 0.0f);
+					usernameText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 4.0f);
+
+					saveUsernameButton.setSize(sf::Vector2f(viewWorldSizeX / 8.0f, 2.0f * viewWorldSizeY / 30.0f));
+					saveUsernameButton.setPosition(viewWorldCenterX - saveUsernameButton.getSize().x / 2.0f,
+						viewWorldCenterY - viewWorldSizeY / 32.0f);
+
+					saveUsernameText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 30.0f));
+					saveUsernameText.setOrigin(saveUsernameText.getGlobalBounds().width / 2.0f, 0.0f);
+					saveUsernameText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 32.0f);
+
+					exportAccountText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 50.0f));
+					exportAccountText.setOrigin(exportAccountText.getGlobalBounds().width / 2.0f, 0.0f);
+					exportAccountText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 8.0f);
+
+					clipboardCopy.setSize(sf::Vector2f(viewWorldSizeX / 50.0f, viewWorldSizeY / 25.0f));
+					clipboardCopy.setPosition(saveUsernameButton.getPosition().x - clipboardCopy.getSize().x,
+						saveUsernameButton.getPosition().y + saveUsernameButton.getSize().y / 2.0f
+						- clipboardCopy.getSize().y / 2.0f);
+
+					loadAccountButton.setSize(sf::Vector2f(viewWorldSizeX / 8.0f, 2.0f * viewWorldSizeY / 30.0f));
+					loadAccountButton.setPosition(viewWorldCenterX - loadAccountButton.getSize().x / 2.0f,
+						viewWorldCenterY + viewWorldSizeY / 16.0f);
+
+					clipboardPaste.setSize(sf::Vector2f(viewWorldSizeX / 50.0f, viewWorldSizeY / 25.0f));
+					clipboardPaste.setPosition(loadAccountButton.getPosition().x,
+						loadAccountButton.getPosition().y + loadAccountButton.getSize().y / 2.0f
+						- clipboardPaste.getSize().y / 2.0f);
+
+					loadAccountText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 30.0f));
+					loadAccountText.setOrigin(loadAccountText.getGlobalBounds().width / 2.0f, 0.0f);
+					loadAccountText.setPosition(viewWorldCenterX, viewWorldCenterY + viewWorldSizeY / 16.0f);
+
+					window.draw(loginMenu);
+					window.draw(usernameBox);
+					window.draw(usernameText);
+					window.draw(saveUsernameButton);
+					window.draw(saveUsernameText);
+					window.draw(exportAccountText);
+					window.draw(clipboardCopy);
+					window.draw(loadAccountButton);
+					window.draw(clipboardPaste);
+					window.draw(loadAccountText);
+				}
+				else if (shopping) {
+					storeCar.setSize(sf::Vector2f(viewWorldSizeX, viewWorldSizeY));
+					storeCar.setOrigin(storeCar.getGlobalBounds().width / 2.0f, storeCar.getGlobalBounds().height / 2.0f);
+					storeCar.setPosition(viewWorldCenterX, viewWorldCenterY);
+
+					shopLawnMower.setSize(sf::Vector2f(viewWorldSizeX / 13.0f, viewWorldSizeX / 13.0f / 89.0f * 75.0f));
+					shopLawnMower.setPosition(viewWorldCenterX - viewWorldSizeX / 5.0f,
+						viewWorldCenterY - viewWorldSizeY / 3.0f);
+					shopLawnMower.setFillColor(account.unlockedLawnMower ? sf::Color(100, 100, 100, 200)
+						: sf::Color(255, 255, 255, 255));
+
+					window.draw(storeCar);
+					window.draw(shopLawnMower);
+				}
+				else {
+					if (loadFlag_readyToDraw.load()) {
+						flag_rect.setTexture(&flag_texture);
+						loadFlag_readyToDraw.store(false);
+					}
+
+					if (!flag.empty()) {
+						flag_rect.setSize(sf::Vector2f(15 * mapRatio * viewWorldSizeX / window.getSize().x,
+							10 * mapRatio * viewWorldSizeY / window.getSize().y)); // 3:2
+						flag_rect.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
+							viewWorldCenterY - viewWorldSizeY / 2.0f);
+						window.draw(flag_rect);
+					}
+
+					if (!plantExist(0)) {
+						selectCountryScreen.setSize(sf::Vector2f(viewWorldSizeX, 4.0f * viewWorldSizeY / 5.0f));
+						selectCountryScreen.setPosition(viewWorldCenterX - selectCountryScreen.getSize().x / 2.0f,
+							viewWorldCenterY - selectCountryScreen.getSize().y / 2.0f);
+
+						sf::RectangleShape& ps = seedPackets[seedPacketIdToString(0)];
+						ps.setSize(sf::Vector2f(viewWorldSizeX / 10.0f, viewWorldSizeX / 10.0f * 7.0f / 5.0f));
+						ps.setOrigin(ps.getSize().x / 2.0f, ps.getSize().y);
+						ps.setPosition(viewWorldCenterX,
+							selectCountryScreen.getPosition().y + selectCountryScreen.getSize().y * 0.9f);
+
+						selectCountryText.setCharacterSize(static_cast<unsigned int>(viewWorldSizeX / 20.0f));
+						selectCountryText.setOrigin(selectCountryText.getGlobalBounds().width / 2.0f, 0.0f);
+						selectCountryText.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 2.5f);
+
+						flag_rect.setSize(sf::Vector2f(viewWorldSizeX / 5.0f, viewWorldSizeX / 5.0f * 2.0f / 3.0f));
+						flag_rect.setOrigin(flag_rect.getSize().x / 2.0f, 0);
+						flag_rect.setPosition(viewWorldCenterX, selectCountryScreen.getPosition().y +
+							selectCountryText.getGlobalBounds().height * 1.5f);
+
+						window.draw(selectCountryScreen);
+						window.draw(seedPackets[seedPacketIdToString(0)]);
+						window.draw(selectCountryText);
+						window.draw(flag_rect);
+					}
+					else {
+						focus_select.setSize(sf::Vector2f(viewWorldSizeX / 7.0f, viewWorldSizeY / 10.0f));
+						focus_select.setOrigin(focus_select.getSize().x / 2.0f, 0);
+						focus_select.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 2.0f);
+						window.draw(focus_select);
+					}
+				}
+
+				window.draw(accountButton);
+
+				if (plantExist(1)) {
+					carKeys.setSize(sf::Vector2f(viewWorldSizeY / 8.0f / 89.0f * 130.0f, viewWorldSizeY / 8.0f));
+					carKeys.setOrigin(0, carKeys.getGlobalBounds().height);
+					carKeys.setPosition(viewWorldCenterX - viewWorldSizeX / 2.0f,
+						viewWorldCenterY + viewWorldSizeY * 0.46f);
+					carKeys.setTexture(carKeys.getGlobalBounds().contains(mousePos) ?
+						&carKeysHighlightTexture : &carKeysTexture);
+					window.draw(carKeys);
+				}
 			}
 			break;
 		}
@@ -942,4 +985,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.58
+//Version 1.0.59

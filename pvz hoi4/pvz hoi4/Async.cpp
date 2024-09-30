@@ -148,7 +148,6 @@ inline static float getAnimRatioById(int id) {
 static void updateZombieAnim() {
 	for (auto& zombie : zombiesOnScene) {
 		auto& sprite = zombie.anim.sprite;
-		//++zombie.anim.frameId;
 
 		if (zombie.anim.frameId > getZombieMaxAnimFramesById(zombie.anim.animId) * animSpeed
 			* getAnimRatioById(zombie.anim.animId)) zombie.anim.frameId = 0;
@@ -158,8 +157,10 @@ static void updateZombieAnim() {
 		}
 
 		sprite.setTextureRect(getZombieAnimFrameFromId(zombie.anim.animId).find(
-			static_cast<int>(std::trunc(++zombie.anim.frameId / animSpeed //last ++
+			static_cast<int>(std::trunc(zombie.anim.frameId / animSpeed
 				/ getAnimRatioById(zombie.anim.animId))))->second.frameRect);
+
+		++zombie.anim.frameId;
 	}
 }
 

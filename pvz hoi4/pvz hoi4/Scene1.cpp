@@ -171,6 +171,7 @@ bool plantExist(int id) {
 void unlockPlant(int id) {
 	if (account.plantsLevel[id] == 0) {
 		account.plantsLevel[id] = 1;
+		updateSpecificWorldColour(id);
 	}
 }
 

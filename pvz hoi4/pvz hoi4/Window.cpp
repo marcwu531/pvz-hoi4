@@ -2,13 +2,14 @@
 #include <nlohmann/json.hpp>
 #include <queue>
 #include <SFML/Graphics.hpp>
+#include <windows.h>
 
 #include "Colour.h"
+#include "Display.h"
 #include "State.h"
 #include "Window.h"
 
 #ifdef RUN_DEBUG
-#include <windows.h>
 #include <signal.h>
 
 void AttachConsole() {
@@ -82,7 +83,7 @@ void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::Vi
 std::array<std::string, 2> clickingState(sf::Image& image, float mouseInMapPosX, float mouseInMapPosY) {
 	int x = static_cast<int>(mouseInMapPosX), y = static_cast<int>(mouseInMapPosY);
 
-	auto rgba = getRGBA(image, x, y);
+	auto rgba = getRGBA(og_world_image, x, y);
 	for (const auto& region : Regions) {
 		for (const std::string& state : region.second) {
 			auto state_rgba_iter = state_rgba.find(state);

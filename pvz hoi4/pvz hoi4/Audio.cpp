@@ -5,7 +5,7 @@
 
 #include "Audio.h"
 
-//#define NSOUND
+#define NSOUND
 
 static sf::Music* loadMusicFromResource(HINSTANCE hInstance, int resourceId, size_t& resourceSize) {
 	auto music = new sf::Music();

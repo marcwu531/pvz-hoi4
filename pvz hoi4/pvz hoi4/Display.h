@@ -3,6 +3,8 @@
 
 #include <variant>
 
+const int maxFocusAmount = 1;
+
 extern sf::Font defaultFont;
 
 extern sf::Texture flag_texture;
@@ -133,11 +135,18 @@ extern sf::Sprite explosionPowie;
 extern sf::Sprite zombieFlagWalk;
 extern std::unordered_map<int, SpriteFrame> zombieFlagWalkFrames;
 extern sf::Texture zombieFlagWalkSprites;
+extern std::unordered_map<int, sf::RectangleShape> focuses;
+extern std::unordered_map<int, sf::Texture> focus_textures;
+extern std::unordered_map<int, sf::RectangleShape> focuses_bg;
+extern sf::RectangleShape focus_select;
+extern sf::RectangleShape focus_bg;
+extern std::unordered_map<int, sf::Text> focuses_text;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea);
 
 extern HINSTANCE nullHInstance;
+extern sf::Texture texture_world;
 extern sf::Image world_image;
 extern std::unordered_map<std::string, sf::Image> flagImages;
 extern std::unordered_map<std::string, std::unordered_map<std::string, sf::Image>> pvzImages;
@@ -149,6 +158,7 @@ extern sf::View view_world;
 extern sf::View view_background;
 sf::Image getFlagImage(const std::string& country);
 sf::Image getPvzImage(const std::string& type, std::string target);
+sf::Image getHoi4Image(const std::string& type, std::string target);
 std::vector<char> loadResourceData(HINSTANCE hInstance, int resourceId);
 std::string checkClickingState(float mouseInMapPosX, float mouseInMapPosY);
 void changeScene(int targetScene);
@@ -159,4 +169,9 @@ const int maxParticleAmount = 1;
 float getParticalInitialFloat(const std::variant<std::string, float>& var);
 std::optional<std::array<float, 2>> getParticleFloatAsArray(const std::variant<std::string, float>& var);
 sf::Uint8 clampColor(float value);
+void updateWorldColour();
+extern sf::Image og_world_image;
+bool updateSpecificWorldColour(int j, bool update = true);
+void initFocus();
+void setFocusProperties(float viewWorldSizeX, float viewWorldSizeY, float viewWorldCenterX, float viewWorldCenterY);
 #endif
