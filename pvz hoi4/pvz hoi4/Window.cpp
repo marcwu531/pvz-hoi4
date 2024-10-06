@@ -63,20 +63,45 @@ void handle_aborts(int signal_number) {
 
 float currentZoom = 1.0f;
 
-void zoomViewAt(sf::Vector2i pixel, sf::RenderWindow& window, float zoom, sf::View& view) {
-	//std::cout << zoom << std::endl;
-	//sf::View view = window.getView();
-	if (currentZoom * zoom <= 7.06f && currentZoom * zoom >= 0.531f) {
-		const sf::Vector2f beforeCoord{ window.mapPixelToCoords(pixel) };
+void zoomViewAt(sf::RectangleShape& worldRect, float zoom) {
+	// Get the current scale of the worldRect
+	sf::Vector2f currentScale = worldRect.getScale();
 
-		view.zoom(zoom);
-		currentZoom *= zoom;
+	// Get the world position of the mouse before zooming
+	sf::Vector2f beforeZoomCoord = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
-		window.setView(view);
-		const sf::Vector2f afterCoord{ window.mapPixelToCoords(pixel) };
-		const sf::Vector2f offsetCoords{ beforeCoord - afterCoord };
-		view.move(offsetCoords);
-		window.setView(view);
+	// Use the original scaling logic you provided
+	float scaleF = currentScale.x + --zoom;
+	sf::Vector2f newScale = sf::Vector2f(scaleF, scaleF);
+
+	// Clamp the scale values to be within limits (0.531 to 7.06)
+	newScale.x = std::clamp(newScale.x, 0.531f, 7.06f);
+	newScale.y = std::clamp(newScale.y, 0.531f, 7.06f);
+
+	// Only apply scaling if the new scale is different
+	if (newScale != currentScale) {
+		sf::Vector2f rectPosition = worldRect.getPosition();
+
+		// Calculate the size of the rectangle based on the current scale
+		sf::Vector2f currentSize = worldRect.getGlobalBounds().getSize();
+
+		// Calculate the center of the rectangle
+		sf::Vector2f rectCenter = rectPosition + currentSize / 2.0f;
+
+		// Calculate the offset of the mouse position relative to the rectangle's center
+		sf::Vector2f mouseOffset = beforeZoomCoord - rectCenter;
+
+		// Apply the new scale to the worldRect
+		worldRect.setScale(newScale);
+
+		// Get the size after scaling
+		sf::Vector2f newSize = worldRect.getGlobalBounds().getSize();
+
+		// Calculate the new center of the rectangle after scaling
+		sf::Vector2f newRectCenter = rectPosition + newSize / 2.0f;
+
+		// Move the rectangle to maintain the mouse offset from the center
+		worldRect.setPosition(rectCenter - mouseOffset + newRectCenter);
 	}
 }
 

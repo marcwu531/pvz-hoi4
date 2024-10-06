@@ -141,6 +141,7 @@ extern std::unordered_map<int, sf::RectangleShape> focuses_bg;
 extern sf::RectangleShape focus_select;
 extern sf::RectangleShape focus_bg;
 extern std::unordered_map<int, sf::Text> focuses_text;
+extern sf::Text focus_text;
 
 sf::Image loadImageFromResource(HINSTANCE hInstance, UINT resourceID);
 sf::Image cropImage(const sf::Image& image, const sf::IntRect& cropArea);

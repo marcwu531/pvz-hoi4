@@ -116,6 +116,7 @@ std::unordered_map<int, sf::RectangleShape> focuses_bg;
 sf::RectangleShape focus_select;
 sf::RectangleShape focus_bg;
 std::unordered_map<int, sf::Text> focuses_text;
+sf::Text focus_text("", defaultFont, 50);
 
 sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
 //(1920, 1046)
@@ -655,7 +656,7 @@ void setFocusProperties(float viewWorldSizeX, float viewWorldSizeY,
 		focuses[i].setOrigin(focuses[i].getSize().x / 2.0f, focuses[i].getSize().y / 2.0f);
 
 		focuses_bg[i] = focus_select;
-		focuses_bg[i].setSize(sf::Vector2f(focuses_bg[i].getSize().x * 2.0f, focuses_bg[i].getSize().y));
+		//focuses_bg[i].setSize(sf::Vector2f(focuses_bg[i].getSize().x * 2.0f, focuses_bg[i].getSize().y));
 		focuses_bg[i].setPosition(focuses[i].getPosition() + sf::Vector2f(0.0f, 
 			focuses[i].getSize().y / 2.0f));
 		focuses_bg[i].setOrigin(focuses_bg[i].getSize().x / 2.0f, focuses_bg[i].getSize().y / 2.0f);

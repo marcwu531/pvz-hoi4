@@ -217,8 +217,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			case 0:
 				if (evt.type == sf::Event::MouseWheelScrolled) {
 					if (!loggingIn && plantExist(0) && !inFocus) {
-						zoomViewAt({ evt.mouseWheelScroll.x, evt.mouseWheelScroll.y }, window,
-							std::pow(1.1f, -evt.mouseWheelScroll.delta), view_world);
+						zoomViewAt(worldRect, std::pow(1.01f, evt.mouseWheelScroll.delta));
 						view_world = window.getView();
 						//std::cout << view.getCenter().x << " " << view.getCenter().y << std::endl;
 					}
@@ -340,6 +339,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				if (inFocus) {
 					if (focus_select.getGlobalBounds().contains(mousePos)) {
 						inFocus = false;
+					}
+					else {
+						for (int i = 0; i < maxFocusAmount; ++i) {
+							if (focuses[i].getGlobalBounds().contains(mousePos) ||
+								focuses_text[i].getGlobalBounds().contains(mousePos) ||
+								focuses_bg[i].getGlobalBounds().contains(mousePos)) {
+								focus_text.setString(focuses_text[i].getString());
+								break;
+							}
+						}
 					}
 				}
 				else if (carKeys.getGlobalBounds().contains(mousePos)) {
@@ -574,6 +583,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			if (inFocus) {
 				window.draw(focus_bg);
 				window.draw(focus_select);
+				if (!focus_text.getString().isEmpty()) {
+					focus_text.setOrigin(focus_text.getGlobalBounds().width / 2.0f,
+						focus_text.getGlobalBounds().height / 2.0f);
+					focus_text.setPosition(focus_select.getPosition());
+					window.draw(focus_text);
+				}
 
 				for (int i = 0; i < maxFocusAmount; ++i) {
 					window.draw(focuses_bg[i]);
@@ -615,7 +630,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					window.draw(levelStart);
 
 					if (world == 1 && level <= 3) {
-						levelStartText.setCharacterSize(static_cast<unsigned int>(std::trunc(viewWorldSizeX / 38.4f)));
+						levelStartText.setCharacterSize(static_cast<unsigned int>(
+							std::trunc(viewWorldSizeX / 38.4f)));
 
 						const sf::FloatRect textBounds = levelStartText.getLocalBounds();
 
@@ -751,10 +767,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						window.draw(flag_rect);
 					}
 					else {
-						focus_select.setSize(sf::Vector2f(viewWorldSizeX / 7.0f, viewWorldSizeY / 10.0f));
-						focus_select.setOrigin(focus_select.getSize().x / 2.0f, 0);
-						focus_select.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 2.0f);
+						focus_select.setSize(sf::Vector2f(viewWorldSizeX / 3.5f, viewWorldSizeY / 10.0f));
+						focus_select.setOrigin(focus_select.getSize().x / 2.0f, focus_select.getSize().y / 2.0f);
+						focus_select.setPosition(viewWorldCenterX, viewWorldCenterY - viewWorldSizeY / 2.25f);
+
 						window.draw(focus_select);
+						if (!focus_text.getString().isEmpty()) {
+							focus_text.setOrigin(focus_text.getGlobalBounds().width / 2.0f,
+								focus_text.getGlobalBounds().height / 2.0f);
+							focus_text.setPosition(focus_select.getPosition());
+							window.draw(focus_text);
+						}
 					}
 				}
 
@@ -985,4 +1008,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.59
+//Version 1.0.60
