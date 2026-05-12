@@ -117,7 +117,7 @@ std::string getRGBA(const sf::Image& texture, int imageX, int imageY) {
 		getPixelColour(texture, imageX, imageY, 'g'),
 		getPixelColour(texture, imageX, imageY, 'b') }));
 	std::cout << ArrayFloat[0] << ", " << ArrayFloat[1] << ", " << ArrayFloat[2] << std::endl;*/
-	if (imageX < 0 || static_cast<unsigned int>(imageX) >= texture.getSize().x || 
+	if (imageX < 0 || static_cast<unsigned int>(imageX) >= texture.getSize().x ||
 		imageY < 0 || static_cast<unsigned int>(imageY) >= texture.getSize().y) return "-1 -1 -1 -1";
 
 	sf::Color color = texture.getPixel(imageX, imageY);

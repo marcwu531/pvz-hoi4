@@ -8,7 +8,7 @@ struct playerAccount {
 	bool unlockedLawnMower = false;
 };
 extern playerAccount account;
-std::string encryptAccount(const playerAccount& 
+std::string encryptAccount(const playerAccount&
 );
 std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount);
 bool tryDecryptAccount(const std::string& encryptedAccount);

@@ -54,7 +54,7 @@ void updatePacketPosition(size_t i, const sf::Vector2f& targetPosition, int elap
 	state[1] += elapsedTime * 2;
 
 	float distanceMoved = state[1] / 5.0f;
-	auto packetIterator = seedPackets.find(seedPacketIdToString(i));
+	auto packetIterator = seedPackets.find(seedPacketIdToString(static_cast<int>(i)));
 	if (packetIterator != seedPackets.end()) {
 		sf::Vector2f currentPosition = packetIterator->second.getPosition();
 
@@ -136,7 +136,7 @@ std::unordered_map<int, SpriteFrame>* getPlantIdleFrameById(int id) {
 }
 
 sf::Texture* getPlantAttackTextureById(int id) {
-	static sf::Texture* attackTextures[] = { &peashooterShootSprites, &sunflowerIdleSprites, 
+	static sf::Texture* attackTextures[] = { &peashooterShootSprites, &sunflowerIdleSprites,
 		&cherrybombIdleSprites };
 	return attackTextures[id];
 }
@@ -312,7 +312,7 @@ void initScene1Place() {
 
 	zombiesWon.setTexture(&zombiesWonTexture);
 	zombiesWon.setTextureRect(zombiesWonFrames[0].frameRect);
-	zombiesWon.setSize(sf::Vector2f(view_background.getSize().y / 3.0f * 4.0f, 
+	zombiesWon.setSize(sf::Vector2f(view_background.getSize().y / 3.0f * 4.0f,
 		view_background.getSize().y)); //800*600
 
 	optionsMenuback.setTexture(&optionsMenubackTexture);
@@ -335,7 +335,7 @@ void initScene1Place() {
 	zombieFlagWalk.setOrigin(zombieFlagWalk.getTextureRect().getSize().x / 4.0f * 3.0f,
 		zombieFlagWalk.getTextureRect().getSize().y / 5.0f * 4.0f);
 
-	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+	for (int i = 0; i < maxPlantAmount; ++i) {
 		idlePlants[idlePlantToString[i]].setTexture(*getPlantIdleTextureById(i));
 		idlePlants[idlePlantToString[i]].setTextureRect(getPlantIdleFrameById(i)->find(0)->second.frameRect);
 		idlePlants[idlePlantToString[i]].setScale(scene1ZoomSize, scene1ZoomSize);
@@ -435,11 +435,11 @@ void initializeScene1() {
 	zombieFlagWalkSprites.loadFromImage(zombieFlagWalkImage);
 	zombieFlagWalkFrames = parseSpriteSheetData(zombieFlagWalkJson);
 
-	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+	for (int i = 0; i < maxPlantAmount; ++i) {
 		getPlantIdleTextureById(i)->loadFromImage(getPvzImage("animations", idlePlantToString[i] + "Idle"));
 		*getPlantIdleFrameById(i) = parseSpriteSheetData(loadJsonFromResource(getPlantJsonIdById(i)));
 
-		getPlantAttackTextureById(i)->loadFromImage(getPvzImage("animations", 
+		getPlantAttackTextureById(i)->loadFromImage(getPvzImage("animations",
 			idlePlantToString[i] + getAttackAnimName(i)));
 		*getPlantAttackFrameById(i) = parseSpriteSheetData(loadJsonFromResource(getPlantJsonIdById(i, false)));
 
@@ -546,7 +546,7 @@ void createZombie(sf::Vector2f pos, int animId, int row) {
 	newZombie = getZombieSpriteById(animId);
 	newZombie.setPosition(pos);
 
-	float movementSpeedX = animId  == 4 ? -0.75f - (rand() % 26) / 100.0f : -0.5f - (rand() % 26) / 100.0f;
+	float movementSpeedX = animId == 4 ? -0.75f - (rand() % 26) / 100.0f : -0.5f - (rand() % 26) / 100.0f;
 
 	zombiesOnScene.push_back({ {newZombie, animId, rand() % 28, row}, 200, 0,
 		sf::Vector2f(movementSpeedX, 0.0f), nullptr });
@@ -562,7 +562,7 @@ void createProjectile(int type, sf::Vector2f pos) {
 
 void selectSeedPacket(sf::Vector2f mousePos) {
 	auto end = seedPackets.end();
-	for (size_t i = 0; i < static_cast<size_t>(maxPlantAmount); ++i) {
+	for (int i = 0; i < maxPlantAmount; ++i) {
 		if (plantExist(i)) {
 			auto it = seedPackets.find(seedPacketIdToString(i));
 			if (it != end && it->second.getGlobalBounds().contains(mousePos)) {
@@ -621,7 +621,7 @@ void selectSeedPacket(int id) { //--id;
 		}
 	}
 	else {
-		if (audios["sounds"]["buzzer"]->getStatus() != sf::Music::Playing) 
+		if (audios["sounds"]["buzzer"]->getStatus() != sf::Music::Playing)
 			audios["sounds"]["buzzer"]->play();
 		blinkSunText = 0;
 	}
@@ -740,7 +740,7 @@ void winLevel() {
 	awardScreen.setOrigin(awardScreen.getSize().x / 2.0f, awardScreen.getSize().y / 2.0f);
 	awardScreen.setPosition(view_background.getCenter());
 
-	if(!isMoneyBag) idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setPosition(view_background.getCenter() -
+	if (!isMoneyBag) idlePlants[idlePlantToString[getUnlockPlantIdByLevel()]].setPosition(view_background.getCenter() -
 		sf::Vector2f(0.0f, 0.15f * view_background.getSize().y));
 
 	seedPacketState.clear();

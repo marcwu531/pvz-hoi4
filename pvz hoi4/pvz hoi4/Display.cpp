@@ -584,7 +584,7 @@ void spawnParticle(int id, sf::Vector2f pos) {
 				particleValue["launchSpeedY"] = generateRandomNumber(emitter.launchSpeed);
 			}
 
-			particlesOnScene.push_back({ { particleRect, id, 0, std::nullopt }, 
+			particlesOnScene.push_back({ { particleRect, id, 0, std::nullopt },
 				emitter, particleRect, particleValue });
 		}
 	}
@@ -642,7 +642,7 @@ void initFocus() {
 	}
 }
 
-void setFocusProperties(float viewWorldSizeX, float viewWorldSizeY, 
+void setFocusProperties(float viewWorldSizeX, float viewWorldSizeY,
 	float viewWorldCenterX, float viewWorldCenterY) {
 	focus_bg.setSize(sf::Vector2f(viewWorldSizeX, viewWorldSizeY));
 	focus_bg.setOrigin(focus_bg.getSize().x / 2.0f, focus_bg.getSize().y / 2.0f);
@@ -657,7 +657,7 @@ void setFocusProperties(float viewWorldSizeX, float viewWorldSizeY,
 
 		focuses_bg[i] = focus_select;
 		//focuses_bg[i].setSize(sf::Vector2f(focuses_bg[i].getSize().x * 2.0f, focuses_bg[i].getSize().y));
-		focuses_bg[i].setPosition(focuses[i].getPosition() + sf::Vector2f(0.0f, 
+		focuses_bg[i].setPosition(focuses[i].getPosition() + sf::Vector2f(0.0f,
 			focuses[i].getSize().y / 2.0f));
 		focuses_bg[i].setOrigin(focuses_bg[i].getSize().x / 2.0f, focuses_bg[i].getSize().y / 2.0f);
 
@@ -665,4 +665,9 @@ void setFocusProperties(float viewWorldSizeX, float viewWorldSizeY,
 			focuses_text[i].getGlobalBounds().getSize().y / 2.0f);
 		focuses_text[i].setPosition(focuses_bg[i].getPosition());
 	}
+}
+
+void loadFromImageSmooth(sf::Texture& texture, sf::Image image) {
+	texture.loadFromImage(image);
+	//texture.setSmooth(true);
 }

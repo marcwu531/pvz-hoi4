@@ -1,9 +1,9 @@
+#include <SFML/Audio.hpp>
+#include <SFML/Graphics.hpp>
 #include <array>
 #include <chrono>
 #include <functional>
 #include <iostream>
-#include <SFML/Audio.hpp>
-#include <SFML/Graphics.hpp>
 #include <shared_mutex>
 #include <string>
 #include <thread>
@@ -364,7 +364,7 @@ void asyncPvzSceneUpdate() {
 								createZombie(tempPos, 4, getRowByY(tempPos.y));
 							}
 							else {
-								int spawnTier = static_cast<int>( std::log10(currentWave + 1) * 10.0f * 
+								int spawnTier = static_cast<int>(std::log10(currentWave + 1) * 10.0f *
 									std::pow(1 + world_level_spawnTier[world][level] / 25.0f, 3)) - 2;
 
 								if (currentWave == world_level_waves[world][level] + 1) {
@@ -509,7 +509,7 @@ void asyncPvzSceneUpdate() {
 										{
 											std::unique_lock<std::shared_mutex> particleWriteLock(particlesMutex);
 											sf::FloatRect bounds = plant.anim.sprite.getGlobalBounds();
-											spawnParticle(0, sf::Vector2f(bounds.left + bounds.width / 2.0f, 
+											spawnParticle(0, sf::Vector2f(bounds.left + bounds.width / 2.0f,
 												bounds.top + bounds.height / 2.0f));
 										}
 
@@ -793,7 +793,7 @@ void asyncPvzSceneUpdate() {
 									std::optional<std::array<float, 2>> particleFrictionYArray =
 										getParticleFloatAsArray(it->emitter.field.y);
 									if (particleFrictionXArray.has_value() && particleFrictionYArray.has_value()) {
-										float particleFrictionX = getParticalInitialFloat(it->emitter.field.x), 
+										float particleFrictionX = getParticalInitialFloat(it->emitter.field.x),
 											particleFrictionY = getParticalInitialFloat(it->emitter.field.y);
 
 										particleFrictionX += std::min(static_cast<float>(it->anim.frameId), particleFrictionXArray.value()[0])

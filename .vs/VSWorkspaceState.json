@@ -1,7 +1,10 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\pvz hoi4",
+    "\\pvz hoi4\\Debug",
+    "\\pvz hoi4\\pvz hoi4"
   ],
-  "SelectedNode": "\\pvz hoi4.sln",
+  "SelectedNode": "\\pvz hoi4\\pvz hoi4\\main.cpp",
   "PreviewInSolutionExplorer": false
 }

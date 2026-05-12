@@ -1,6 +1,6 @@
+#include <SFML/Graphics.hpp>
 #include <optional>
 #include <random>
-#include <SFML/Graphics.hpp>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -38,7 +38,7 @@ static std::string generateOffsetString(size_t length) {
 		}
 	}
 
-	std::uniform_int_distribution<> dis(0, allowedChars.size() - 1);
+	std::uniform_int_distribution<size_t> dis(0, allowedChars.size() - 1);
 	std::string offsetString(length, '\0');
 
 	for (size_t i = 0; i < length; ++i) {
@@ -107,7 +107,7 @@ std::string encryptAccount(const playerAccount& account) {
 
 	std::string encryptedLawnMower = shiftStringWithOffsets(account.unlockedLawnMower ? "1" : "0", offsets);
 
-	return encryptedOffsetString + '$' + encryptedUsername + '$' + encryptedPlantsLevel + 
+	return encryptedOffsetString + '$' + encryptedUsername + '$' + encryptedPlantsLevel +
 		'$' + encryptedLawnMower;
 }
 
@@ -135,7 +135,7 @@ std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount)
 		if (!std::getline(encryptedStream, segment, '$') || segment.empty()) {
 			return std::nullopt;
 		}
-		
+
 		if (segment.length() != offsets.size()) return std::nullopt;
 		pAccount.username = shiftStringWithOffsets(segment, offsets, false);
 
@@ -159,7 +159,7 @@ std::optional<playerAccount> decryptAccount(const std::string& encryptedAccount)
 		if (!std::getline(encryptedStream, segment) || segment.empty()) {
 			return std::nullopt;
 		}
-		
+
 		pAccount.unlockedLawnMower = shiftStringWithOffsets(segment, offsets, false) == "1";
 
 		return pAccount;

@@ -1,8 +1,8 @@
+#include <SFML/Audio.hpp>
+#include <SFML/Graphics.hpp>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <queue>
-#include <SFML/Audio.hpp>
-#include <SFML/Graphics.hpp>
 #include <shared_mutex>
 #include <string>
 #include <thread>
@@ -53,7 +53,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	//window.create(sf::VideoMode::getDesktopMode(), "Pvz Hoi4", sf::Style::Resize | sf::Style::Close);
 	//world.setOrigin(93000.0f, 19500.0f);
 	//world_image.loadFromFile("world_images/world.png");
-	texture_world.loadFromImage(world_image); //sf::IntRect(4555, 920, 200, 200)
+	loadFromImageSmooth(texture_world, world_image); //sf::IntRect(4555, 920, 200, 200)
 	worldRect.setTexture(&texture_world);
 	view_world.setCenter(sf::Vector2f(93000.0f, 19000.0f)); //94000.0f, 20000.0f
 	window.setFramerateLimit(fps);
@@ -103,7 +103,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	auto clipboardCopyImage = loadImageFromResource(nullHInstance, 140);
 	auto clipboardPasteImage = loadImageFromResource(nullHInstance, 141);
 #endif
-	accountButtonTexture.loadFromImage(seedChooserBgImage);
+	loadFromImageSmooth(accountButtonTexture, seedChooserBgImage);
 	accountButton.setTexture(&accountButtonTexture);
 
 	sf::RectangleShape loginMenu;
@@ -157,16 +157,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	float phi = (1.0f + std::sqrt(5.0f)) / 2.0f;*/
 
 	sf::Texture awardScreenTexture;
-	awardScreenTexture.loadFromImage(awardScreenImage);
+	loadFromImageSmooth(awardScreenTexture, awardScreenImage);
 	awardScreen.setTexture(&awardScreenTexture);
 
 	sf::Texture clipboardCopyTexture;
-	clipboardCopyTexture.loadFromImage(clipboardCopyImage);
+	loadFromImageSmooth(clipboardCopyTexture, clipboardCopyImage);
 	sf::RectangleShape clipboardCopy;
 	clipboardCopy.setTexture(&clipboardCopyTexture);
 
 	sf::Texture clipboardPasteTexture;
-	clipboardPasteTexture.loadFromImage(clipboardPasteImage);
+	loadFromImageSmooth(clipboardPasteTexture, clipboardPasteImage);
 	sf::RectangleShape clipboardPaste;
 	clipboardPaste.setTexture(&clipboardPasteTexture);
 	clipboardPaste.setFillColor(sf::Color::Green);
@@ -189,11 +189,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	menuMenuText.setFillColor(sf::Color::Green);
 
 	sf::Texture focus_select_texture;
-	focus_select_texture.loadFromImage(getHoi4Image("focus", "can_start_bg"));
+	loadFromImageSmooth(focus_select_texture, getHoi4Image("focus", "can_start_bg"));
 	focus_select.setTexture(&focus_select_texture);
 
 	sf::Texture focus_bg_texture;
-	focus_bg_texture.loadFromImage(getHoi4Image("focus", "tiled_bg"));
+	loadFromImageSmooth(focus_bg_texture, getHoi4Image("focus", "tiled_bg"));
 	focus_bg.setTexture(&focus_bg_texture);
 
 	bool inFocus = false;
@@ -217,7 +217,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			case 0:
 				if (evt.type == sf::Event::MouseWheelScrolled) {
 					if (!loggingIn && plantExist(0) && !inFocus) {
-						zoomViewAt(worldRect, std::pow(1.01f, evt.mouseWheelScroll.delta));
+						zoomViewAt(worldRect, std::pow(1.05f, evt.mouseWheelScroll.delta));
 						view_world = window.getView();
 						//std::cout << view.getCenter().x << " " << view.getCenter().y << std::endl;
 					}
@@ -227,8 +227,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						if (usernameText.getFillColor() != sf::Color(0, 0, 0, 64)) username.pop_back();
 					}
 					else if (evt.text.unicode > 31 && evt.text.unicode < 127 &&
-						evt.text.unicode != 36 && evt.text.unicode != 94 && //$^|\ 
-						evt.text.unicode != 124 && evt.text.unicode != 92) { //127: delete
+						evt.text.unicode != 36 && evt.text.unicode != 94 &&
+						evt.text.unicode != 124 && evt.text.unicode != 92) { //$ ^ | \ and 127: delete
 						username += static_cast<char>(evt.text.unicode);
 					}
 
@@ -266,7 +266,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						&& evt.key.code <= 26 + std::min(maxPlantSelectAmount, getOwnedPlantsAmount()))
 						selectSeedPacket(seedPacketsSelectedOrder[evt.key.code - 27]);
 
-					if (evt.key.code == sf::Keyboard::Escape || evt.key.code == sf::Keyboard::Space && 
+					if (evt.key.code == sf::Keyboard::Escape || evt.key.code == sf::Keyboard::Space &&
 						pvzScene < 5) {
 						//changeScene(-1);
 						//window.close();
@@ -354,7 +354,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				else if (carKeys.getGlobalBounds().contains(mousePos)) {
 					shopping = !shopping;
 					loggingIn = false;
-				} 
+				}
 				else if (accountButton.getGlobalBounds().contains(mousePos)) {
 					loggingIn = !loggingIn;
 					shopping = false;
@@ -395,10 +395,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							if (clicking_state.empty() || !rectBounds.contains(mousePos)) {
 								//std::cout << mouseInMapPosX << std::endl;
 								//std::cout << mouseInMapPosY << std::endl;
-
-								std::string levelIdStr =
-									checkClickingState((mousePos.x - worldRect.getPosition().x) / mapRatio,
-										(mousePos.y - worldRect.getPosition().y) / mapRatio);
+								sf::Vector2f currentScale = worldRect.getScale();
+								std::string levelIdStr = checkClickingState(
+									(mousePos.x - worldRect.getPosition().x) / (mapRatio * currentScale.x),
+									(mousePos.y - worldRect.getPosition().y) / (mapRatio * currentScale.y)
+								);
 								if (!levelIdStr.empty()) levelId.setString(levelIdStr);
 							}
 							else if (levelStartButton.getGlobalBounds().contains(mousePos)) {
@@ -481,7 +482,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								changeScene(0);
 								openingMenu = false;
 							}
- 						}
+						}
 						else {
 							openingMenu = false;
 						}
@@ -497,8 +498,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 									case 0: //select place
 										if (seedPacketSelected < std::min(maxPlantSelectAmount,
 											getOwnedPlantsAmount())) {
-											seedPacketsSelectedOrder[seedPacketsSelectedOrder.empty() ? 0 :
-												seedPacketsSelectedOrder.size()] = i;
+											seedPacketsSelectedOrder[static_cast<int>(seedPacketsSelectedOrder.size())] = i;
 											seedPacketState[i][0] = 1;
 										}
 										//stdcoutMap(&seedPacketsSelectedOrder);
@@ -609,7 +609,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				if (!clicking_state.empty()) {
 					{
 						std::shared_lock<std::shared_mutex> mapReadLock(mapMutex);
-						world_blink.setPosition(sf::Vector2f(mapSx * mapRatio, mapSy * mapRatio) + worldPos);
+						sf::Vector2f currentScale = worldRect.getScale();
+						float scaledX = (mapSx * mapRatio) * currentScale.x;
+						float scaledY = (mapSy * mapRatio) * currentScale.y;
+						world_blink.setPosition(sf::Vector2f(scaledX, scaledY) + worldPos);
+						world_blink.setScale(currentScale);
 						window.draw(world_blink);
 					}
 
@@ -958,7 +962,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					else {
 						window.draw(seedPackets[seedPacketIdToString(getUnlockPlantIdByLevel())]);
 					}
-				} 
+				}
 				else if (pvzScene == 8) {
 					zombiesWon.setOrigin(zombiesWon.getSize().x / 2.0f, zombiesWon.getSize().y / 2.0f);
 					zombiesWon.setPosition(view_background.getCenter());
@@ -972,7 +976,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					window.draw(zombiesWonDark);
 					window.draw(zombiesWon);
 				}
-			} else {
+			}
+			else {
 				if (pvzScene == 9) {
 					window.draw(zombiesWonDark);
 					window.draw(zombiesWon);
@@ -1008,4 +1013,4 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	return 0;
 }
 
-//Version 1.0.60
+//Version 1.0.61

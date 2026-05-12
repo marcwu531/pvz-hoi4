@@ -64,44 +64,25 @@ void handle_aborts(int signal_number) {
 float currentZoom = 1.0f;
 
 void zoomViewAt(sf::RectangleShape& worldRect, float zoom) {
-	// Get the current scale of the worldRect
 	sf::Vector2f currentScale = worldRect.getScale();
+	sf::Vector2f newScale = currentScale * zoom;
 
-	// Get the world position of the mouse before zooming
-	sf::Vector2f beforeZoomCoord = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-
-	// Use the original scaling logic you provided
-	float scaleF = currentScale.x + --zoom;
-	sf::Vector2f newScale = sf::Vector2f(scaleF, scaleF);
-
-	// Clamp the scale values to be within limits (0.531 to 7.06)
 	newScale.x = std::clamp(newScale.x, 0.531f, 7.06f);
 	newScale.y = std::clamp(newScale.y, 0.531f, 7.06f);
 
-	// Only apply scaling if the new scale is different
 	if (newScale != currentScale) {
-		sf::Vector2f rectPosition = worldRect.getPosition();
+		sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+		sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePos);
 
-		// Calculate the size of the rectangle based on the current scale
-		sf::Vector2f currentSize = worldRect.getGlobalBounds().getSize();
+		float effectiveMultiplierX = newScale.x / currentScale.x;
+		float effectiveMultiplierY = newScale.y / currentScale.y;
 
-		// Calculate the center of the rectangle
-		sf::Vector2f rectCenter = rectPosition + currentSize / 2.0f;
-
-		// Calculate the offset of the mouse position relative to the rectangle's center
-		sf::Vector2f mouseOffset = beforeZoomCoord - rectCenter;
-
-		// Apply the new scale to the worldRect
 		worldRect.setScale(newScale);
 
-		// Get the size after scaling
-		sf::Vector2f newSize = worldRect.getGlobalBounds().getSize();
+		sf::Vector2f currentPos = worldRect.getPosition();
+		sf::Vector2f newPos = mouseWorldPos - (mouseWorldPos - currentPos) * effectiveMultiplierX;
 
-		// Calculate the new center of the rectangle after scaling
-		sf::Vector2f newRectCenter = rectPosition + newSize / 2.0f;
-
-		// Move the rectangle to maintain the mouse offset from the center
-		worldRect.setPosition(rectCenter - mouseOffset + newRectCenter);
+		worldRect.setPosition(newPos);
 	}
 }
 

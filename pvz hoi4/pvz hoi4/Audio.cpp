@@ -29,7 +29,7 @@ void initializeAudios(HINSTANCE hInstance) {
 	auto loadAndStoreMusic = [&](const std::string& category, const std::string& name, int resourceId) {
 		auto music = loadMusicFromResource(hInstance, resourceId, resourceSize);
 		if (music) audios[category][name] = std::move(music);
-	};
+		};
 
 	loadAndStoreMusic("lawnbgm", "6", 112);
 	loadAndStoreMusic("lawnbgm", "1", 113);
